@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Storage Architect | Interactive Learning Module</title>
+    <!-- Lucide Icons for UI elements -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --radius: 0.75rem;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .dark-mode {
+            --bg-page: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.3s, color 0.3s; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 1rem;
+        }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
+        
+        /* Navigation */
+        nav { display: flex; gap: 1rem; margin-bottom: 2rem; background: var(--bg-card); padding: 0.5rem; border-radius: var(--radius); box-shadow: var(--shadow); position: sticky; top: 1rem; z-index: 100; }
+        nav button {
+            flex: 1; padding: 0.75rem; border: none; background: none; color: var(--text-muted);
+            font-weight: 600; cursor: pointer; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        nav button.active { background: var(--primary); color: white; }
+        nav button:hover:not(.active) { background: var(--border); }
+
+        /* Progress Bar */
+        .progress-container { width: 100%; height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 2rem; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; }
+
+        /* Components */
+        .card { background: var(--bg-card); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow); margin-bottom: 1.5rem; border: 1px solid var(--border); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .btn { padding: 0.6rem 1.2rem; border-radius: 0.5rem; border: none; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        
+        /* Interactive Elements */
+        .disk-visualization { height: 80px; background: #e2e8f0; border-radius: 8px; display: flex; overflow: hidden; margin: 1.5rem 0; border: 2px solid #cbd5e1; position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .partition-block { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; white-space: nowrap; border-right: 1px solid rgba(255,255,255,0.2); }
+        .partition-block span { font-size: 0.7rem; opacity: 0.9; font-weight: normal; }
+        .partition-root { background: #2563eb; }
+        .partition-home { background: #10b981; }
+        .partition-swap { background: #f59e0b; }
+        .partition-var { background: #8b5cf6; }
+        .partition-unallocated { background: #94a3b8; color: #334155; }
+
+        .raid-disk-container { display: flex; gap: 1rem; justify-content: center; margin: 2rem 0; }
+        .raid-disk { width: 80px; border: 2px solid var(--primary); border-radius: 4px; padding: 0.5rem; display: flex; flex-direction: column; gap: 4px; background: var(--bg-card); position: relative; }
+        .raid-disk.failed { border-color: var(--error); opacity: 0.5; }
+        .raid-block { height: 20px; background: var(--primary); border-radius: 2px; font-size: 10px; color: white; text-align: center; line-height: 20px; }
+        .raid-block.parity { background: var(--warning); }
+
+        /* Typography */
+        h1, h2, h3 { margin-top: 0; }
+        .why-box { background: rgba(37, 99, 235, 0.1); border-left: 4px solid var(--primary); padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0; }
+        .feedback { margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; display: none; }
+        .feedback.success { background: rgba(16, 185, 129, 0.1); color: #065f46; display: block; border: 1px solid var(--success); }
+        .feedback.error { background: rgba(239, 68, 68, 0.1); color: #991b1b; display: block; border: 1px solid var(--error); }
+        .explanation-text { font-size: 0.95rem; line-height: 1.5; color: var(--text-main); margin-top: 1rem; padding: 1rem; background: var(--bg-page); border-radius: 0.5rem; border: 1px dashed var(--border); }
+
+        /* Animations */
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .pulse { animation: pulse 1.5s infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+
+        /* Screen States */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Scenarios */
+        .scenario-card { border: 2px solid var(--border); padding: 1rem; border-radius: var(--radius); cursor: pointer; transition: all 0.2s; background: var(--bg-card); margin-bottom: 0.75rem; }
+        .scenario-card:hover { border-color: var(--primary); }
+        .scenario-card.selected { border-color: var(--primary); background: rgba(37, 99, 235, 0.05); box-shadow: 0 0 0 2px var(--primary); }
+
+        /* Vocabulary Matcher */
+        .vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .vocab-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .vocab-item { padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; }
+        .vocab-item.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .vocab-item.matched { background: var(--success); color: white; border-color: var(--success); cursor: default; }
+
+        /* Quiz Styles */
+        .quiz-option { display: block; padding: 1rem; border: 1px solid var(--border); border-radius: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; }
+        .quiz-option:hover { background: var(--border); }
+        .quiz-option.correct { background: var(--success); color: white; }
+        .quiz-option.incorrect { background: var(--error); color: white; }
+
+        /* Toggles */
+        .theme-toggle { background: none; border: none; cursor: pointer; color: var(--text-main); font-size: 1.2rem; }
+
+        #welcome-screen { text-align: center; padding: 4rem 2rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo">
+            <i data-lucide="database"></i>
+            Linux Storage Architect
+        </div>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">
+            <i data-lucide="moon"></i>
+        </button>
+    </header>
+
+    <div class="progress-container">
+        <div id="main-progress" class="progress-bar"></div>
+    </div>
+
+    <nav id="main-nav">
+        <button data-screen="welcome" class="active"><i data-lucide="home"></i> Start</button>
+        <button data-screen="learn"><i data-lucide="book-open"></i> 1. Learn</button>
+        <button data-screen="explore"><i data-lucide="compass"></i> 2. Explore</button>
+        <button data-screen="practice"><i data-lucide="check-circle"></i> 3. Practice</button>
+    </nav>
+
+    <!-- 0. Welcome Screen -->
+    <section id="welcome-screen" class="screen active">
+        <div class="card">
+            <h1>Master Linux Storage Systems</h1>
+            <p style="font-size: 1.2rem; color: var(--text-muted); max-width: 800px; margin: 0 auto 2rem;">
+                A comprehensive interactive module covering partitions, filesystems, RAID, and storage administration for CompTIA Linux+ certification.
+            </p>
+            <div class="grid" style="text-align: left; margin-bottom: 2rem;">
+                <div>
+                    <h3><i data-lucide="layers" style="vertical-align: middle;"></i> Core Concepts</h3>
+                    <p>Learn the difference between physical disks, partitions, and logical mount points.</p>
+                </div>
+                <div>
+                    <h3><i data-lucide="shield-check" style="vertical-align: middle;"></i> Reliability</h3>
+                    <p>Explore RAID levels and how they provide redundancy and performance.</p>
+                </div>
+                <div>
+                    <h3><i data-lucide="pen-tool" style="vertical-align: middle;"></i> Hands-on Practice</h3>
+                    <p>Build partition layouts for real-world server scenarios and test your knowledge.</p>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="app.setScreen('learn')">Get Started <i data-lucide="arrow-right"></i></button>
+        </div>
+    </section>
+
+    <!-- 1. Learn Screen -->
+    <section id="learn-screen" class="screen">
+        <div class="grid">
+            <div class="card">
+                <h2>The Storage Stack</h2>
+                <p>Linux organizes storage in a hierarchical stack. It's helpful to think of it from the hardware up:</p>
+                <ul>
+                    <li><strong>Physical Disk:</strong> The hardware device (e.g., `/dev/nvme0n1`).</li>
+                    <li><strong>Partition:</strong> Logical divisions of that disk (e.g., `/dev/nvme0n1p1`).</li>
+                    <li><strong>Filesystem:</strong> The logic that handles data storage (e.g., `ext4`, `XFS`).</li>
+                    <li><strong>Mount Point:</strong> The directory where the filesystem is attached (e.g., `/var`).</li>
+                </ul>
+                <div class="why-box">
+                    <strong>Why this matters:</strong> Proper organization prevents a single full partition (like a log directory) from crashing the entire system.
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                    <p><strong>Quick Check:</strong> Which command shows all available block devices?</p>
+                    <div id="check-1">
+                        <button class="btn btn-outline" onclick="app.knowledgeCheck(1, false)">fdisk -l</button>
+                        <button class="btn btn-outline" onclick="app.knowledgeCheck(1, true)">lsblk</button>
+                        <button class="btn btn-outline" onclick="app.knowledgeCheck(1, false)">df -h</button>
+                    </div>
+                    <div id="check-1-feedback" class="feedback"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Filesystems & Quotas</h2>
+                <p>A filesystem is the data structure used to control how data is stored and retrieved.</p>
+                <p><strong>Common Types:</strong></p>
+                <ul>
+                    <li><strong>Ext4:</strong> The reliable Linux standard. Versatile.</li>
+                    <li><strong>XFS:</strong> High performance, great for large files and 64-bit systems.</li>
+                    <li><strong>Btrfs:</strong> "Better FS." Supports snapshots and pooling.</li>
+                </ul>
+                <p><strong>Quotas & Encryption:</strong></p>
+                <ul>
+                    <li><strong>Quotas:</strong> Restrict disk space or file counts per user or group.</li>
+                    <li><strong>LUKS:</strong> The standard for disk encryption in Linux (Linux Unified Key Setup).</li>
+                </ul>
+                <div class="why-box">
+                    <strong>Why this matters:</strong> Choosing XFS for a database or Btrfs for a backup server can drastically improve reliability and efficiency.
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2>RAID Fundamentals</h2>
+            <p><strong>Redundant Array of Independent Disks</strong> combines multiple physical disks into a single logical unit for redundancy or performance.</p>
+            <div class="grid">
+                <div style="background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 8px;">
+                    <h4>RAID 0 (Striping)</h4>
+                    <p>Splits data across disks. Fast performance, zero redundancy. If one disk fails, all data is lost.</p>
+                </div>
+                <div style="background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 8px;">
+                    <h4>RAID 1 (Mirroring)</h4>
+                    <p>Duplicates data on two disks. High redundancy, but you lose 50% of your total capacity.</p>
+                </div>
+                <div style="background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 8px;">
+                    <h4>RAID 5 (Parity)</h4>
+                    <p>Stripes data and parity information across 3+ disks. Can survive 1 disk failure. Balanced.</p>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 1rem;">
+            <button class="btn btn-primary" onclick="app.setScreen('explore')">Proceed to Exploration <i data-lucide="arrow-right"></i></button>
+        </div>
+    </section>
+
+    <!-- 2. Explore Screen -->
+    <section id="explore-screen" class="screen">
+        <!-- Partition Builder (Comparative Version) -->
+        <div class="card">
+            <h2>Partition Architecture Showcase</h2>
+            <p>Select a server scenario below to see the <strong>recommended partition layout</strong> and understand the architectural reasoning.</p>
+            
+            <div class="grid" style="grid-template-columns: 1fr 2fr;">
+                <div id="partition-scenarios" class="list">
+                    <!-- Scenarios injected by JS -->
+                </div>
+                <div>
+                    <div id="disk-viz" class="disk-visualization">
+                        <!-- Filled by JS -->
+                    </div>
+                    
+                    <div id="partition-info-box">
+                        <div id="partition-feedback" class="feedback"></div>
+                        <div id="partition-explanation" class="explanation-text">
+                            Select a scenario to reveal the architectural breakdown.
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Want to experiment? Click the button below to build your own layout.</p>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button id="manual-mode-btn" class="btn btn-outline btn-sm" onclick="app.toggleManualMode()">Enable Manual Mode</button>
+                            <div id="manual-controls" style="display: none; gap: 0.5rem;">
+                                <button class="btn btn-primary btn-sm" onclick="app.addPartition('root')">+ /</button>
+                                <button class="btn btn-primary btn-sm" onclick="app.addPartition('home')">+ /home</button>
+                                <button class="btn btn-primary btn-sm" onclick="app.addPartition('var')">+ /var</button>
+                                <button class="btn btn-primary btn-sm" onclick="app.addPartition('swap')">+ swap</button>
+                                <button class="btn btn-outline btn-sm" style="color: var(--error); border-color: var(--error);" onclick="app.resetPartitions()">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAID Visualizer -->
+        <div class="card">
+            <h2>RAID Concept Visualizer</h2>
+            <p>Select a RAID level to see how data blocks are distributed across physical disks.</p>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-outline" onclick="app.updateRAID('0')">RAID 0</button>
+                <button class="btn btn-outline" onclick="app.updateRAID('1')">RAID 1</button>
+                <button class="btn btn-outline" onclick="app.updateRAID('5')">RAID 5</button>
+                <button class="btn btn-outline" onclick="app.updateRAID('10')">RAID 10</button>
+            </div>
+            
+            <div id="raid-display">
+                <div class="raid-disk-container" id="raid-disks">
+                    <!-- Disks injected here -->
+                </div>
+                <div id="raid-stats" class="grid" style="grid-template-columns: repeat(4, 1fr); text-align: center;">
+                    <div><span class="text-muted">Fault Tolerance</span><br><strong id="raid-ft">None</strong></div>
+                    <div><span class="text-muted">Speed</span><br><strong id="raid-speed">Fast</strong></div>
+                    <div><span class="text-muted">Efficiency</span><br><strong id="raid-eff">100%</strong></div>
+                    <div><span class="text-muted">Min Disks</span><br><strong id="raid-min">2</strong></div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="fail-disk-btn" class="btn btn-primary" onclick="app.toggleDiskFailure()" style="background: var(--error);">Simulate Disk Failure</button>
+                </div>
+                <div id="raid-failure-status" class="feedback" style="text-align: center;"></div>
+            </div>
+        </div>
+
+        <div style="text-align: right; margin-top: 1rem;">
+            <button class="btn btn-primary" onclick="app.setScreen('practice')">Go to Final Practice <i data-lucide="arrow-right"></i></button>
+        </div>
+    </section>
+
+    <!-- 3. Practice Screen -->
+    <section id="practice-screen" class="screen">
+        
+        <!-- Vocabulary Matcher -->
+        <div class="card">
+            <h2>Activity 1: Vocabulary Matcher</h2>
+            <p>Click a term, then click its matching definition.</p>
+            <div class="vocab-grid">
+                <div class="vocab-list" id="vocab-terms"></div>
+                <div class="vocab-list" id="vocab-defs"></div>
+            </div>
+            <div id="vocab-feedback" class="feedback"></div>
+        </div>
+
+        <!-- Build a System -->
+        <div class="card">
+            <h2>Activity 2: Storage Architect Challenge</h2>
+            <div id="sys-challenge-content">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- Troubleshooting Case -->
+        <div class="card">
+            <h2>Activity 3: Mini-Case Study</h2>
+            <div id="case-study-content">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- Final Quiz -->
+        <div class="card">
+            <h2>Activity 4: Quick Check Quiz</h2>
+            <div id="quiz-container">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- Results Dashboard -->
+        <div id="mastery-dashboard" class="card" style="display: none; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white;">
+            <h2>Your Mastery Summary</h2>
+            <div class="grid">
+                <div>
+                    <h1 id="final-score" style="font-size: 3rem; margin: 0;">0%</h1>
+                    <p>Total Score</p>
+                </div>
+                <ul id="mastery-list" style="list-style: none; padding: 0;">
+                    <!-- Filled by JS -->
+                </ul>
+            </div>
+            <button class="btn" style="background: white; color: var(--primary); margin-top: 1rem;" onclick="location.reload()">Reset and Try Again</button>
+        </div>
+    </section>
+
+</div>
+
+<script>
+/**
+ * LINUX STORAGE ARCHITECT - APP LOGIC
+ */
+
+const app = {
+    state: {
+        activeScreen: 'welcome',
+        darkMode: false,
+        progress: 0,
+        score: { vocab: 0, scenario: 0, quiz: 0 },
+        currentPartitionScenario: null,
+        currentPartitions: [],
+        manualMode: false,
+        raidLevel: '0',
+        raidDiskFailed: false,
+        vocabSelected: null,
+        quizIndex: 0
+    },
+
+    partitionScenarios: [
+        { 
+            name: "Standard Workstation", 
+            icon: "monitor",
+            layout: [{type: 'root', size: 30}, {type: 'home', size: 60}, {type: 'swap', size: 10}],
+            explanation: "In a workstation, **User Data (/home)** is the priority. We allocate 60% here so users have plenty of space for documents and downloads without affecting the 30% reserved for the OS **System files (/)**."
+        },
+        { 
+            name: "Log-Heavy Web Server", 
+            icon: "server",
+            layout: [{type: 'root', size: 30}, {type: 'var', size: 60}, {type: 'swap', size: 10}],
+            explanation: "**Isolating /var** is critical here. Logs grow rapidly; by putting them on a separate partition, we ensure that even if logs fill their 60% space, the **Root (/) partition** remains clear, keeping the system bootable and admin-accessible."
+        },
+        { 
+            name: "Database Cluster Node", 
+            icon: "database",
+            layout: [{type: 'root', size: 20}, {type: 'swap', size: 40}, {type: 'var', size: 40}],
+            explanation: "Database nodes often require massive **Swap space** for high memory management tasks and a dedicated **Data area (/var)**. The Root partition is kept minimal to reduce administrative overhead and system footprint."
+        },
+        { 
+            name: "Multi-User Lab Machine", 
+            icon: "users",
+            layout: [{type: 'root', size: 20}, {type: 'home', size: 70}, {type: 'swap', size: 10}],
+            explanation: "With many users, the **home directory** grows fastest. We maximize the /home partition to 70% and often implement **Disk Quotas** here to ensure one user doesn't hog the entire server."
+        }
+    ],
+
+    init() {
+        lucide.createIcons();
+        this.setupNav();
+        this.updateProgress();
+        this.setupTheme();
+        this.initVocab();
+        this.renderPartitionScenarios();
+        this.renderPartitionVisual();
+        this.updateRAID('0');
+        this.renderChallenge();
+        this.renderCaseStudy();
+        this.renderQuiz();
+    },
+
+    setupNav() {
+        document.querySelectorAll('nav button').forEach(btn => {
+            btn.addEventListener('click', () => this.setScreen(btn.dataset.screen));
+        });
+    },
+
+    setupTheme() {
+        const toggle = document.getElementById('theme-toggle');
+        toggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            this.state.darkMode = !this.state.darkMode;
+            toggle.innerHTML = this.state.darkMode ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+            lucide.createIcons();
+        });
+    },
+
+    setScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`${screenId}-screen`).classList.add('active');
+        
+        document.querySelectorAll('nav button').forEach(b => {
+            b.classList.toggle('active', b.dataset.screen === screenId);
+        });
+
+        this.state.activeScreen = screenId;
+        this.updateProgress();
+        window.scrollTo(0,0);
+    },
+
+    updateProgress() {
+        const steps = ['welcome', 'learn', 'explore', 'practice'];
+        const idx = steps.indexOf(this.state.activeScreen);
+        this.state.progress = (idx / (steps.length - 1)) * 100;
+        document.getElementById('main-progress').style.width = `${this.state.progress}%`;
+    },
+
+    knowledgeCheck(id, isCorrect) {
+        const fb = document.getElementById(`check-${id}-feedback`);
+        if (isCorrect) {
+            fb.textContent = "Correct! lsblk (List Block Devices) is the most modern and readable way to see your disk structure.";
+            fb.className = "feedback success";
+        } else {
+            fb.textContent = "Not quite. fdisk -l works but is verbose, and df shows usage, not the devices themselves.";
+            fb.className = "feedback error";
+        }
+    },
+
+    /* --- Partition Builder (Comparative) Logic --- */
+    renderPartitionScenarios() {
+        const container = document.getElementById('partition-scenarios');
+        container.innerHTML = '';
+        this.partitionScenarios.forEach((s, idx) => {
+            const card = document.createElement('div');
+            card.className = 'scenario-card';
+            card.innerHTML = `
+                <strong><i data-lucide="${s.icon}" style="width:14px; height:14px; vertical-align:middle; margin-right:5px;"></i> ${s.name}</strong>
+                <p class="small" style="font-size:0.8rem; color:var(--text-muted); margin-top:5px;">Click to view optimal layout.</p>
+            `;
+            card.onclick = () => this.selectPartitionScenario(idx);
+            container.appendChild(card);
+        });
+        lucide.createIcons();
+    },
+
+    selectPartitionScenario(idx) {
+        this.state.currentPartitionScenario = idx;
+        const scenario = this.partitionScenarios[idx];
+        
+        // Update selection UI
+        document.querySelectorAll('.scenario-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+        
+        // Disable manual mode if active
+        this.state.manualMode = false;
+        document.getElementById('manual-controls').style.display = 'none';
+        document.getElementById('manual-mode-btn').textContent = "Enable Manual Mode";
+
+        // Auto-allocate
+        this.state.currentPartitions = [...scenario.layout];
+        
+        // Show explanation
+        const expBox = document.getElementById('partition-explanation');
+        expBox.innerHTML = `<strong>Architectural Reason:</strong><br>${scenario.explanation}`;
+        
+        this.renderPartitionVisual();
+    },
+
+    toggleManualMode() {
+        this.state.manualMode = !this.state.manualMode;
+        const controls = document.getElementById('manual-controls');
+        const btn = document.getElementById('manual-mode-btn');
+        const expBox = document.getElementById('partition-explanation');
+
+        if (this.state.manualMode) {
+            controls.style.display = 'flex';
+            btn.textContent = "Exit Manual Mode";
+            this.state.currentPartitions = [];
+            expBox.innerHTML = "<strong>Manual Mode Active:</strong> Use the buttons above to build your own disk layout from scratch.";
+            document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
+        } else {
+            controls.style.display = 'none';
+            btn.textContent = "Enable Manual Mode";
+            expBox.innerHTML = "Select a scenario to reveal the architectural breakdown.";
+            this.state.currentPartitions = [];
+        }
+        this.renderPartitionVisual();
+    },
+
+    addPartition(type) {
+        let total = this.state.currentPartitions.reduce((acc, curr) => acc + curr.size, 0);
+        if (total >= 100) return;
+        
+        const size = 10; 
+        this.state.currentPartitions.push({ type, size });
+        this.renderPartitionVisual();
+    },
+
+    resetPartitions() {
+        this.state.currentPartitions = [];
+        this.renderPartitionVisual();
+    },
+
+    renderPartitionVisual() {
+        const container = document.getElementById('disk-viz');
+        container.innerHTML = '';
+        let total = 0;
+        
+        this.state.currentPartitions.forEach(p => {
+            const el = document.createElement('div');
+            el.className = `partition-block partition-${p.type}`;
+            el.style.width = `${p.size}%`;
+            el.innerHTML = `/${p.type === 'swap' ? 'swap' : p.type}<span>${p.size}GB</span>`;
+            container.appendChild(el);
+            total += p.size;
+        });
+
+        if (total < 100) {
+            const el = document.createElement('div');
+            el.className = 'partition-block partition-unallocated';
+            el.style.width = `${100 - total}%`;
+            el.innerHTML = `Free<span>${100 - total}GB</span>`;
+            container.appendChild(el);
+        }
+    },
+
+    /* --- RAID Logic --- */
+    updateRAID(level) {
+        this.state.raidLevel = level;
+        this.state.raidDiskFailed = false;
+        const container = document.getElementById('raid-disks');
+        container.innerHTML = '';
+        
+        const diskCount = level === '5' ? 3 : (level === '10' ? 4 : 2);
+        for(let i=0; i<diskCount; i++) {
+            const d = document.createElement('div');
+            d.className = 'raid-disk';
+            d.id = `raid-disk-${i}`;
+            for(let j=0; j<4; j++) {
+                const b = document.createElement('div');
+                b.className = 'raid-block';
+                b.textContent = this.getRAIDLabel(level, i, j);
+                if (b.textContent.includes('P')) b.className += ' parity';
+                d.appendChild(b);
+            }
+            container.appendChild(d);
+        }
+
+        const stats = {
+            '0': { ft: 'None', speed: 'Extreme', eff: '100%', min: '2' },
+            '1': { ft: '1 Disk', speed: 'Normal', eff: '50%', min: '2' },
+            '5': { ft: '1 Disk', speed: 'Fast (Read)', eff: 'n-1', min: '3' },
+            '10': { ft: '1-2 Disks', speed: 'Fast', eff: '50%', min: '4' }
+        }[level];
+
+        document.getElementById('raid-ft').textContent = stats.ft;
+        document.getElementById('raid-speed').textContent = stats.speed;
+        document.getElementById('raid-eff').textContent = stats.eff;
+        document.getElementById('raid-min').textContent = stats.min;
+        document.getElementById('raid-failure-status').style.display = 'none';
+    },
+
+    getRAIDLabel(level, diskIdx, blockIdx) {
+        if (level === '0') return `Data ${diskIdx + (blockIdx * 2)}`;
+        if (level === '1') return `Data ${blockIdx}`;
+        if (level === '5') {
+            if (diskIdx === blockIdx % 3) return 'P-' + blockIdx;
+            return 'D-' + blockIdx;
+        }
+        return 'Data';
+    },
+
+    toggleDiskFailure() {
+        this.state.raidDiskFailed = !this.state.raidDiskFailed;
+        const disk = document.getElementById('raid-disk-0');
+        const fb = document.getElementById('raid-failure-status');
+        
+        if (this.state.raidDiskFailed) {
+            disk.classList.add('failed');
+            if (this.state.raidLevel === '0') {
+                fb.textContent = "CRITICAL FAILURE: RAID 0 has no redundancy. All data is lost.";
+                fb.className = "feedback error";
+            } else {
+                fb.textContent = "DISK FAILED: System is running in degraded mode. Data is still accessible.";
+                fb.className = "feedback success";
+            }
+        } else {
+            disk.classList.remove('failed');
+            fb.style.display = 'none';
+        }
+    },
+
+    /* --- Vocabulary Activity --- */
+    vocabData: [
+        { term: 'Mount Point', def: 'A directory used to access a filesystem.' },
+        { term: 'LUKS', def: 'The standard for Linux disk encryption.' },
+        { term: 'Quota', def: 'Restriction on disk space per user.' },
+        { term: 'XFS', def: 'High-performance 64-bit journaling filesystem.' },
+        { term: 'Swap', def: 'Disk space used as virtual memory.' },
+        { term: 'Inode', def: 'A data structure that stores file metadata.' }
+    ],
+
+    initVocab() {
+        const termsContainer = document.getElementById('vocab-terms');
+        const defsContainer = document.getElementById('vocab-defs');
+        
+        const terms = [...this.vocabData].sort(() => Math.random() - 0.5);
+        const defs = [...this.vocabData].sort(() => Math.random() - 0.5);
+
+        terms.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'vocab-item';
+            el.textContent = item.term;
+            el.onclick = () => this.selectVocab(el, 'term', item.term);
+            termsContainer.appendChild(el);
+        });
+
+        defs.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'vocab-item';
+            el.textContent = item.def;
+            el.onclick = () => this.selectVocab(el, 'def', item.term);
+            defsContainer.appendChild(el);
+        });
+    },
+
+    selectVocab(el, type, termId) {
+        if (el.classList.contains('matched')) return;
+
+        if (this.state.vocabSelected && this.state.vocabSelected.type !== type) {
+            if (this.state.vocabSelected.id === termId) {
+                el.classList.add('matched');
+                this.state.vocabSelected.el.classList.add('matched');
+                this.state.vocabSelected = null;
+                this.state.score.vocab++;
+                this.checkVocabCompletion();
+            } else {
+                this.state.vocabSelected.el.classList.remove('selected');
+                this.state.vocabSelected = null;
+            }
+        } else {
+            if (this.state.vocabSelected) this.state.vocabSelected.el.classList.remove('selected');
+            this.state.vocabSelected = { el, type, id: termId };
+            el.classList.add('selected');
+        }
+    },
+
+    checkVocabCompletion() {
+        if (this.state.score.vocab === this.vocabData.length) {
+            const fb = document.getElementById('vocab-feedback');
+            fb.textContent = "All terms matched! Excellent work.";
+            fb.className = "feedback success";
+        }
+    },
+
+    /* --- Build-the-System Activity --- */
+    scenarios: [
+        {
+            q: "Build a system for a Small Business File Server. They have 4 disks, need high redundancy, and want to store large media files.",
+            options: {
+                raid: ["RAID 0", "RAID 10", "RAID 1"],
+                fs: ["ext4", "XFS", "Btrfs"]
+            },
+            correct: ["RAID 10", "XFS"],
+            rational: "RAID 10 provides high redundancy for 4 disks, and XFS is optimized for large file storage."
+        }
+    ],
+
+    renderChallenge() {
+        const s = this.scenarios[0];
+        const container = document.getElementById('sys-challenge-content');
+        container.innerHTML = `
+            <p>${s.q}</p>
+            <div class="grid">
+                <div>
+                    <label>RAID Level:</label>
+                    <select id="challenge-raid" class="btn btn-outline" style="width:100%">${s.options.raid.map(o => `<option>${o}</option>`)}</select>
+                </div>
+                <div>
+                    <label>Filesystem:</label>
+                    <select id="challenge-fs" class="btn btn-outline" style="width:100%">${s.options.fs.map(o => `<option>${o}</option>`)}</select>
+                </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:1rem" onclick="app.checkChallenge()">Submit Design</button>
+            <div id="challenge-feedback" class="feedback"></div>
+        `;
+    },
+
+    checkChallenge() {
+        const raid = document.getElementById('challenge-raid').value;
+        const fs = document.getElementById('challenge-fs').value;
+        const fb = document.getElementById('challenge-feedback');
+        if (raid === this.scenarios[0].correct[0] && fs === this.scenarios[0].correct[1]) {
+            fb.className = "feedback success";
+            fb.textContent = "Perfect! " + this.scenarios[0].rational;
+        } else {
+            fb.className = "feedback error";
+            fb.textContent = "Not quite the optimal design. Consider RAID 10 for 4 disks and XFS for media files.";
+        }
+    },
+
+    /* --- Case Study --- */
+    caseStudies: [
+        {
+            title: "The Filled Log Directory",
+            scenario: "A junior admin finds that the server is unresponsive. Running 'df -h' shows /dev/sda1 (mounted at /) is 100% full because /var/log has grown too large.",
+            q: "What is the best long-term architectural fix?",
+            options: [
+                "Delete all files in /var/log",
+                "Create a separate partition for /var and mount it there",
+                "Increase the hardware disk size",
+                "Install a smaller filesystem"
+            ],
+            correct: 1,
+            why: "Isolating /var on its own partition prevents log growth from filling the root (/) partition, keeping the OS bootable."
+        }
+    ],
+
+    renderCaseStudy() {
+        const cs = this.caseStudies[0];
+        const container = document.getElementById('case-study-content');
+        container.innerHTML = `
+            <h3>${cs.title}</h3>
+            <p>${cs.scenario}</p>
+            <strong>${cs.q}</strong>
+            <div style="margin-top:1rem">
+                ${cs.options.map((o, i) => `
+                    <button class="btn btn-outline" style="width:100%; margin-bottom:0.5rem; text-align:left;" onclick="app.checkCase(${i})">${o}</button>
+                `).join('')}
+            </div>
+            <div id="case-feedback" class="feedback"></div>
+        `;
+    },
+
+    checkCase(idx) {
+        const fb = document.getElementById('case-feedback');
+        const cs = this.caseStudies[0];
+        if (idx === cs.correct) {
+            fb.className = "feedback success";
+            fb.textContent = "Correct! " + cs.why;
+        } else {
+            fb.className = "feedback error";
+            fb.textContent = "Incorrect. While deleting logs works temporarily, it doesn't prevent future crashes.";
+        }
+    },
+
+    /* --- Final Quiz --- */
+    quizQuestions: [
+        { q: "Which file contains the information for persistent filesystem mounts?", a: ["/etc/mtab", "/etc/fstab", "/etc/mounts"], c: 1 },
+        { q: "What is the minimum number of disks required for RAID 5?", a: ["2", "3", "4"], c: 1 },
+        { q: "Which command is used to create an ext4 filesystem?", a: ["mkfs.ext4", "format.ext4", "newfs"], c: 0 },
+        { q: "True or False: RAID 0 provides fault tolerance.", a: ["True", "False"], c: 1 },
+        { q: "What does LUKS stand for in Linux storage?", a: ["Linux Unit Kernel System", "Linux Unified Key Setup", "Log Under Key Storage"], c: 1 }
+    ],
+
+    renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        if (this.state.quizIndex >= this.quizQuestions.length) {
+            this.showMastery();
+            return;
+        }
+        
+        const q = this.quizQuestions[this.state.quizIndex];
+        container.innerHTML = `
+            <p>Question ${this.state.quizIndex + 1} of ${this.quizQuestions.length}:</p>
+            <h3>${q.q}</h3>
+            ${q.a.map((opt, i) => `
+                <div class="quiz-option" onclick="app.handleQuizAnswer(${i})">${opt}</div>
+            `).join('')}
+        `;
+    },
+
+    handleQuizAnswer(idx) {
+        const q = this.quizQuestions[this.state.quizIndex];
+        const options = document.querySelectorAll('.quiz-option');
+        
+        if (idx === q.c) {
+            options[idx].classList.add('correct');
+            this.state.score.quiz++;
+        } else {
+            options[idx].classList.add('incorrect');
+            options[q.c].classList.add('correct');
+        }
+
+        setTimeout(() => {
+            this.state.quizIndex++;
+            this.renderQuiz();
+        }, 1200);
+    },
+
+    showMastery() {
+        const container = document.getElementById('quiz-container');
+        container.style.display = 'none';
+        const dashboard = document.getElementById('mastery-dashboard');
+        dashboard.style.display = 'block';
+        
+        const percent = Math.round((this.state.score.quiz / this.quizQuestions.length) * 100);
+        document.getElementById('final-score').textContent = `${percent}%`;
+        
+        const list = document.getElementById('mastery-list');
+        list.innerHTML = `
+            <li>✔ Concepts Explored: Complete</li>
+            <li>✔ RAID Scenarios: Attempted</li>
+            <li>✔ Quiz Accuracy: ${percent}%</li>
+            <li>✔ Final Status: ${percent > 70 ? 'Certified Storage Architect' : 'Needs Review'}</li>
+        `;
+    }
+};
+
+window.onload = () => app.init();
+</script>
+</body>
+</html>
