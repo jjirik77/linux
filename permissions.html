@@ -6,540 +6,448 @@
     <title>Linux Permissions Masterclass</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap');
-
-        :root {
-            --terminal-bg: #1e1e1e;
-            --linux-blue: #3b82f6;
-            --linux-green: #10b981;
-            --linux-red: #ef4444;
-            --linux-yellow: #f59e0b;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
+            background-color: #f8fafc;
+            color: #1e293b;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        .mono {
-            font-family: 'Fira Code', monospace;
-        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
 
-        .terminal {
-            background-color: var(--terminal-bg);
-            color: #d1d5db;
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
             border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-
-        .terminal::before {
-            content: "● ● ●";
-            position: absolute;
-            top: 8px;
-            left: 12px;
-            font-size: 10px;
-            color: #4b5563;
-            letter-spacing: 2px;
-        }
-
-        .permission-bit {
-            display: inline-block;
+            font-size: 14px;
+            font-weight: 500;
             transition: all 0.2s ease;
-            cursor: pointer;
-            padding: 2px 4px;
-            border-radius: 4px;
+            color: #64748b;
         }
 
-        .permission-bit:hover {
-            background-color: rgba(59, 130, 246, 0.2);
-            transform: scale(1.1);
+        .tab-btn.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
         }
 
-        .active-bit {
-            color: #fff;
-            font-weight: bold;
+        .tab-btn:not(.active):hover {
+            background-color: #f1f5f9;
+            color: #1e293b;
         }
 
-        .highlight-user { color: #60a5fa; }
-        .highlight-group { color: #a78bfa; }
-        .highlight-other { color: #f472b6; }
-        .highlight-special { color: #fbbf24; }
-
-        .card {
+        .content-card {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            width: 100%;
+            max-width: 900px;
+            padding: 40px;
+            margin: auto;
         }
 
-        .step-active {
-            border-left: 4px solid var(--linux-blue);
-            background-color: #eff6ff;
-        }
-        
-        .bit-toggle {
-            width: 50px;
-            height: 50px;
+        .bit-btn {
+            width: 54px;
+            height: 54px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid #e5e7eb;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
+            font-weight: 700;
             cursor: pointer;
-            font-weight: 600;
-            user-select: none;
+            transition: all 0.2s;
+            background: #f8fafc;
         }
 
-        .bit-toggle.on {
-            background-color: var(--linux-blue);
+        .bit-btn.active {
+            background-color: #2563eb;
             color: white;
-            border-color: var(--linux-blue);
+            border-color: #2563eb;
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
         }
 
-        .bit-toggle.off {
-            background-color: white;
-            color: #9ca3af;
+        .mastery-circle {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            border: 10px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        .view-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        .success-pulse {
-            animation: pulse 0.5s ease-in-out;
+        .terminal {
+            background-color: #0f172a;
+            color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+        }
+
+        .sub-tab {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .sub-tab.active {
+            background: #dbeafe;
+            color: #1e40af;
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body>
 
-    <!-- Navigation Header -->
-    <nav class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <svg viewBox="0 0 24 24" class="w-8 h-8 fill-current text-blue-400">
-                    <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.5 18.8,16.7 17,18.1L12.5,13.6C12.8,13.1 13,12.6 13,12A1,1 0 0,0 12,11A1,1 0 0,0 11,12C11,12.6 11.2,13.1 11.5,13.6L7,18.1C5.2,16.7 4,14.5 4,12A8,8 0 0,1 12,4Z" />
-                </svg>
-                <h1 class="text-xl font-bold tracking-tight">Linux Permissions <span class="text-blue-400">Masterclass</span></h1>
-            </div>
-            <div class="hidden md:flex gap-6 text-sm font-medium">
-                <a href="#basics" class="hover:text-blue-400">Anatomy</a>
-                <a href="#calculator" class="hover:text-blue-400">Octal Lab</a>
-                <a href="#special" class="hover:text-blue-400">Special Modes</a>
-                <a href="#challenge" class="bg-blue-600 px-4 py-1.5 rounded-full hover:bg-blue-500 transition">Take Challenge</a>
-            </div>
+    <!-- Top Bar -->
+    <header class="px-8 py-4 flex justify-between items-center bg-white border-b border-slate-200">
+        <div class="flex items-center gap-2 text-blue-600 font-extrabold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <span class="text-lg tracking-tight">Linux Permissions Master</span>
         </div>
-    </nav>
+        <button class="text-slate-400 hover:text-slate-600 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+    </header>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-12">
+    <!-- Nav Pills -->
+    <div class="flex justify-center pt-8">
+        <div class="bg-white p-1.5 rounded-xl border border-slate-200 flex gap-1 shadow-sm">
+            <button onclick="showView('start')" id="btn-start" class="tab-btn active">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Start
+            </button>
+            <button onclick="showView('learn')" id="btn-learn" class="tab-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                1. Learn
+            </button>
+            <button onclick="showView('explore')" id="btn-explore" class="tab-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.068-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                2. Explore
+            </button>
+            <button onclick="showView('practice')" id="btn-practice" class="tab-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                3. Practice
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Card Area -->
+    <div class="view-container">
         
-        <!-- Intro Section -->
-        <section class="text-center space-y-4 pt-4">
-            <h2 class="text-4xl font-extrabold text-slate-900">Mastering the Mode</h2>
-            <p class="text-slate-600 max-w-2xl mx-auto text-lg">
-                In Linux, everything is a file. Controlling who can read, write, and execute these files is the foundation of system security.
-            </p>
-        </section>
-
-        <!-- Section 1: The Anatomy -->
-        <section id="basics" class="grid lg:grid-cols-2 gap-8 items-center">
-            <div class="space-y-6">
-                <h3 class="text-2xl font-bold flex items-center gap-2">
-                    <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
-                    The Anatomy of <code class="bg-slate-200 px-2 py-1 rounded text-sm">ls -l</code>
-                </h3>
-                <p class="text-slate-600">
-                    Run the long listing command to see file details. Hover over the terminal output components to learn what they represent.
+        <!-- START VIEW -->
+        <div id="view-start" class="content-card text-center space-y-10">
+            <div class="space-y-4">
+                <h2 class="text-3xl font-extrabold text-slate-900">Master Linux Permissions</h2>
+                <p class="text-slate-500 max-w-xl mx-auto text-sm leading-relaxed">
+                    A comprehensive interactive module covering standard rwx bits, octal notation, and special kernel flags for Linux system administration.
                 </p>
-                
-                <div class="terminal mono text-base leading-relaxed">
-                    <div class="mb-2 text-slate-500">$ ls -l</div>
-                    <div>total 97297</div>
-                    <div class="cursor-help transition-all">
-                        <span class="group relative">
-                            <span class="text-emerald-400">-rwxrwxr-x</span>
-                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg w-48 z-10">
-                                <strong>Permissions String:</strong> First char is Type (- file, d directory). Next 9 are rwx for User, Group, and Others.
-                            </div>
-                        </span>
-                        <span class="group relative px-2">
-                            <span class="text-yellow-400">2</span>
-                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg w-48 z-10">
-                                <strong>Hard Links:</strong> Number of directory entries that point to this file.
-                            </div>
-                        </span>
-                        <span class="group relative px-2">
-                            <span class="text-blue-400">brijkishore</span>
-                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg w-48 z-10">
-                                <strong>Owner:</strong> The user who owns this file.
-                            </div>
-                        </span>
-                        <span class="group relative px-2">
-                            <span class="text-purple-400">staff</span>
-                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg w-48 z-10">
-                                <strong>Group:</strong> The group that has group-level access.
-                            </div>
-                        </span>
-                        <span class="group relative px-2">
-                            <span class="text-slate-300">500</span>
-                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg w-48 z-10">
-                                <strong>File Size:</strong> Measured in bytes.
-                            </div>
-                        </span>
-                        <span class="group relative px-2">
-                            <span class="text-slate-400">Nov 24 22:10</span>
-                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded shadow-lg w-48 z-10">
-                                <strong>M-Time:</strong> Last modification date and time.
-                            </div>
-                        </span>
-                        <span class="text-white font-bold ml-2">data_report.csv</span>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-x-12 gap-y-10 text-left px-4">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Core Concepts
                     </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Learn the difference between Owner, Group, and Others tiers of access control.</p>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 3c1.72 0 3.347.433 4.775 1.202m0 0L17 5m-1.833 4.667L12 15m0 0l-1.833-2.333M12 15V3"></path></svg>
+                        Octal Notation
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Master the binary math behind permission numbers like 755 and 644.</p>
+                </div>
+                <div class="space-y-2 col-span-2">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Special Permissions
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Understand SUID, SGID, and the Sticky Bit for shared storage and elevated privileges.</p>
                 </div>
             </div>
-            
-            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h4 class="font-bold text-slate-800 mb-4">Permission Groups</h4>
-                <div class="space-y-4">
-                    <div class="flex items-start gap-4 p-3 bg-blue-50 rounded-lg">
-                        <div class="text-blue-600 font-bold text-lg pt-1">User</div>
-                        <div>
-                            <p class="text-sm font-semibold">The Individual Owner</p>
-                            <p class="text-xs text-slate-500">The person who created the file or was assigned ownership via <code class="bg-blue-100 px-1">chown</code>.</p>
+
+            <button onclick="showView('learn')" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                Get Started
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </div>
+
+        <!-- LEARN VIEW -->
+        <div id="view-learn" class="content-card hidden space-y-6">
+            <div class="flex justify-between items-center border-b pb-4">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <span class="text-blue-600">01.</span> Learn
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="showSubLearn('standard')" id="sub-standard" class="sub-tab active">Standard & Groups</button>
+                    <button onclick="showSubLearn('special')" id="sub-special" class="sub-tab">Special Bits</button>
+                </div>
+            </div>
+
+            <!-- Standard & Groups Sub-View -->
+            <div id="learn-standard" class="space-y-6">
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                            <h4 class="font-bold text-[11px] uppercase text-slate-400 mb-2">Permission Groups</h4>
+                            <div class="space-y-2 text-xs">
+                                <div><span class="font-bold text-slate-700">Owner (u):</span> The user who owns the file.</div>
+                                <div><span class="font-bold text-slate-700">Group (g):</span> Users in the file's group.</div>
+                                <div><span class="font-bold text-slate-700">Others (o):</span> Everyone else on system.</div>
+                            </div>
                         </div>
+                        <p class="text-xs text-slate-500">Each group has a set of <span class="mono text-blue-600">rwx</span> bits: Read (4), Write (2), and Execute (1).</p>
                     </div>
-                    <div class="flex items-start gap-4 p-3 bg-purple-50 rounded-lg">
-                        <div class="text-purple-600 font-bold text-lg pt-1">Group</div>
-                        <div>
-                            <p class="text-sm font-semibold">The Department/Team</p>
-                            <p class="text-xs text-slate-500">A set of users defined in the system who share permissions for collaborative files.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4 p-3 bg-pink-50 rounded-lg">
-                        <div class="text-pink-600 font-bold text-lg pt-1">Others</div>
-                        <div>
-                            <p class="text-sm font-semibold">Everyone Else</p>
-                            <p class="text-xs text-slate-500">Often called "world" permissions. Any user on the system who isn't the owner or in the group.</p>
+                    <div class="terminal mono leading-relaxed">
+                        <div class="text-slate-500 mb-1"># ls -l snapshot</div>
+                        <div class="text-emerald-400 font-bold">-rwxr-xr--</div>
+                        <div class="mt-4 space-y-1 text-slate-400 text-[10px]">
+                            <div><span class="text-slate-200">rwx</span> (7) : User Owner</div>
+                            <div><span class="text-slate-200">r-x</span> (5) : Group Owner</div>
+                            <div><span class="text-slate-200">r--</span> (4) : Others (World)</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Section 2: Octal Calculator -->
-        <section id="calculator" class="space-y-8">
-            <div class="text-center">
-                <h3 class="text-3xl font-bold">Interactive Octal Lab</h3>
-                <p class="text-slate-600">Permissions are binary. Toggle the bits to see how the octal values are calculated.</p>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-6">
-                <!-- User Permissions -->
-                <div class="card p-6 border-t-4 border-blue-500">
-                    <h4 class="text-center font-bold text-blue-600 mb-4 uppercase tracking-wider">User (Owner)</h4>
-                    <div class="flex justify-center gap-4 mb-6">
-                        <div onclick="toggleBit('u', 'r')" id="u-r" class="bit-toggle off">r</div>
-                        <div onclick="toggleBit('u', 'w')" id="u-w" class="bit-toggle off">w</div>
-                        <div onclick="toggleBit('u', 'x')" id="u-x" class="bit-toggle off">x</div>
+            <!-- Special Bits Sub-View -->
+            <div id="learn-special" class="hidden space-y-6">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                        <h4 class="font-bold text-xs text-blue-800 mb-1">SUID (u+s)</h4>
+                        <p class="text-[10px] text-blue-600">File runs with <strong>owner</strong> permissions. Shown as 's' in user slot.</p>
                     </div>
-                    <div class="text-center">
-                        <div class="text-sm text-slate-400">Value</div>
-                        <div id="u-val" class="text-4xl font-black text-slate-800">0</div>
+                    <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
+                        <h4 class="font-bold text-xs text-indigo-800 mb-1">SGID (g+s)</h4>
+                        <p class="text-[10px] text-indigo-600">Inherits <strong>group</strong> of directory. Shown as 's' in group slot.</p>
+                    </div>
+                    <div class="p-4 bg-pink-50 border border-pink-100 rounded-lg">
+                        <h4 class="font-bold text-xs text-pink-800 mb-1">Sticky Bit (+t)</h4>
+                        <p class="text-[10px] text-pink-600">Only <strong>owner</strong> can delete files. Shown as 't' in others slot.</p>
                     </div>
                 </div>
-
-                <!-- Group Permissions -->
-                <div class="card p-6 border-t-4 border-purple-500">
-                    <h4 class="text-center font-bold text-purple-600 mb-4 uppercase tracking-wider">Group</h4>
-                    <div class="flex justify-center gap-4 mb-6">
-                        <div onclick="toggleBit('g', 'r')" id="g-r" class="bit-toggle off">r</div>
-                        <div onclick="toggleBit('g', 'w')" id="g-w" class="bit-toggle off">w</div>
-                        <div onclick="toggleBit('g', 'x')" id="g-x" class="bit-toggle off">x</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-sm text-slate-400">Value</div>
-                        <div id="g-val" class="text-4xl font-black text-slate-800">0</div>
-                    </div>
-                </div>
-
-                <!-- Other Permissions -->
-                <div class="card p-6 border-t-4 border-pink-500">
-                    <h4 class="text-center font-bold text-pink-600 mb-4 uppercase tracking-wider">Others (World)</h4>
-                    <div class="flex justify-center gap-4 mb-6">
-                        <div onclick="toggleBit('o', 'r')" id="o-r" class="bit-toggle off">r</div>
-                        <div onclick="toggleBit('o', 'w')" id="o-w" class="bit-toggle off">w</div>
-                        <div onclick="toggleBit('o', 'x')" id="o-x" class="bit-toggle off">x</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-sm text-slate-400">Value</div>
-                        <div id="o-val" class="text-4xl font-black text-slate-800">0</div>
-                    </div>
+                <div class="terminal mono text-center py-4">
+                    <span class="text-slate-500 mr-4">Examples:</span>
+                    <span class="text-blue-400">-rwsr-xr-x</span>
+                    <span class="text-slate-600 mx-2">|</span>
+                    <span class="text-indigo-400">drwxrwsr-x</span>
+                    <span class="text-slate-600 mx-2">|</span>
+                    <span class="text-pink-400">drwxrwxrwt</span>
                 </div>
             </div>
 
-            <!-- Result Box -->
-            <div class="bg-slate-900 rounded-xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-                <div>
-                    <h5 class="text-blue-400 font-bold uppercase text-xs mb-1">Generated Command</h5>
-                    <div id="cmd-preview" class="text-2xl mono">chmod <span id="octal-final">000</span> filename</div>
-                </div>
-                <div class="text-right">
-                    <h5 class="text-slate-400 font-bold uppercase text-xs mb-1">Mode String</h5>
-                    <div id="string-preview" class="text-2xl mono text-emerald-400">---------</div>
-                </div>
-                <button onclick="copyCommand()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    Copy Mode
+            <div class="flex justify-end pt-4">
+                <button onclick="showView('explore')" class="text-blue-600 font-bold text-sm flex items-center gap-1 hover:underline">
+                    Proceed to Lab <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
                 </button>
             </div>
+        </div>
+
+        <!-- EXPLORE VIEW -->
+        <div id="view-explore" class="content-card hidden space-y-10">
+            <h2 class="text-xl font-bold border-b pb-4 flex items-center gap-2">
+                <span class="text-blue-600">02.</span> Configuration Lab
+            </h2>
             
-            <div id="toast" class="fixed bottom-4 right-4 bg-emerald-600 text-white px-4 py-2 rounded-lg opacity-0 transition-opacity pointer-events-none">
-                Copied to clipboard!
-            </div>
-        </section>
-
-        <!-- Section 3: Special Permissions -->
-        <section id="special" class="space-y-6">
-            <h3 class="text-2xl font-bold">Special Permissions: SUID, SGID, and Sticky</h3>
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-xl border-l-8 border-yellow-400 shadow-sm hover:shadow-md transition">
-                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2">
-                        SUID <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">u+s</span>
-                    </h4>
-                    <p class="text-sm text-slate-600 mb-4">Allows a user to run an executable with the <strong>owner's</strong> privileges.</p>
-                    <div class="terminal mono text-xs p-3">
-                        -rw<span class="text-yellow-400 font-bold">s</span>r-xr-x
+            <div class="grid grid-cols-3 gap-6">
+                <div class="text-center space-y-4">
+                    <div class="text-[10px] uppercase font-black tracking-widest text-slate-400">Owner (u)</div>
+                    <div class="flex justify-center gap-2">
+                        <button id="u-r" onclick="toggleBit('u','r')" class="bit-btn">R</button>
+                        <button id="u-w" onclick="toggleBit('u','w')" class="bit-btn">W</button>
+                        <button id="u-x" onclick="toggleBit('u','x')" class="bit-btn">X</button>
                     </div>
+                    <div id="u-val" class="text-3xl font-black mono text-slate-700">0</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl border-l-8 border-indigo-400 shadow-sm hover:shadow-md transition">
-                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2">
-                        SGID <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">g+s</span>
-                    </h4>
-                    <p class="text-sm text-slate-600 mb-4">Files created in the directory inherit the <strong>group</strong> of the parent directory.</p>
-                    <div class="terminal mono text-xs p-3">
-                        drwxr-w<span class="text-indigo-400 font-bold">s</span>r-x
+                <div class="text-center space-y-4">
+                    <div class="text-[10px] uppercase font-black tracking-widest text-slate-400">Group (g)</div>
+                    <div class="flex justify-center gap-2">
+                        <button id="g-r" onclick="toggleBit('g','r')" class="bit-btn">R</button>
+                        <button id="g-w" onclick="toggleBit('g','w')" class="bit-btn">W</button>
+                        <button id="g-x" onclick="toggleBit('g','x')" class="bit-btn">X</button>
                     </div>
+                    <div id="g-val" class="text-3xl font-black mono text-slate-700">0</div>
                 </div>
-                <div class="bg-white p-6 rounded-xl border-l-8 border-pink-400 shadow-sm hover:shadow-md transition">
-                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2">
-                        Sticky Bit <span class="text-xs bg-pink-100 text-pink-700 px-2 py-0.5 rounded">t</span>
-                    </h4>
-                    <p class="text-sm text-slate-600 mb-4">Used on directories to prevent users from deleting files owned by <strong>others</strong>.</p>
-                    <div class="terminal mono text-xs p-3">
-                        drwxrwxr-w<span class="text-pink-400 font-bold">t</span>
+                <div class="text-center space-y-4">
+                    <div class="text-[10px] uppercase font-black tracking-widest text-slate-400">Others (o)</div>
+                    <div class="flex justify-center gap-2">
+                        <button id="o-r" onclick="toggleBit('o','r')" class="bit-btn">R</button>
+                        <button id="o-w" onclick="toggleBit('o','w')" class="bit-btn">W</button>
+                        <button id="o-x" onclick="toggleBit('o','x')" class="bit-btn">X</button>
                     </div>
+                    <div id="o-val" class="text-3xl font-black mono text-slate-700">0</div>
                 </div>
             </div>
-            <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
-                <strong>Pro Tip:</strong> If you see a capital <span class="font-bold">S</span> or <span class="font-bold">T</span>, it means the special bit is set but the underlying execute (x) bit is <strong>missing</strong>—this is usually an error or non-functional.
-            </div>
-        </section>
 
-        <!-- Section 4: Quiz Challenge -->
-        <section id="challenge" class="bg-slate-100 p-8 rounded-2xl border-2 border-dashed border-slate-300">
-            <div class="max-w-3xl mx-auto space-y-6">
-                <div class="text-center space-y-2">
-                    <h3 class="text-3xl font-bold">Knowledge Challenge</h3>
-                    <p class="text-slate-600">Think you've mastered permissions? Test yourself!</p>
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 flex items-center justify-between">
+                <div class="space-y-1">
+                    <div class="text-[10px] uppercase font-bold text-blue-400">Generated Call</div>
+                    <div class="mono text-2xl font-bold text-slate-800">chmod <span id="octal-final" class="text-blue-600">000</span> node.log</div>
                 </div>
-
-                <div id="quiz-container" class="bg-white p-8 rounded-xl shadow-lg min-h-[300px] flex flex-col">
-                    <!-- Quiz content injected here -->
-                    <div id="quiz-screen">
-                        <div class="mb-4">
-                            <span id="quiz-progress" class="text-xs font-bold text-blue-600 uppercase">Question 1 of 5</span>
-                            <div class="w-full bg-slate-200 h-2 rounded-full mt-1">
-                                <div id="quiz-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all" style="width: 20%"></div>
-                            </div>
-                        </div>
-                        <h4 id="quiz-question" class="text-xl font-semibold mb-6">What is the octal value for "Read" permission?</h4>
-                        <div id="quiz-options" class="grid gap-4">
-                            <!-- Options -->
-                        </div>
-                    </div>
-                    
-                    <div id="quiz-results" class="hidden text-center space-y-6 py-8">
-                        <div class="text-6xl">🎉</div>
-                        <h4 class="text-2xl font-bold">Lab Complete!</h4>
-                        <p class="text-slate-600">You scored <span id="quiz-score" class="font-bold text-blue-600">0</span> out of 5.</p>
-                        <button onclick="resetQuiz()" class="bg-slate-900 text-white px-8 py-3 rounded-lg font-bold hover:bg-slate-800 transition">Try Again</button>
-                    </div>
+                <div class="text-right">
+                    <div class="text-[10px] uppercase font-bold text-slate-400">Mode String</div>
+                    <div id="string-preview" class="mono text-2xl text-slate-500 tracking-widest">---------</div>
                 </div>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-slate-900 text-slate-400 py-12 px-4 mt-20">
-        <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
-            <div>
-                <h5 class="text-white font-bold mb-4">About this Module</h5>
-                <p class="text-sm">Created for IT and Cybersecurity students to bridge the gap between abstract octal numbers and real-world system management.</p>
-            </div>
-            <div class="text-right">
-                <h5 class="text-white font-bold mb-4">Command Reference</h5>
-                <ul class="text-sm space-y-1">
-                    <li><code class="text-blue-400">chmod</code> - Change Mode</li>
-                    <li><code class="text-blue-400">chown</code> - Change Owner</li>
-                    <li><code class="text-blue-400">chgrp</code> - Change Group</li>
-                    <li><code class="text-blue-400">umask</code> - Default permissions</li>
-                </ul>
             </div>
         </div>
-        <div class="max-w-6xl mx-auto pt-8 mt-8 border-t border-slate-800 text-center text-xs">
-            &copy; 2024 Linux Mastery Course &bull; Interactive Educational Tool
+
+        <!-- PRACTICE VIEW -->
+        <div id="view-practice" class="content-card hidden">
+            <div id="quiz-screen" class="space-y-8">
+                <div class="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <span id="quiz-step">Sequence: 01 / 05</span>
+                    <span id="quiz-score" class="text-blue-600">Integrity: 100%</span>
+                </div>
+                <h4 id="quiz-q" class="text-xl font-bold text-slate-900 leading-snug">Validation sequence loading...</h4>
+                <div id="quiz-opts" class="grid gap-3"></div>
+            </div>
+
+            <div id="result-screen" class="hidden text-center space-y-8 py-4">
+                <div class="mastery-circle">
+                    <span id="final-percent" class="text-3xl font-black text-blue-600">0%</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
+                </div>
+                <div class="space-y-2">
+                    <h2 class="text-2xl font-bold text-slate-900">Validation Complete</h2>
+                    <p class="text-sm text-slate-500">System credentials verified. You have completed the permissions lab.</p>
+                </div>
+                <button onclick="showView('start')" class="text-blue-600 font-bold text-sm hover:underline uppercase tracking-widest">Return to Dashboard</button>
+            </div>
         </div>
+
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-6 px-8 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <span>&copy; 2024 Linux Education Node</span>
+        <span>Distributed Learning Environment</span>
     </footer>
 
     <script>
-        // State Management for Octal Lab
-        const state = {
-            u: { r: false, w: false, x: false },
-            g: { r: false, w: false, x: false },
-            o: { r: false, w: false, x: false }
-        };
+        const views = ['start', 'learn', 'explore', 'practice'];
+        
+        function showView(name) {
+            views.forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`btn-${v}`).classList.remove('active');
+            });
+            document.getElementById(`view-${name}`).classList.remove('hidden');
+            document.getElementById(`btn-${name}`).classList.add('active');
+            
+            if(name === 'practice') resetQuiz();
+        }
 
-        const bitValues = { r: 4, w: 2, x: 1 };
+        function showSubLearn(subName) {
+            document.getElementById('learn-standard').classList.add('hidden');
+            document.getElementById('learn-special').classList.add('hidden');
+            document.getElementById('sub-standard').classList.remove('active');
+            document.getElementById('sub-special').classList.remove('active');
+            
+            document.getElementById(`learn-${subName}`).classList.remove('hidden');
+            document.getElementById(`sub-${subName}`).classList.add('active');
+        }
 
-        function toggleBit(group, bit) {
-            state[group][bit] = !state[group][bit];
+        // Lab Logic
+        const state = { u:{r:0,w:0,x:0}, g:{r:0,w:0,x:0}, o:{r:0,w:0,x:0} };
+        const vals = {r:4, w:2, x:1};
+
+        function toggleBit(cat, bit) {
+            state[cat][bit] = state[cat][bit] ? 0 : 1;
+            const btn = document.getElementById(`${cat}-${bit}`);
+            if(state[cat][bit]) btn.classList.add('active');
+            else btn.classList.remove('active');
             updateUI();
         }
 
         function updateUI() {
-            let fullOctal = "";
-            let fullString = "";
-
-            ['u', 'g', 'o'].forEach(group => {
+            let finalOctal = "";
+            let finalStr = "";
+            ['u','g','o'].forEach(cat => {
                 let sum = 0;
-                let groupStr = "";
-                
-                ['r', 'w', 'x'].forEach(bit => {
-                    const el = document.getElementById(`${group}-${bit}`);
-                    if (state[group][bit]) {
-                        el.classList.add('on');
-                        el.classList.remove('off');
-                        sum += bitValues[bit];
-                        groupStr += bit;
+                ['r','w','x'].forEach(bit => {
+                    if(state[cat][bit]) {
+                        sum += vals[bit];
+                        finalStr += bit;
                     } else {
-                        el.classList.add('off');
-                        el.classList.remove('on');
-                        groupStr += "-";
+                        finalStr += "-";
                     }
                 });
-
-                document.getElementById(`${group}-val`).innerText = sum;
-                fullOctal += sum;
-                fullString += groupStr;
+                document.getElementById(`${cat}-val`).innerText = sum;
+                finalOctal += sum;
             });
-
-            document.getElementById('octal-final').innerText = fullOctal;
-            document.getElementById('string-preview').innerText = fullString;
+            document.getElementById('octal-final').innerText = finalOctal;
+            document.getElementById('string-preview').innerText = finalStr;
         }
 
-        function copyCommand() {
-            const octal = document.getElementById('octal-final').innerText;
-            const text = `chmod ${octal} filename`;
-            
-            // Clipboard fallback as requested
-            const dummy = document.createElement("textarea");
-            document.body.appendChild(dummy);
-            dummy.value = text;
-            dummy.select();
-            document.execCommand("copy");
-            document.body.removeChild(dummy);
-
-            const toast = document.getElementById('toast');
-            toast.style.opacity = '1';
-            setTimeout(() => toast.style.opacity = '0', 2000);
-        }
-
-        // Quiz Logic
-        const quizData = [
-            {
-                q: "What is the octal value for full permissions (Read, Write, Execute)?",
-                o: ["5", "6", "7", "4"],
-                a: 2
-            },
-            {
-                q: "Which command changes the owner of a file?",
-                o: ["chmod", "chown", "chgrp", "setuid"],
-                a: 1
-            },
-            {
-                q: "In the permission string '-rwxr-xr--', what are the Group permissions?",
-                o: ["Read & Write", "Read & Execute", "Read Only", "Full Access"],
-                a: 1
-            },
-            {
-                q: "What does the 'Sticky Bit' do when applied to a directory?",
-                o: ["Allows anyone to delete any file", "Makes the directory read-only", "Prevents users from deleting files owned by others", "Speeds up file access"],
-                a: 2
-            },
-            {
-                q: "If a file has octal permissions '644', what can 'Others' do?",
-                o: ["Read and Write", "Execute Only", "Read Only", "No Permissions"],
-                a: 2
-            }
+        // Quiz Data
+        const questions = [
+            { q: "What is the numeric value of 'Read' + 'Execute'?", o: ["4", "5", "6", "7"], a: 1 },
+            { q: "Which special bit allows a file to run with owner permissions?", o: ["SUID", "SGID", "Sticky Bit", "Immutable"], a: 0 },
+            { q: "What string represents Octal 755?", o: ["rwxr-xr-x", "rw-r--r--", "rwx------", "rw-rw-rw-"], a: 0 },
+            { q: "Which tier does the third set of bits control?", o: ["Root", "Owner", "Group", "Others"], a: 3 },
+            { q: "Value of 'chmod 600' on a secret file?", o: ["rwxrwxrwx", "rw-------", "r--r--r--", "rw-r--r--"], a: 1 }
         ];
-
-        let currentQuestion = 0;
+        let curQ = 0;
         let score = 0;
 
-        function loadQuestion() {
-            const quiz = quizData[currentQuestion];
-            document.getElementById('quiz-progress').innerText = `Question ${currentQuestion + 1} of ${quizData.length}`;
-            document.getElementById('quiz-progress-bar').style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
-            document.getElementById('quiz-question').innerText = quiz.q;
-            
-            const optionsBox = document.getElementById('quiz-options');
-            optionsBox.innerHTML = '';
-            
-            quiz.o.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 rounded-lg border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition font-medium";
-                btn.innerText = opt;
-                btn.onclick = () => handleAnswer(idx);
-                optionsBox.appendChild(btn);
-            });
-        }
-
-        function handleAnswer(idx) {
-            if (idx === quizData[currentQuestion].a) {
-                score++;
-            }
-            
-            currentQuestion++;
-            
-            if (currentQuestion < quizData.length) {
-                loadQuestion();
-            } else {
-                showResults();
-            }
-        }
-
-        function showResults() {
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('quiz-results').classList.remove('hidden');
-            document.getElementById('quiz-score').innerText = score;
-        }
-
         function resetQuiz() {
-            currentQuestion = 0;
-            score = 0;
+            curQ = 0; score = 0;
             document.getElementById('quiz-screen').classList.remove('hidden');
-            document.getElementById('quiz-results').classList.add('hidden');
-            loadQuestion();
+            document.getElementById('result-screen').classList.add('hidden');
+            loadQ();
         }
 
-        // Initialize
-        window.onload = () => {
-            updateUI();
-            loadQuestion();
-        };
+        function loadQ() {
+            const q = questions[curQ];
+            document.getElementById('quiz-step').innerText = `Sequence: 0${curQ + 1} / 05`;
+            document.getElementById('quiz-q').innerText = q.q;
+            const container = document.getElementById('quiz-opts');
+            container.innerHTML = '';
+            q.o.forEach((opt, i) => {
+                const b = document.createElement('button');
+                b.className = "w-full text-left p-4 rounded-lg border border-slate-200 hover:border-blue-600 hover:bg-blue-50 transition text-sm font-medium text-slate-700";
+                b.innerText = `> ${opt}`;
+                b.onclick = () => {
+                    if(i === q.a) score++;
+                    curQ++;
+                    if(curQ < questions.length) loadQ();
+                    else showResult();
+                }
+                container.appendChild(b);
+            });
+            document.getElementById('quiz-score').innerText = `Integrity: ${Math.round(((curQ)/questions.length)*100)}%`;
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-percent').innerText = Math.round((score/questions.length)*100) + "%";
+        }
+
+        window.onload = updateUI;
     </script>
 </body>
 </html>
