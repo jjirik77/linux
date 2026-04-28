@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Foundations Lab | CompTIA Linux+</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --accent: #10b981;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --terminal-bg: #0f172a;
+            --terminal-text: #e2e8f0;
+            --terminal-prompt: #4ade80;
+            --radius: 0.75rem;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .dark-theme {
+            --bg-page: #020617;
+            --bg-card: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* Layout */
+        .app-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .progress-bar-container {
+            height: 6px;
+            width: 100%;
+            background: var(--border);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        main { flex: 1; padding: 2rem; position: relative; }
+
+        /* Components */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: var(--border); }
+        
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Screens */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Welcome Page Specials */
+        .objective-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .obj-card {
+            padding: 1.25rem;
+            background: var(--bg-page);
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        /* Diagnostic Quiz */
+        .quiz-option {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            text-align: left;
+            background: var(--bg-page);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quiz-option:hover { border-color: var(--primary); background: var(--bg-card); }
+        .quiz-option.selected { border-color: var(--primary); background: rgba(37, 99, 235, 0.1); }
+
+        /* Concept Studio */
+        .hierarchy-viz {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+            margin: 2rem 0;
+        }
+        .layer {
+            width: 100%;
+            max-width: 400px;
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+        .layer:hover { transform: scale(1.02); }
+        .layer.active { border-color: var(--primary); box-shadow: 0 0 15px rgba(37, 99, 235, 0.3); }
+        .layer-hardware { background: #64748b; color: white; }
+        .layer-kernel { background: #3b82f6; color: white; }
+        .layer-shell { background: #10b981; color: white; }
+        .layer-terminal { background: #f59e0b; color: white; }
+
+        /* Terminal UI */
+        .terminal-container {
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+        }
+        .terminal-header {
+            background: #1e293b;
+            padding: 0.75rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .t-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .t-red { background: #ef4444; }
+        .t-yellow { background: #f59e0b; }
+        .t-green { background: #10b981; }
+        .t-title { font-size: 0.8rem; margin-left: 1rem; color: #94a3b8; }
+        
+        .terminal-body {
+            flex: 1;
+            padding: 1.25rem;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            font-size: 0.95rem;
+        }
+        .terminal-output-line { margin-bottom: 0.4rem; white-space: pre-wrap; }
+        .terminal-input-line { display: flex; align-items: center; gap: 0.5rem; }
+        .prompt { color: var(--terminal-prompt); font-weight: bold; }
+        .term-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: inherit;
+            font-size: inherit;
+            flex: 1;
+            outline: none;
+        }
+
+        /* Guided Labs Sidebar */
+        .lab-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 900px) {
+            .lab-layout { grid-template-columns: 1fr; }
+        }
+        .lab-steps {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            height: fit-content;
+        }
+        .step-item {
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+            position: relative;
+            opacity: 0.5;
+        }
+        .step-item.active { opacity: 1; font-weight: 600; }
+        .step-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+        .step-item.completed::before { background: var(--accent); }
+        .step-item.active::before { background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+
+        /* Dashboard Mastery Bars */
+        .mastery-row { margin-bottom: 1.5rem; }
+        .mastery-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: 600; }
+        .mastery-track { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+        .mastery-fill { height: 100%; background: var(--primary); transition: width 1s ease-out; }
+
+        /* Utilities */
+        .hidden { display: none; }
+        .mt-4 { margin-top: 1rem; }
+        .text-center { text-align: center; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="background: var(--primary); color: white; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800;">L+</div>
+            <h2 style="font-size: 1.1rem; letter-spacing: -0.01em;">Working with Linux: Part 1</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div id="mode-badge" class="badge" style="background: #f1f5f9; color: #475569;">Initializing...</div>
+            <button id="theme-toggle" class="btn-outline" style="padding: 0.4rem 0.8rem; border-radius: 0.4rem;">Theme</button>
+        </div>
+        <div class="progress-bar-container">
+            <div id="progress-fill"></div>
+        </div>
+    </header>
+
+    <main id="app-content">
+        <!-- Screen 1: Welcome -->
+        <section id="screen-welcome" class="screen active">
+            <div class="card text-center" style="padding: 4rem 2rem;">
+                <h1 style="font-size: 2.75rem; margin-bottom: 1rem; line-height: 1.1;">Master Linux Foundations</h1>
+                <p style="font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto;">
+                    Dive into the architecture of Linux. From the hardware-managing Kernel to the user-friendly Shell, 
+                    get hands-on experience in a live simulated terminal environment.
+                </p>
+                
+                <div class="objective-grid">
+                    <div class="obj-card">
+                        <strong>Architecture</strong>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Kernels, Terminals, and Shells</p>
+                    </div>
+                    <div class="obj-card">
+                        <strong>Environment</strong>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Manage Environment Variables</p>
+                    </div>
+                    <div class="obj-card">
+                        <strong>Command Line</strong>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Core Navigation & Execution</p>
+                    </div>
+                    <div class="obj-card">
+                        <strong>Help Systems</strong>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Man, Info, and Help Docs</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="app.startMode('guided')">Start Guided Mode</button>
+                    <button class="btn btn-outline" onclick="app.startMode('standard')">Standard Mode</button>
+                    <button class="btn btn-outline" onclick="app.startMode('challenge')">Challenge Mode</button>
+                </div>
+                <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">Estimated completion: 35 minutes</p>
+            </div>
+        </section>
+
+        <!-- Screen 2: Diagnostic -->
+        <section id="screen-diagnostic" class="screen">
+            <div class="card" style="max-width: 700px; margin: 0 auto;">
+                <div class="flex-between mb-2">
+                    <h3>Diagnostic Precheck</h3>
+                    <span id="diag-counter" class="text-muted">Question 1 of 5</span>
+                </div>
+                <div id="diag-question-container">
+                    <!-- Dynamic -->
+                </div>
+                <div class="mt-4 flex-between">
+                    <p id="diag-feedback" style="font-size: 0.9rem;"></p>
+                    <button id="diag-next-btn" class="btn btn-primary" onclick="app.handleDiagNext()" disabled>Next Question</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 3: Concept Studio -->
+        <section id="screen-concepts" class="screen">
+            <div class="grid-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div class="hierarchy-viz">
+                    <div class="layer layer-terminal" onclick="app.showLayer('terminal')">Terminal Interface</div>
+                    <div class="layer layer-shell" onclick="app.showLayer('shell')">Command Shell (Bash)</div>
+                    <div class="layer layer-kernel" onclick="app.showLayer('kernel')">Linux Kernel</div>
+                    <div class="layer layer-hardware" onclick="app.showLayer('hardware')">Physical Hardware</div>
+                    <p class="text-muted mt-4" style="font-size: 0.9rem;">Click layers to explore relationships</p>
+                </div>
+                <div id="concept-details" class="card">
+                    <div style="text-align: center; padding: 2rem;">
+                        <h3 style="margin-bottom: 1rem;">Select a component to begin</h3>
+                        <p class="text-muted">Understanding the path from user input to physical hardware execution is critical for CompTIA Linux+ success.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <button class="btn btn-primary" onclick="app.changeScreen('onboarding')">Enter Terminal Lab &rarr;</button>
+            </div>
+        </section>
+
+        <!-- Screen 4: Terminal Onboarding -->
+        <section id="screen-onboarding" class="screen">
+            <div class="card">
+                <h2>Hello, Shell.</h2>
+                <p class="text-muted mb-2">The terminal is your gateway to the system. Try typing your first command to see your current location.</p>
+                <div class="terminal-container mt-4">
+                    <div class="terminal-header">
+                        <div class="t-dot t-red"></div><div class="t-dot t-yellow"></div><div class="t-dot t-green"></div>
+                        <div class="t-title">bash — interactive onboarding</div>
+                    </div>
+                    <div class="terminal-body" id="onboarding-terminal-body">
+                        <div class="terminal-output-line">CompTIA Linux+ Simulated Shell v1.0.4</div>
+                        <div class="terminal-output-line">Type 'pwd' and press Enter to see your current working directory.</div>
+                    </div>
+                    <div class="terminal-input-line" style="padding: 0 1.25rem 1.25rem 1.25rem;">
+                        <span class="prompt">learner@linux:~$</span>
+                        <input type="text" class="term-input" id="onboarding-input" spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+                <div id="onboarding-success" class="hidden mt-4 text-center">
+                    <div class="badge" style="background: #dcfce7; color: #166534; margin-bottom: 1rem;">Mission Accomplished</div>
+                    <p>Excellent. You've executed your first command. Ready to start the labs?</p>
+                    <button class="btn btn-primary mt-4" onclick="app.changeScreen('labs')">Start Guided Labs</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 5: Guided Labs -->
+        <section id="screen-labs" class="screen">
+            <div class="lab-layout">
+                <div class="lab-steps">
+                    <div class="flex-between mb-2">
+                        <span id="lab-id" class="badge" style="background: var(--primary); color: white;">Lab 1/4</span>
+                        <span id="lab-tries" class="text-muted" style="font-size: 0.75rem;">Tries: 0</span>
+                    </div>
+                    <h3 id="lab-title">Lab Title</h3>
+                    <p id="lab-scenario" style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);"></p>
+                    <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border);">
+                    <div id="step-list">
+                        <!-- Dynamic -->
+                    </div>
+                    <div class="mt-4" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button class="btn btn-outline" onclick="app.getHint()">Need a Hint?</button>
+                        <button class="btn btn-outline" style="color: #ef4444;" onclick="app.resetLab()">Reset Lab</button>
+                    </div>
+                    <div id="hint-box" class="card mt-4 hidden" style="padding: 1rem; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 0.85rem;"></div>
+                </div>
+                <div>
+                    <div class="terminal-container">
+                        <div class="terminal-header">
+                            <div class="t-dot t-red"></div><div class="t-dot t-yellow"></div><div class="t-dot t-green"></div>
+                            <div class="t-title" id="lab-term-title">bash — lab_environment</div>
+                        </div>
+                        <div class="terminal-body" id="lab-terminal-body"></div>
+                        <div class="terminal-input-line" style="padding: 0 1.25rem 1.25rem 1.25rem;">
+                            <span class="prompt" id="lab-prompt">learner@linux:~$</span>
+                            <input type="text" class="term-input" id="lab-input" spellcheck="false" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 6: Mission Challenge -->
+        <section id="screen-mission" class="screen">
+            <div class="card" style="border-top: 8px solid #f59e0b;">
+                <div class="flex-between">
+                    <div>
+                        <span class="badge" style="background: #fef3c7; color: #92400e;">Final Mission</span>
+                        <h2 class="mt-4">Operation: Ghost Environment</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <div id="mission-timer" style="font-family: monospace; font-size: 1.5rem; font-weight: bold;">00:00</div>
+                        <span class="text-muted" style="font-size: 0.75rem;">MISSION TIME</span>
+                    </div>
+                </div>
+                <p class="mt-4">You are a junior Linux admin assigned to a server with a misconfigured environment. No instructions will be given. You must:</p>
+                <ul style="margin: 1rem 2rem; font-size: 0.95rem;">
+                    <li>Audit the current directory and find the hidden <code>.config</code> directory.</li>
+                    <li>Verify if <code>PATH</code> includes <code>/usr/local/bin</code>.</li>
+                    <li>Locate the command for "process status" using the help system.</li>
+                    <li>Export a new variable <code>DEPLOY_STATUS</code> with the value <code>READY</code>.</li>
+                </ul>
+                <div class="terminal-container mt-4" style="height: 350px;">
+                    <div class="terminal-body" id="mission-terminal-body"></div>
+                    <div class="terminal-input-line" style="padding: 0 1.25rem 1.25rem 1.25rem;">
+                        <span class="prompt">admin@linux-server:~$</span>
+                        <input type="text" class="term-input" id="mission-input" spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button id="finish-mission-btn" class="btn btn-primary hidden" onclick="app.changeScreen('assessment')">Complete Mission</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 7: Post-Assessment -->
+        <section id="screen-assessment" class="screen">
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+                <h2 class="text-center mb-2">Knowledge Validation</h2>
+                <p class="text-muted text-center mb-4">Complete this final check to earn your chapter mastery badge.</p>
+                <div id="assessment-container">
+                    <!-- Dynamic -->
+                </div>
+                <div class="flex-between mt-4">
+                    <div id="assessment-progress" class="text-muted">Question 1 of 10</div>
+                    <button class="btn btn-primary" onclick="app.submitAssessment()">Submit Answer</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screen 8: Mastery Dashboard -->
+        <section id="screen-mastery" class="screen">
+            <div class="text-center mb-4">
+                <h1 style="font-size: 2.5rem;">Chapter Mastery</h1>
+                <p class="text-muted">Performance Summary for Chapter 9: Working with Linux</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem;">
+                <div class="card">
+                    <h3 class="mb-4">Objectives Mastery</h3>
+                    <div id="mastery-bars">
+                        <!-- Dynamic -->
+                    </div>
+                </div>
+                <div>
+                    <div class="card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="stat-score">0%</div>
+                            <div class="text-muted">Final Score</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent);" id="stat-hints">0</div>
+                            <div class="text-muted">Hints Used</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent);" id="stat-cmds">0</div>
+                            <div class="text-muted">Commands Run</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="stat-time">0m</div>
+                            <div class="text-muted">Total Time</div>
+                        </div>
+                    </div>
+                    <div class="card mt-4">
+                        <h3 class="mb-2">Your Performance Profile</h3>
+                        <p id="mastery-feedback" class="text-muted"></p>
+                        <div class="mt-4">
+                            <button class="btn btn-outline" onclick="location.reload()">Restart Lesson</button>
+                            <button class="btn btn-primary" onclick="app.changeScreen('mission')">Retry Mission</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    /**
+     * LINUX LABS - ENGINE & CONTENT
+     */
+
+    const app = {
+        state: {
+            mode: 'standard', // guided, standard, challenge
+            currentScreen: 'welcome',
+            progress: 0,
+            startTime: Date.now(),
+            stats: {
+                hintsUsed: 0,
+                commandsRun: 0,
+                tries: 0,
+                score: 0,
+                objectives: {
+                    arch: 0,
+                    env: 0,
+                    cmd: 0,
+                    help: 0
+                }
+            },
+            terminal: {
+                cwd: '/home/learner',
+                env: {
+                    'HOME': '/home/learner',
+                    'USER': 'learner',
+                    'SHELL': '/bin/bash',
+                    'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+                    'PWD': '/home/learner'
+                },
+                history: [],
+                fs: {
+                    '/home/learner': { type: 'dir', content: ['docs', 'projects', 'notes.txt'] },
+                    '/home/learner/docs': { type: 'dir', content: ['readme.md'] },
+                    '/home/learner/projects': { type: 'dir', content: ['linux-lab'] },
+                    '/home/learner/notes.txt': { type: 'file', content: 'Practice makes perfect in Linux!' },
+                    '/usr/bin': { type: 'dir', content: ['ls', 'pwd', 'echo', 'cat'] },
+                    '/usr/local/bin': { type: 'dir', content: ['deploy-tool'] }
+                }
+            },
+            diagnostic: {
+                current: 0,
+                answers: [],
+                score: 0,
+                questions: [
+                    { q: "Which component acts as the bridge between hardware and software?", options: ["Terminal", "Kernel", "Shell", "GNU"], correct: 1 },
+                    { q: "You need to see your current directory path. Which command?", options: ["dir", "whereami", "pwd", "path"], correct: 2 },
+                    { q: "What defines where the shell looks for executable files?", options: ["$HOME", "$USER", "$PATH", "$SHELL"], correct: 2 },
+                    { q: "Which command provides structured, multi-page documentation?", options: ["man", "info", "help", "whatis"], correct: 1 },
+                    { q: "What is the primary difference between a Shell and a Terminal?", options: ["They are the same", "Shell is the hardware, Terminal is the app", "Terminal is the UI window, Shell is the interpreter", "Shell is for servers only"], correct: 2 }
+                ]
+            },
+            labs: {
+                currentIdx: 0,
+                currentStepIdx: 0,
+                data: [
+                    {
+                        id: 1,
+                        title: "Exploring Architecture",
+                        scenario: "Validate your shell environment and identify the command interpreter.",
+                        steps: [
+                            { text: "Type 'echo $SHELL' to verify your current shell.", validate: (cmd) => cmd.trim() === 'echo $SHELL' },
+                            { text: "Type 'which bash' to see the binary location.", validate: (cmd) => cmd.trim() === 'which bash' }
+                        ],
+                        hints: ["The $ prefix is used for variables.", "Bash is usually in /bin/bash.", "Type exactly as shown for validation."]
+                    },
+                    {
+                        id: 2,
+                        title: "Variable Management",
+                        scenario: "Create and inspect session-level environment variables.",
+                        steps: [
+                            { text: "List all environment variables with 'printenv'.", validate: (cmd) => cmd.trim() === 'printenv' || cmd.trim() === 'env' },
+                            { text: "Export a new variable: 'export LAB=ACTIVE'.", validate: (cmd) => cmd.trim().includes('export LAB=ACTIVE') },
+                            { text: "Verify the new variable with 'echo $LAB'.", validate: (cmd) => cmd.trim() === 'echo $LAB' }
+                        ],
+                        hints: ["printenv is the standard tool.", "No spaces around the equals sign in export.", "Don't forget the $ when reading back."]
+                    },
+                    {
+                        id: 3,
+                        title: "Navigation Master",
+                        scenario: "Navigate the directory structure using core utilities.",
+                        steps: [
+                            { text: "Navigate to 'docs' directory.", validate: (cmd, state) => state.terminal.cwd.endsWith('docs') },
+                            { text: "List contents including hidden files: 'ls -a'.", validate: (cmd) => cmd.trim() === 'ls -a' },
+                            { text: "Return to home directory: 'cd ~'.", validate: (cmd, state) => state.terminal.cwd === '/home/learner' }
+                        ],
+                        hints: ["cd stands for change directory.", "ls -a shows all files including dots.", "The tilde (~) is a shortcut for home."]
+                    },
+                    {
+                        id: 4,
+                        title: "The Help System",
+                        scenario: "Search for commands and documentation.",
+                        steps: [
+                            { text: "Use 'apropos' to find commands related to 'directory'.", validate: (cmd) => cmd.trim().startsWith('apropos') },
+                            { text: "Get a one-line summary of 'pwd' using 'whatis'.", validate: (cmd) => cmd.trim() === 'whatis pwd' },
+                            { text: "Read the full manual page for 'ls'.", validate: (cmd) => cmd.trim() === 'man ls' }
+                        ],
+                        hints: ["apropos searches by keyword.", "whatis is for short descriptions.", "man is the standard manual."]
+                    }
+                ]
+            },
+            assessment: {
+                current: 0,
+                score: 0,
+                questions: [
+                    { q: "Which file contains the user's home directory path in the environment?", options: ["$PATH", "$PWD", "$HOME", "$USER"], correct: 2 },
+                    { q: "Which command provides short summaries from a database of manual pages?", options: ["help", "info", "whatis", "man"], correct: 2 },
+                    { q: "You want to find all commands related to 'disk'. Which should you use?", options: ["man", "apropos", "help", "which"], correct: 1 },
+                    { q: "What character sequence clears the terminal screen?", options: ["cls", "clean", "reset", "clear"], correct: 3 },
+                    { q: "Which component manages memory and CPU scheduling?", options: ["Shell", "Kernel", "Terminal", "Compiler"], correct: 1 },
+                    { q: "An 'export' command changes variables for:", options: ["Permanent storage", "The current session and child processes", "The root user only", "The hardware settings"], correct: 1 },
+                    { q: "To see internal shell command help, use:", options: ["man [cmd]", "info [cmd]", "help [cmd]", "apropos [cmd]"], correct: 2 },
+                    { q: "Hidden files in Linux start with what character?", options: ["/", "-", ".", "_"], correct: 2 },
+                    { q: "Which variable tells the shell where to look for programs?", options: ["$BIN", "$PATH", "$EXEC", "$SEARCH"], correct: 1 },
+                    { q: "How do you go up one level in the directory tree?", options: ["cd /", "cd ..", "cd -", "cd ."], correct: 1 }
+                ]
+            }
+        },
+
+        init() {
+            this.bindEvents();
+            this.updateUI();
+        },
+
+        bindEvents() {
+            document.getElementById('theme-toggle').onclick = () => {
+                document.body.classList.toggle('dark-theme');
+            };
+
+            const handleEnter = (e, targetId) => {
+                if (e.key === 'Enter') {
+                    const val = e.target.value;
+                    e.target.value = '';
+                    this.processCommand(val, targetId);
+                }
+            };
+
+            document.getElementById('onboarding-input').onkeydown = (e) => handleEnter(e, 'onboarding-terminal-body');
+            document.getElementById('lab-input').onkeydown = (e) => handleEnter(e, 'lab-terminal-body');
+            document.getElementById('mission-input').onkeydown = (e) => handleEnter(e, 'mission-terminal-body');
+        },
+
+        changeScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+            this.state.currentScreen = screenId;
+            
+            // Screen specific inits
+            if (screenId === 'diagnostic') this.renderDiagnostic();
+            if (screenId === 'labs') this.initLabs();
+            if (screenId === 'mission') this.initMission();
+            if (screenId === 'assessment') this.renderAssessment();
+            if (screenId === 'mastery') this.initMastery();
+            
+            this.updateUI();
+        },
+
+        updateUI() {
+            const screens = ['welcome', 'diagnostic', 'concepts', 'onboarding', 'labs', 'mission', 'assessment', 'mastery'];
+            const idx = screens.indexOf(this.state.currentScreen);
+            const progress = (idx / (screens.length - 1)) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            
+            const badge = document.getElementById('mode-badge');
+            badge.innerText = this.state.mode.toUpperCase();
+        },
+
+        startMode(mode) {
+            this.state.mode = mode;
+            this.changeScreen('diagnostic');
+        },
+
+        // --- Diagnostic ---
+        renderDiagnostic() {
+            const q = this.state.diagnostic.questions[this.state.diagnostic.current];
+            const container = document.getElementById('diag-question-container');
+            document.getElementById('diag-counter').innerText = `Question ${this.state.diagnostic.current + 1} of 5`;
+            
+            container.innerHTML = `
+                <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem;">${q.q}</p>
+                ${q.options.map((opt, i) => `
+                    <button class="quiz-option" onclick="app.selectDiagOption(${i})">${opt}</button>
+                `).join('')}
+            `;
+            document.getElementById('diag-next-btn').disabled = true;
+            document.getElementById('diag-feedback').innerText = '';
+        },
+
+        selectDiagOption(idx) {
+            const options = document.querySelectorAll('.quiz-option');
+            options.forEach(o => o.classList.remove('selected'));
+            options[idx].classList.add('selected');
+            this.state.diagnostic.selection = idx;
+            document.getElementById('diag-next-btn').disabled = false;
+        },
+
+        handleDiagNext() {
+            const q = this.state.diagnostic.questions[this.state.diagnostic.current];
+            if (this.state.diagnostic.selection === q.correct) {
+                this.state.diagnostic.score++;
+            }
+            
+            this.state.diagnostic.current++;
+            if (this.state.diagnostic.current < 5) {
+                this.renderDiagnostic();
+            } else {
+                this.finishDiagnostic();
+            }
+        },
+
+        finishDiagnostic() {
+            const score = this.state.diagnostic.score;
+            let rec = "Guided Mode";
+            if (score >= 3) rec = "Standard Mode";
+            if (score === 5) rec = "Challenge Mode";
+            
+            const container = document.getElementById('diag-question-container');
+            container.innerHTML = `
+                <div class="text-center">
+                    <h2 style="font-size: 3rem; margin-bottom: 0.5rem;">${score}/5</h2>
+                    <p class="text-muted">Diagnostic Complete</p>
+                    <div class="card mt-4" style="background: var(--bg-page);">
+                        <p>Based on your results, we recommend <strong>${rec}</strong> for this session.</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('diag-next-btn').innerText = "Begin Training";
+            document.getElementById('diag-next-btn').onclick = () => this.changeScreen('concepts');
+        },
+
+        // --- Concepts ---
+        showLayer(layerId) {
+            document.querySelectorAll('.layer').forEach(l => l.classList.remove('active'));
+            document.querySelector(`.layer-${layerId}`).classList.add('active');
+            
+            const details = document.getElementById('concept-details');
+            const data = {
+                terminal: {
+                    title: "Terminal Interface",
+                    desc: "The 'window' or 'app' you type into. It's simply a user interface (UI) that displays text from the shell and captures your keyboard input.",
+                    why: "Without a terminal, you'd have no place to type. Common terminals include GNOME Terminal, PuTTY, or xterm.",
+                    check: "Does the terminal interpret the 'ls' command? No, it just passes it to the shell."
+                },
+                shell: {
+                    title: "The Shell (Bash)",
+                    desc: "The interpreter. It takes your text (like 'ls'), finds the program, and asks the kernel to run it. Bash (Bourne Again SHell) is the Linux standard.",
+                    why: "The shell handles variables, logic, and command execution. It's the logic engine of your interaction.",
+                    check: "What happens if you type a fake command? The shell returns 'command not found'."
+                },
+                kernel: {
+                    title: "The Linux Kernel",
+                    desc: "The core manager. It controls the CPU, memory, and disk. It speaks to the hardware and ensures programs don't crash the system.",
+                    why: "The kernel is the 'real' OS. Everything else is just software sitting on top of it.",
+                    check: "Can you talk to the kernel directly? Rarely. You use system calls via the shell."
+                },
+                hardware: {
+                    title: "Physical Hardware",
+                    desc: "The CPU, RAM, Hard Drives, and Network cards. These only understand binary signals.",
+                    why: "Ultimately, every command results in physical electrons moving through circuits.",
+                    check: "Hardware management is handled by: The Kernel."
+                }
+            };
+            
+            const info = data[layerId];
+            details.innerHTML = `
+                <span class="badge" style="background: var(--primary); color: white;">Deep Dive</span>
+                <h3 class="mt-4">${info.title}</h3>
+                <p class="mt-4">${info.desc}</p>
+                <div style="background: var(--bg-page); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+                    <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">Why it matters</strong>
+                    <p style="font-size: 0.9rem;">${info.why}</p>
+                </div>
+                <div style="border-left: 3px solid var(--accent); padding-left: 1rem; margin-top: 1rem;">
+                    <strong style="font-size: 0.8rem; text-transform: uppercase; color: var(--accent);">Concept Check</strong>
+                    <p style="font-size: 0.9rem;">${info.check}</p>
+                </div>
+            `;
+        },
+
+        // --- Terminal Engine ---
+        processCommand(raw, outputId) {
+            const output = document.getElementById(outputId);
+            const cmdLine = document.createElement('div');
+            cmdLine.className = 'terminal-output-line';
+            
+            const promptSpan = document.createElement('span');
+            promptSpan.className = 'prompt';
+            promptSpan.innerText = `${this.state.terminal.user || 'learner'}@linux:${this.state.terminal.cwd.replace('/home/learner', '~')}$ `;
+            
+            cmdLine.appendChild(promptSpan);
+            cmdLine.appendChild(document.createTextNode(raw));
+            output.appendChild(cmdLine);
+
+            const response = this.evaluateLinux(raw);
+            if (response) {
+                const resLine = document.createElement('div');
+                resLine.className = 'terminal-output-line';
+                resLine.innerText = response;
+                output.appendChild(resLine);
+            }
+            
+            output.scrollTop = output.scrollHeight;
+            this.state.stats.commandsRun++;
+
+            // Validation hooks
+            if (this.state.currentScreen === 'onboarding' && raw.trim() === 'pwd') {
+                document.getElementById('onboarding-success').classList.remove('hidden');
+            }
+            if (this.state.currentScreen === 'labs') {
+                this.validateStep(raw);
+            }
+            if (this.state.currentScreen === 'mission') {
+                this.validateMission(raw);
+            }
+        },
+
+        evaluateLinux(input) {
+            const parts = input.trim().split(/\s+/);
+            const cmd = parts[0];
+            const args = parts.slice(1);
+
+            switch(cmd) {
+                case 'pwd':
+                    return this.state.terminal.cwd;
+                case 'ls':
+                    let flags = args.filter(a => a.startsWith('-'));
+                    const fsItem = this.state.terminal.fs[this.state.terminal.cwd];
+                    let list = [...fsItem.content];
+                    if (flags.includes('-a')) list.unshift('.', '..');
+                    return list.join('  ');
+                case 'cd':
+                    let target = args[0] || '~';
+                    if (target === '~') {
+                        this.state.terminal.cwd = '/home/learner';
+                        return '';
+                    }
+                    if (target === '..') {
+                        const chunks = this.state.terminal.cwd.split('/');
+                        if (chunks.length > 2) {
+                            chunks.pop();
+                            this.state.terminal.cwd = chunks.join('/');
+                        }
+                        return '';
+                    }
+                    const fullTarget = this.state.terminal.cwd + '/' + target;
+                    if (this.state.terminal.fs[fullTarget]) {
+                        this.state.terminal.cwd = fullTarget;
+                        return '';
+                    }
+                    return `bash: cd: ${target}: No such directory`;
+                case 'echo':
+                    let text = args.join(' ');
+                    if (text.startsWith('$')) {
+                        const key = text.substring(1);
+                        return this.state.terminal.env[key] || '';
+                    }
+                    return text;
+                case 'printenv':
+                case 'env':
+                    if (args[0]) return this.state.terminal.env[args[0]] || '';
+                    return Object.entries(this.state.terminal.env).map(([k,v]) => `${k}=${v}`).join('\n');
+                case 'export':
+                    const [key, val] = args[0] ? args[0].split('=') : [null, null];
+                    if (key && val) {
+                        this.state.terminal.env[key] = val;
+                        return '';
+                    }
+                    return 'usage: export KEY=VALUE';
+                case 'unset':
+                    delete this.state.terminal.env[args[0]];
+                    return '';
+                case 'which':
+                    if (!args[0]) return '';
+                    return `/usr/bin/${args[0]}`;
+                case 'clear':
+                    const outId = this.state.currentScreen === 'labs' ? 'lab-terminal-body' : 'onboarding-terminal-body';
+                    const targetOut = document.getElementById(outId);
+                    if (targetOut) targetOut.innerHTML = '';
+                    return '';
+                case 'man':
+                    return this.getHelp('man', args[0]);
+                case 'whatis':
+                    return this.getHelp('whatis', args[0]);
+                case 'apropos':
+                    return "directory (1) - search folder contents\nls (1) - list directory contents\npwd (1) - print name of current/working directory";
+                case 'help':
+                    return "GNU bash, version 5.0.17(1)-release\nThese shell commands are defined internally. Type 'help' to see this list.";
+                case 'info':
+                    return `File: info.info,  Node: Top\n\nThis is a simulation of the GNU Info system for ${args[0] || 'Linux'}.`;
+                case '':
+                    return '';
+                default:
+                    if (input.includes('--help')) return `Usage: ${cmd} [OPTION]...\nSimulated help for ${cmd}.`;
+                    return `bash: ${cmd}: command not found`;
+            }
+        },
+
+        getHelp(type, cmd) {
+            const db = {
+                ls: {
+                    whatis: "ls (1) - list directory contents",
+                    man: "LS(1) User Commands\nNAME\n    ls - list directory contents\nSYNOPSIS\n    ls [OPTION]... [FILE]...\nDESCRIPTION\n    List information about the FILEs (the current directory by default)."
+                },
+                pwd: {
+                    whatis: "pwd (1) - print name of current/working directory",
+                    man: "PWD(1) User Commands\nNAME\n    pwd - print name of current working directory\nDESCRIPTION\n    Print the full filename of the current working directory."
+                }
+            };
+            if (!cmd) return `${type}: what manual page do you want?`;
+            return db[cmd] ? db[cmd][type] : `No entry for ${cmd}`;
+        },
+
+        // --- Labs ---
+        initLabs() {
+            this.state.labs.currentIdx = 0;
+            this.state.labs.currentStepIdx = 0;
+            this.renderLab();
+        },
+
+        renderLab() {
+            const lab = this.state.labs.data[this.state.labs.currentIdx];
+            document.getElementById('lab-id').innerText = `Lab ${lab.id}/4`;
+            document.getElementById('lab-title').innerText = lab.title;
+            document.getElementById('lab-scenario').innerText = lab.scenario;
+            
+            const list = document.getElementById('step-list');
+            list.innerHTML = lab.steps.map((s, i) => `
+                <div class="step-item ${i < this.state.labs.currentStepIdx ? 'completed' : ''} ${i === this.state.labs.currentStepIdx ? 'active' : ''}">
+                    ${s.text}
+                </div>
+            `).join('');
+            
+            document.getElementById('hint-box').classList.add('hidden');
+            document.getElementById('lab-terminal-body').innerHTML = `<div class="terminal-output-line">Lab ${lab.id} environment ready...</div>`;
+        },
+
+        validateStep(cmd) {
+            const lab = this.state.labs.data[this.state.labs.currentIdx];
+            const step = lab.steps[this.state.labs.currentStepIdx];
+            
+            if (step.validate(cmd, this.state)) {
+                this.state.labs.currentStepIdx++;
+                if (this.state.labs.currentStepIdx >= lab.steps.length) {
+                    this.completeLab();
+                } else {
+                    this.renderLab();
+                }
+            } else {
+                this.state.stats.tries++;
+                document.getElementById('lab-tries').innerText = `Tries: ${this.state.stats.tries}`;
+            }
+        },
+
+        getHint() {
+            const lab = this.state.labs.data[this.state.labs.currentIdx];
+            const hint = lab.hints[this.state.labs.currentStepIdx] || lab.hints[0];
+            const box = document.getElementById('hint-box');
+            box.innerText = hint;
+            box.classList.remove('hidden');
+            this.state.stats.hintsUsed++;
+        },
+
+        resetLab() {
+            this.state.terminal.cwd = '/home/learner';
+            this.state.labs.currentStepIdx = 0;
+            this.renderLab();
+        },
+
+        completeLab() {
+            const labContainer = document.getElementById('lab-terminal-body');
+            labContainer.innerHTML += `<div class="terminal-output-line" style="color: var(--accent); font-weight: bold;">[SUCCESS] Lab Objectives Met.</div>`;
+            
+            this.state.labs.currentIdx++;
+            if (this.state.labs.currentIdx < this.state.labs.data.length) {
+                setTimeout(() => {
+                    this.state.labs.currentStepIdx = 0;
+                    this.renderLab();
+                }, 2000);
+            } else {
+                setTimeout(() => this.changeScreen('mission'), 2000);
+            }
+        },
+
+        // --- Mission ---
+        initMission() {
+            this.state.missionStart = Date.now();
+            this.state.missionSuccess = { audit: false, path: false, help: false, env: false };
+            document.getElementById('mission-terminal-body').innerHTML = `<div class="terminal-output-line">System access granted. Mission clock started.</div>`;
+            
+            const timer = setInterval(() => {
+                if (this.state.currentScreen !== 'mission') {
+                    clearInterval(timer);
+                    return;
+                }
+                const elapsed = Math.floor((Date.now() - this.state.missionStart) / 1000);
+                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const s = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('mission-timer').innerText = `${m}:${s}`;
+            }, 1000);
+        },
+
+        validateMission(cmd) {
+            const raw = cmd.trim();
+            if (raw === 'ls -a') this.state.missionSuccess.audit = true;
+            if (raw === 'echo $PATH' || raw === 'printenv PATH') this.state.missionSuccess.path = true;
+            if (raw === 'apropos process' || raw === 'whatis ps') this.state.missionSuccess.help = true;
+            if (raw === 'export DEPLOY_STATUS=READY') this.state.missionSuccess.env = true;
+
+            const allDone = Object.values(this.state.missionSuccess).every(v => v === true);
+            if (allDone) {
+                document.getElementById('mission-terminal-body').innerHTML += `<div class="terminal-output-line" style="color: var(--accent); font-weight: bold;">[MISSION COMPLETE] All environmental anomalies corrected.</div>`;
+                document.getElementById('finish-mission-btn').classList.remove('hidden');
+            }
+        },
+
+        // --- Assessment ---
+        renderAssessment() {
+            const q = this.state.assessment.questions[this.state.assessment.current];
+            const container = document.getElementById('assessment-container');
+            document.getElementById('assessment-progress').innerText = `Question ${this.state.assessment.current + 1} of 10`;
+            
+            container.innerHTML = `
+                <div class="card" style="background: var(--bg-page); border: none; box-shadow: none;">
+                    <p style="font-size: 1.25rem; font-weight: 700; margin-bottom: 2rem;">${q.q}</p>
+                    <div style="display: grid; gap: 0.75rem;">
+                        ${q.options.map((opt, i) => `
+                            <button class="quiz-option" onclick="app.selectAssessOption(${i})">${opt}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        },
+
+        selectAssessOption(idx) {
+            const options = document.querySelectorAll('.quiz-option');
+            options.forEach(o => o.classList.remove('selected'));
+            options[idx].classList.add('selected');
+            this.state.assessment.selection = idx;
+        },
+
+        submitAssessment() {
+            if (this.state.assessment.selection === undefined) return;
+            
+            const q = this.state.assessment.questions[this.state.assessment.current];
+            if (this.state.assessment.selection === q.correct) {
+                this.state.assessment.score++;
+            }
+            
+            this.state.assessment.current++;
+            this.state.assessment.selection = undefined;
+            
+            if (this.state.assessment.current < 10) {
+                this.renderAssessment();
+            } else {
+                this.changeScreen('mastery');
+            }
+        },
+
+        // --- Mastery ---
+        initMastery() {
+            const score = (this.state.assessment.score / 10) * 100;
+            document.getElementById('stat-score').innerText = score + '%';
+            document.getElementById('stat-hints').innerText = this.state.stats.hintsUsed;
+            document.getElementById('stat-cmds').innerText = this.state.stats.commandsRun;
+            
+            const totalTime = Math.floor((Date.now() - this.state.startTime) / 60000);
+            document.getElementById('stat-time').innerText = totalTime + 'm';
+
+            const masteryBars = document.getElementById('mastery-bars');
+            const objectives = [
+                { name: "Architecture", val: score > 70 ? 100 : 70 },
+                { name: "Environments", val: score > 80 ? 95 : 60 },
+                { name: "Core Commands", val: this.state.stats.commandsRun > 20 ? 100 : 80 },
+                { name: "Help Systems", val: this.state.stats.hintsUsed < 3 ? 100 : 75 }
+            ];
+
+            masteryBars.innerHTML = objectives.map(obj => `
+                <div class="mastery-row">
+                    <div class="mastery-label">
+                        <span>${obj.name}</span>
+                        <span>${obj.val}%</span>
+                    </div>
+                    <div class="mastery-track">
+                        <div class="mastery-fill" data-val="${obj.val}" style="width: 0%"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Trigger animation
+            setTimeout(() => {
+                const fills = document.querySelectorAll('.mastery-fill');
+                fills.forEach((f) => f.style.width = f.getAttribute('data-val') + '%');
+            }, 100);
+
+            let feedback = "You have demonstrated a solid understanding of the Linux foundations required for XK0-005.";
+            if (score < 70) feedback = "Good effort. Consider reviewing the differences between Shell and Terminal, and practice navigating with relative paths.";
+            if (score >= 90) feedback = "Expert performance! You have mastered the environment and architecture basics. You are ready for Chapter 10.";
+            document.getElementById('mastery-feedback').innerText = feedback;
+        }
+    };
+
+    window.onload = () => app.init();
+</script>
+
+</body>
+</html>
