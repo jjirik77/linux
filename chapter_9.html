@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managing Linux Processes | CompTIA Linux+ Lab</title>
+    <style>
+        /* * DESIGN SYSTEM & THEMES
+         */
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --accent: #10b981;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --terminal-bg: #0f172a;
+            --terminal-text: #e2e8f0;
+            --terminal-prompt: #4ade80;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --radius: 0.75rem;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --font-mono: 'Fira Code', 'Courier New', monospace;
+        }
+
+        .dark-theme {
+            --bg-page: #020617;
+            --bg-card: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* * LAYOUT STRUCTURE
+         */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .progress-bar-container {
+            height: 4px;
+            width: 100%;
+            background: var(--border);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        main { flex: 1; padding: 2rem; position: relative; }
+
+        /* * UI COMPONENTS
+         */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { background: var(--border); }
+        
+        .badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.4rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* * SCREENS
+         */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* * MODULE DASHBOARD
+         */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .module-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .module-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .module-card.locked { opacity: 0.6; cursor: not-allowed; }
+        .module-card .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        /* * TERMINAL & SIMULATOR
+         */
+        .workspace-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr 300px;
+            gap: 1rem;
+            height: calc(100vh - 160px);
+        }
+        @media (max-width: 1200px) {
+            .workspace-layout { grid-template-columns: 1fr 1.5fr; }
+            .workspace-right { display: none; }
+        }
+
+        .terminal-container {
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            font-family: var(--font-mono);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+        .terminal-header {
+            background: #1e293b;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+        }
+        .t-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .terminal-body {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            scroll-behavior: smooth;
+        }
+        .terminal-input-line { display: flex; padding: 0.5rem 1rem 1rem; }
+        .prompt { color: var(--terminal-prompt); font-weight: bold; margin-right: 8px; }
+        .term-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: inherit;
+            font-size: inherit;
+            flex: 1;
+            outline: none;
+        }
+
+        /* * PROCESS TREE VISUALIZER
+         */
+        .process-tree-container {
+            height: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            position: relative;
+            overflow: auto;
+            padding: 1rem;
+        }
+        .proc-node {
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin: 0.5rem;
+            background: var(--bg-page);
+            font-size: 0.75rem;
+            width: 150px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .proc-node.active { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        .proc-line { position: absolute; background: var(--border); width: 2px; z-index: 0; }
+
+        /* * CRONTAB BUILDER
+         */
+        .cron-builder {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .cron-field {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .cron-field input {
+            width: 45px;
+            padding: 0.4rem;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 0.4rem;
+            background: var(--bg-page);
+            color: var(--text-main);
+        }
+        .cron-label { font-size: 0.65rem; color: var(--text-muted); font-weight: bold; }
+
+        /* * UTILITIES
+         */
+        .hidden { display: none; }
+        .mt-4 { margin-top: 1rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .text-center { text-align: center; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .scroll-y { overflow-y: auto; }
+        
+        /* * ACCESSIBILITY FOCUS 
+         */
+        *:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+        
+        /* * ANIMATIONS 
+         */
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0); }
+        }
+
+        .process-tree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900;">LX</div>
+            <div>
+                <h1 style="font-size: 1.1rem; letter-spacing: -0.02em;">CompTIA Linux+ : Chapter 9</h1>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">Managing Linux Processes</p>
+            </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div id="status-badge" class="badge" style="background: var(--border); color: var(--text-muted);">Guided Mode</div>
+            <button id="theme-toggle" class="btn btn-outline" aria-label="Toggle Theme">🌓</button>
+        </div>
+
+        <div class="progress-bar-container">
+            <div id="progress-fill"></div>
+        </div>
+    </header>
+
+    <main id="app-view">
+        <!-- SCREEN 1: DASHBOARD -->
+        <section id="screen-dashboard" class="screen active">
+            <div class="card" style="padding: 3rem 2rem; border-top: 5px solid var(--primary);">
+                <h2>Welcome to the Process Lab</h2>
+                <p class="text-muted">Master process management, signals, and job scheduling. Complete the modules below to unlock the final Admin Scenario.</p>
+                
+                <div class="module-grid" id="module-grid">
+                    <!-- Dynamic Module Cards -->
+                </div>
+
+                <div class="mt-4 flex-between">
+                    <div class="card" style="flex: 1; margin-right: 1rem; margin-bottom: 0;">
+                        <h4>Overall Completion</h4>
+                        <div style="height: 10px; background: var(--border); border-radius: 5px; margin-top: 1rem; overflow: hidden;">
+                            <div id="dash-progress-bar" style="height: 100%; width: 0%; background: var(--accent); transition: width 0.5s;"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary pulse" id="resume-btn" onclick="app.resumeLesson()">Resume Training</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: WORKSPACE -->
+        <section id="screen-workspace" class="screen">
+            <div class="workspace-layout">
+                <!-- LEFT: Concept & Instructions -->
+                <div class="card scroll-y" style="margin-bottom: 0;">
+                    <div id="module-info">
+                        <span id="module-badge" class="badge" style="background: var(--primary); color: white; margin-bottom: 0.5rem;">Module 1</span>
+                        <h3 id="module-title" class="mb-2">Foundations</h3>
+                        <div id="module-concept" style="font-size: 0.9rem; color: var(--text-muted);">
+                            <!-- Dynamic Content -->
+                        </div>
+                        <hr style="margin: 1.5rem 0; opacity: 0.1;">
+                        <div id="module-tasks">
+                            <h4 class="mb-2">Your Task</h4>
+                            <div id="task-list" style="font-size: 0.9rem;">
+                                <!-- Dynamic Tasks -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CENTER: Terminal & Visuals -->
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Visual Area -->
+                    <div class="card" style="flex: 1; margin-bottom: 0; position: relative; display: flex; flex-direction: column;">
+                        <div class="flex-between mb-2">
+                            <h4 id="sim-title">Process Visualizer</h4>
+                            <div class="badge" id="sim-type" style="background: #eff6ff; color: #1d4ed8;">Interactive</div>
+                        </div>
+                        <div id="sim-content" style="flex: 1; overflow: hidden;">
+                            <!-- Dynamic Visualization (SVG Process Tree / ps table / etc.) -->
+                        </div>
+                    </div>
+                    
+                    <!-- Terminal -->
+                    <div class="terminal-container" style="height: 250px;">
+                        <div class="terminal-header">
+                            <div class="t-dot" style="background: #ef4444;"></div>
+                            <div class="t-dot" style="background: #f59e0b;"></div>
+                            <div class="t-dot" style="background: #10b981;"></div>
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-left: 1rem;">bash — chapter9@linux-lab</div>
+                        </div>
+                        <div class="terminal-body" id="term-output">
+                            <div>Welcome to the Linux Process Lab.</div>
+                            <div>Type <span style="color: var(--warning)">help</span> for available commands.</div>
+                        </div>
+                        <div class="terminal-input-line">
+                            <span class="prompt">learner@linux:~$</span>
+                            <input type="text" class="term-input" id="term-input" spellcheck="false" autocomplete="off" autofocus>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Checklist & Hints -->
+                <div class="workspace-right" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div class="card" style="flex: 1; margin-bottom: 0;">
+                        <h4 class="mb-2">Hints</h4>
+                        <div id="hint-container" style="font-size: 0.85rem; color: var(--text-muted);">
+                            Click "Request Hint" if you get stuck.
+                        </div>
+                        <button class="btn btn-outline mt-4" style="width: 100%;" onclick="app.getHint()">Request Hint</button>
+                    </div>
+                    <div class="card" style="margin-bottom: 0;">
+                        <h4 class="mb-2">Status</h4>
+                        <div style="font-size: 0.85rem;">
+                            <div class="flex-between"><span>Errors:</span> <span id="stat-errors">0</span></div>
+                            <div class="flex-between"><span>Hints Used:</span> <span id="stat-hints">0</span></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="app.exitModule()">Exit to Dashboard</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: MASTERY REVIEW -->
+        <section id="screen-review" class="screen">
+            <div class="card text-center" style="max-width: 800px; margin: 0 auto; padding: 3rem;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">🏆</div>
+                <h2>Chapter Mastery Achieved</h2>
+                <p class="text-muted">You have successfully navigated the complexities of Linux Process Management.</p>
+                
+                <div class="grid-layout mt-4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                    <div class="card">
+                        <h2 id="final-accuracy">0%</h2>
+                        <p style="font-size: 0.7rem; text-transform: uppercase;">Command Accuracy</p>
+                    </div>
+                    <div class="card">
+                        <h2 id="final-time">0m</h2>
+                        <p style="font-size: 0.7rem; text-transform: uppercase;">Time Spent</p>
+                    </div>
+                    <div class="card">
+                        <h2 id="final-badges">0</h2>
+                        <p style="font-size: 0.7rem; text-transform: uppercase;">Badges Earned</p>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button class="btn btn-primary" onclick="location.reload()">Restart Training</button>
+                    <button class="btn btn-outline" onclick="app.showDashboard()">Review Modules</button>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- 
+    SCRIPTS
+-->
+<script>
+    /**
+     * LESSON DATA & CONFIG
+     */
+    const LESSON_DATA = {
+        modules: [
+            {
+                id: 1,
+                title: "Process Foundations",
+                concept: "A <strong>process</strong> is an executing program. In Linux, <strong>systemd</strong> (PID 1) is the first process launched by the kernel, acting as the parent for all others.",
+                why: "Understanding the hierarchy helps diagnose why killing a parent might affect child processes.",
+                tasks: [
+                    "Examine the process tree to find PID 1.",
+                    "Execute 'ps -ef' to see parent IDs (PPID).",
+                    "Identify the shell process currently running."
+                ],
+                initialState: {
+                    processes: [
+                        { pid: 0, ppid: -1, cmd: "kernel", user: "root", state: "R", cpu: 0 },
+                        { pid: 1, ppid: 0, cmd: "systemd", user: "root", state: "S", cpu: 1 },
+                        { pid: 50, ppid: 1, cmd: "sshd", user: "root", state: "S", cpu: 0 },
+                        { pid: 120, ppid: 50, cmd: "bash", user: "learner", state: "S", cpu: 0 }
+                    ]
+                }
+            },
+            {
+                id: 2,
+                title: "Viewing Processes",
+                concept: "Tools like <code>ps</code> provide a static snapshot, while <code>top</code> and <code>htop</code> offer dynamic, real-time sorting and monitoring.",
+                why: "Knowing when to use 'ps aux' versus 'top' determines how quickly you find a system bottleneck.",
+                tasks: [
+                    "Run 'top' and sort by CPU usage.",
+                    "Use 'pgrep' to find the PID of the 'sshd' process.",
+                    "Filter processes by the 'learner' user."
+                ]
+            },
+            {
+                id: 3,
+                title: "Priorities (Nice)",
+                concept: "Linux uses <strong>Niceness</strong> (-20 to 19) to prioritize CPU time. Lower values mean higher priority.",
+                why: "Preventing a low-priority backup script from slowing down a production database is a common task.",
+                tasks: [
+                    "Launch 'sleep 1000' with a nice value of 10.",
+                    "Renice an existing process to -5 (requires sudo simulation).",
+                    "Observe how priority (PR) changes in response to nice (NI)."
+                ]
+            },
+            {
+                id: 4,
+                title: "Job Control",
+                concept: "Processes can run in the <strong>foreground</strong> (locking the terminal) or <strong>background</strong> (allowing other tasks).",
+                why: "Efficiency. Running long tasks in the background keeps your terminal available.",
+                tasks: [
+                    "Start a process in the background using '&'.",
+                    "Stop a foreground process using Ctrl-Z.",
+                    "Resume a stopped job in the background using 'bg'."
+                ]
+            },
+            {
+                id: 5,
+                title: "Signals & Termination",
+                concept: "Signals communicate with processes. <strong>SIGTERM (15)</strong> asks gracefully; <strong>SIGKILL (9)</strong> forces termination.",
+                why: "Graceful shutdown prevents data corruption.",
+                tasks: [
+                    "Send a SIGTERM to a non-responsive process.",
+                    "Use 'pkill' to end all instances of a command.",
+                    "Explain why SIGKILL should be a last resort."
+                ]
+            },
+            {
+                id: 6,
+                title: "Scheduling Jobs",
+                concept: "<strong>at</strong> handles one-time tasks; <strong>cron</strong> handles recurring schedules using the crontab format.",
+                why: "Automation. Reliable systems don't rely on humans to remember maintenance times.",
+                tasks: [
+                    "Schedule a job for 2 minutes from now using 'at'.",
+                    "Create a cron entry for a daily backup at 5:00 AM.",
+                    "Verify active cron jobs using 'crontab -l'."
+                ]
+            }
+        ]
+    };
+
+    /**
+     * APP ENGINE
+     */
+    const app = {
+        state: {
+            currentModule: 0,
+            completedModules: [],
+            mode: 'guided',
+            theme: 'light',
+            stats: {
+                errors: 0,
+                hints: 0,
+                commands: 0,
+                startTime: Date.now()
+            },
+            terminal: {
+                history: [],
+                historyIndex: -1,
+                cwd: '/home/learner'
+            },
+            processTable: [],
+            jobs: [],
+            cronJobs: []
+        },
+
+        init() {
+            this.bindEvents();
+            this.loadTheme();
+            this.showDashboard();
+            this.updateProgressBar();
+        },
+
+        bindEvents() {
+            document.getElementById('theme-toggle').onclick = () => this.toggleTheme();
+            document.getElementById('term-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.handleCommand(e.target.value);
+                if (e.key === 'ArrowUp') { e.preventDefault(); this.recallHistory(1); }
+                if (e.key === 'ArrowDown') { e.preventDefault(); this.recallHistory(-1); }
+            });
+        },
+
+        /* NAVIGATION & UI */
+        showDashboard() {
+            this.switchScreen('dashboard');
+            const grid = document.getElementById('module-grid');
+            grid.innerHTML = LESSON_DATA.modules.map((m, idx) => {
+                const isCompleted = this.state.completedModules.includes(m.id);
+                const isLocked = idx > 0 && !this.state.completedModules.includes(LESSON_DATA.modules[idx-1].id);
+                
+                return `
+                    <div class="card module-card ${isLocked ? 'locked' : ''}" onclick="app.startModule(${idx})">
+                        <div class="flex-between">
+                            <span class="badge" style="background: var(--bg-page); color: var(--text-muted);">Module ${m.id}</span>
+                            <span class="status-dot" style="background: ${isCompleted ? 'var(--accent)' : 'var(--border)'}"></span>
+                        </div>
+                        <h3 class="mt-4">${m.title}</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">${m.concept.substring(0, 80)}...</p>
+                        ${isLocked ? '<p style="font-size: 0.65rem; color: var(--danger); font-weight: bold; margin-top: 0.5rem;">LOCKED</p>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('dash-progress-bar').style.width = 
+                `${(this.state.completedModules.length / LESSON_DATA.modules.length) * 100}%`;
+        },
+
+        startModule(idx) {
+            if (idx > 0 && !this.state.completedModules.includes(LESSON_DATA.modules[idx-1].id)) return;
+            
+            this.state.currentModule = idx;
+            this.switchScreen('workspace');
+            this.renderModule();
+        },
+
+        resumeLesson() {
+            const nextIdx = this.state.completedModules.length;
+            if (nextIdx < LESSON_DATA.modules.length) {
+                this.startModule(nextIdx);
+            } else {
+                this.showReview();
+            }
+        },
+
+        renderModule() {
+            const m = LESSON_DATA.modules[this.state.currentModule];
+            document.getElementById('module-badge').innerText = `Module ${m.id}`;
+            document.getElementById('module-title').innerText = m.title;
+            document.getElementById('module-concept').innerHTML = `<p>${m.concept}</p><p class="mt-4"><strong>Why it matters:</strong> ${m.why}</p>`;
+            
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = m.tasks.map((t, i) => `
+                <div style="display: flex; gap: 8px; margin-bottom: 0.5rem;">
+                    <input type="checkbox" id="task-${i}" disabled>
+                    <label for="task-${i}">${t}</label>
+                </div>
+            `).join('');
+
+            this.resetSimulation();
+        },
+
+        switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${id}`).classList.add('active');
+        },
+
+        exitModule() {
+            this.showDashboard();
+        },
+
+        /* THEME */
+        toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            this.state.theme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        },
+        loadTheme() {
+            if (this.state.theme === 'dark') document.body.classList.add('dark-theme');
+        },
+
+        /* TERMINAL LOGIC */
+        handleCommand(raw) {
+            const input = raw.trim();
+            if (!input) return;
+
+            this.state.stats.commands++;
+            this.state.terminal.history.push(input);
+            this.state.terminal.historyIndex = -1;
+
+            const parts = input.split(' ');
+            const cmd = parts[0];
+            const args = parts.slice(1);
+
+            this.logToTerminal(`learner@linux:~$ ${input}`, 'prompt');
+            
+            let output = "";
+            let type = "output";
+
+            switch(cmd) {
+                case 'help':
+                    output = "Available: ps, top, htop, pgrep, pidof, kill, pkill, killall, nice, renice, jobs, fg, bg, at, crontab, clear";
+                    break;
+                case 'clear':
+                    document.getElementById('term-output').innerHTML = "";
+                    break;
+                case 'ps':
+                    output = this.simPs(args);
+                    break;
+                case 'top':
+                case 'htop':
+                    this.openSimOverlay('top');
+                    output = "Opening interactive viewer...";
+                    break;
+                case 'pgrep':
+                    const match = this.state.processTable.find(p => p.cmd.includes(args[0]));
+                    output = match ? match.pid.toString() : "No process found.";
+                    break;
+                case 'kill':
+                    output = this.handleKill(args);
+                    break;
+                case 'nice':
+                    if (args.length < 2) {
+                        output = "usage: nice -n <value> <command>";
+                    } else {
+                        output = "Process launched in background.";
+                        this.spawnProcess(args.slice(1).join(' '), parseInt(args[0].replace('-n', '')) || 10);
+                    }
+                    break;
+                case 'crontab':
+                    output = this.handleCrontab(args);
+                    break;
+                default:
+                    output = `bash: ${cmd}: command not found`;
+                    type = "error";
+                    this.state.stats.errors++;
+            }
+
+            if (output) this.logToTerminal(output, type);
+            document.getElementById('term-input').value = "";
+            this.checkObjectiveProgress();
+            this.updateStats();
+        },
+
+        recallHistory(direction) {
+            const hist = this.state.terminal.history;
+            if (hist.length === 0) return;
+
+            if (this.state.terminal.historyIndex === -1 && direction === 1) {
+                this.state.terminal.historyIndex = hist.length - 1;
+            } else {
+                this.state.terminal.historyIndex -= direction;
+            }
+
+            if (this.state.terminal.historyIndex < 0) {
+                this.state.terminal.historyIndex = -1;
+                document.getElementById('term-input').value = "";
+            } else if (this.state.terminal.historyIndex >= hist.length) {
+                this.state.terminal.historyIndex = hist.length - 1;
+            } else {
+                document.getElementById('term-input').value = hist[this.state.terminal.historyIndex];
+            }
+        },
+
+        logToTerminal(text, type) {
+            const container = document.getElementById('term-output');
+            const div = document.createElement('div');
+            div.className = `terminal-line ${type}`;
+            if (type === 'error') div.style.color = 'var(--danger)';
+            if (type === 'prompt') div.style.fontWeight = 'bold';
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        },
+
+        /* SIMULATION LOGIC */
+        resetSimulation() {
+            const m = LESSON_DATA.modules[this.state.currentModule];
+            this.state.processTable = m.initialState?.processes.map(p => ({...p})) || [
+                { pid: 1, ppid: 0, cmd: "systemd", user: "root", state: "S", cpu: 0, ni: 0 },
+                { pid: 120, ppid: 1, cmd: "bash", user: "learner", state: "S", cpu: 0, ni: 0 },
+                { pid: 245, ppid: 120, cmd: "vi notes.txt", user: "learner", state: "T", cpu: 0, ni: 0 }
+            ];
+            this.renderProcessVisualizer();
+        },
+
+        renderProcessVisualizer() {
+            const container = document.getElementById('sim-content');
+            container.innerHTML = "";
+            
+            const tree = document.createElement('div');
+            tree.className = 'process-tree';
+            
+            this.state.processTable.forEach(p => {
+                const node = document.createElement('div');
+                node.className = 'proc-node';
+                node.innerHTML = `
+                    <strong>${p.cmd}</strong><br>
+                    <span style="font-size:0.6rem">PID: ${p.pid} | PPID: ${p.ppid}</span>
+                `;
+                tree.appendChild(node);
+            });
+            
+            container.appendChild(tree);
+        },
+
+        openSimOverlay(type) {
+            this.logToTerminal("[Simulation] Displaying real-time process monitoring...", "output");
+        },
+
+        simPs(args) {
+            let out = "PID    TTY      TIME     CMD\n";
+            this.state.processTable.forEach(p => {
+                out += `${p.pid.toString().padEnd(6)} pts/0    00:00:01 ${p.cmd}\n`;
+            });
+            return out;
+        },
+
+        handleKill(args) {
+            if (args.length === 0) return "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]";
+            
+            const pidArg = args[args.length - 1];
+            const pid = parseInt(pidArg);
+            const signal = args.length > 1 ? args[0] : '-15';
+
+            if ((signal === '-9' || signal === '-SIGKILL') && this.state.mode === 'guided') {
+                this.logToTerminal("Caution: SIGKILL forced termination. Data loss may occur.", "warning");
+            }
+
+            const index = this.state.processTable.findIndex(p => p.pid === pid);
+            if (index > -1) {
+                const proc = this.state.processTable[index];
+                this.state.processTable.splice(index, 1);
+                this.renderProcessVisualizer();
+                return `Process ${pid} (${proc.cmd}) terminated.`;
+            }
+            return `bash: kill: (${pidArg}) - No such process`;
+        },
+
+        spawnProcess(cmd, ni = 0) {
+            const pid = Math.floor(Math.random() * 5000) + 1000;
+            this.state.processTable.push({
+                pid: pid,
+                ppid: 120,
+                cmd: cmd || "sleep 1000",
+                user: "learner",
+                state: "S",
+                cpu: 0,
+                ni: ni
+            });
+            this.renderProcessVisualizer();
+        },
+
+        handleCrontab(args) {
+            if (args[0] === '-l') {
+                return this.state.cronJobs.length > 0 ? this.state.cronJobs.join('\n') : "no crontab for learner";
+            }
+            if (args[0] === '-e') {
+                return "Crontab editor simulated. Please use the Crontab Builder tool in the visualizer area.";
+            }
+            return "usage: crontab [-u user] file | crontab [-l | -r | -e]";
+        },
+
+        /* LESSON FLOW */
+        checkObjectiveProgress() {
+            const mIdx = this.state.currentModule;
+            const tasks = document.querySelectorAll('#task-list input');
+            
+            // Logic varies per module
+            if (mIdx === 0) { // Foundations
+                if (this.state.terminal.history.some(h => h.includes('ps -ef'))) tasks[1].checked = true;
+                if (this.state.terminal.history.some(h => h.includes('ps'))) tasks[0].checked = true;
+            }
+
+            if (this.state.stats.commands > 5) {
+                tasks.forEach(t => t.checked = true);
+            }
+
+            if (Array.from(tasks).every(t => t.checked)) {
+                this.completeModule();
+            }
+        },
+
+        completeModule() {
+            const mId = LESSON_DATA.modules[this.state.currentModule].id;
+            if (!this.state.completedModules.includes(mId)) {
+                this.state.completedModules.push(mId);
+            }
+            
+            if (this.state.completedModules.length === LESSON_DATA.modules.length) {
+                setTimeout(() => this.showReview(), 1500);
+            } else {
+                this.logToTerminal("\nMODULE COMPLETE. Returning to dashboard in 3s...", "output");
+                setTimeout(() => this.showDashboard(), 3000);
+            }
+        },
+
+        showReview() {
+            this.switchScreen('review');
+            document.getElementById('final-accuracy').innerText = 
+                `${Math.max(0, 100 - (this.state.stats.errors * 5))}%`;
+            document.getElementById('final-time').innerText = 
+                `${Math.floor((Date.now() - this.state.stats.startTime) / 60000)}m`;
+            document.getElementById('final-badges').innerText = this.state.completedModules.length;
+        },
+
+        getHint() {
+            this.state.stats.hints++;
+            const hints = [
+                "Try using 'ps aux' to see all processes.",
+                "PID 1 is always systemd in modern Linux.",
+                "Nice values range from -20 to 19.",
+                "Use Ctrl-Z to stop a foreground job.",
+                "Run 'kill -l' to see all signal numbers."
+            ];
+            document.getElementById('hint-container').innerText = hints[Math.floor(Math.random() * hints.length)];
+            this.updateStats();
+        },
+
+        updateStats() {
+            document.getElementById('stat-errors').innerText = this.state.stats.errors;
+            document.getElementById('stat-hints').innerText = this.state.stats.hints;
+            this.updateProgressBar();
+        },
+
+        updateProgressBar() {
+            const total = LESSON_DATA.modules.length;
+            const current = this.state.completedModules.length;
+            document.getElementById('progress-fill').style.width = `${(current / total) * 100}%`;
+        }
+    };
+
+    // Initialize the app
+    window.onload = () => app.init();
+</script>
+
+</body>
+</html>
