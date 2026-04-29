@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managing Linux Applications: Interactive Lab</title>
+    <style>
+        :root {
+            /* Light Theme */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --border: #e2e8f0;
+            --terminal-bg: #1e1e1e;
+            --terminal-text: #33ff33;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border: #334155;
+            --terminal-bg: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        /* Controls */
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
+        .btn-outline:hover { background: var(--bg-secondary); }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        /* Progress Tracker */
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Module Navigation */
+        .module-nav {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            scrollbar-width: thin;
+        }
+
+        .nav-item {
+            white-space: nowrap;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .nav-item.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        /* Main Content Cards */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .instruction-card {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Terminal Simulator */
+        .terminal-container {
+            background: var(--terminal-bg);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            color: var(--terminal-text);
+            height: 400px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #333;
+        }
+
+        .terminal-output {
+            flex-grow: 1;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .terminal-prompt { color: #50fa7b; }
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            width: 100%;
+        }
+
+        /* Interactions */
+        .command-builder {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+        }
+
+        .chip {
+            padding: 4px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .chip.selected {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .quiz-option {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .quiz-option:hover { background: var(--bg-primary); }
+        .quiz-option.correct { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .quiz-option.incorrect { border-color: var(--error); background: rgba(239, 68, 68, 0.1); }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .feedback.visible { display: block; }
+        .feedback-success { background: rgba(16, 185, 129, 0.1); color: #065f46; border-left: 4px solid var(--success); }
+        .feedback-error { background: rgba(239, 68, 68, 0.1); color: #991b1b; border-left: 4px solid var(--error); }
+
+        /* Typography & Helper Classes */
+        h1, h2, h3 { margin-top: 0; }
+        .text-sm { font-size: 0.85rem; color: var(--text-secondary); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: var(--border); margin-right: 5px; }
+        .exam-tip { background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px; margin: 15px 0; color: #92400e; font-size: 0.9rem; }
+        [data-theme="dark"] .exam-tip { background: #451a03; color: #fde68a; border-color: #92400e; }
+
+        .hidden { display: none; }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade { animation: fadeIn 0.4s ease-out; }
+
+        /* Cheat Sheet */
+        .cheatsheet-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .cheatsheet-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 101;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Linux App Management Lab
+            </div>
+            <div class="header-actions">
+                <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌓</button>
+                <div class="text-sm">Progress: <span id="progressText">0%</span></div>
+            </div>
+        </header>
+
+        <div class="progress-bar-container">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+
+        <nav class="module-nav" id="moduleNav"></nav>
+
+        <main class="main-content">
+            <div class="instruction-card card animate-fade" id="contentArea">
+                <!-- Content injected here -->
+                <div id="intro">
+                    <h1>Welcome, SysAdmin</h1>
+                    <p>Software management is the cornerstone of Linux administration. In this interactive lab, you will master the tools and workflows used to install, update, and troubleshoot applications on Enterprise Linux and Debian systems.</p>
+                    <div class="exam-tip">
+                        <strong>Lab Objective:</strong> Prepare for CompTIA Linux+ style tasks involving RPM, DNF, APT, and source compilation.
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <h3>What we'll cover:</h3>
+                        <ul>
+                            <li>Dependency resolution and package foundations.</li>
+                            <li>RPM and DNF (Red Hat family).</li>
+                            <li>dpkg and APT (Debian family).</li>
+                            <li>Universal formats (Snap, Flatpak).</li>
+                            <li>Compiling from source and shared libraries.</li>
+                        </ul>
+                    </div>
+                    <button class="btn-primary" onclick="app.startLab()" style="margin-top: 20px; padding: 12px 24px;">Start Interactive Lab</button>
+                </div>
+            </div>
+
+            <div class="terminal-panel">
+                <div class="terminal-container" id="terminal">
+                    <div class="terminal-output" id="terminalOutput">Welcome to the Lab Terminal.
+System: RHEL 9 / Ubuntu 22.04 Simulation
+Type 'help' for available commands or follow the lesson prompts.</div>
+                    <div class="terminal-input-line">
+                        <span class="terminal-prompt">[learner@linux-lab ~]$</span>
+                        <input type="text" class="terminal-input" id="terminalInput" autofocus spellcheck="false" autocomplete="off">
+                    </div>
+                </div>
+                <div class="text-sm" style="margin-top: 10px; font-style: italic;">
+                    Tip: The terminal supports <code>rpm</code>, <code>dnf</code>, <code>apt</code>, and more.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <button class="btn-outline cheatsheet-toggle" onclick="app.toggleCheatSheet()">Command Reference</button>
+
+    <div id="overlay" class="overlay hidden" onclick="app.toggleCheatSheet()"></div>
+    <div id="cheatSheet" class="cheatsheet-panel hidden">
+        <h2>Command Cheat Sheet</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <h4>RPM (Local)</h4>
+                <ul>
+                    <li><code>-i</code>: Install</li>
+                    <li><code>-U</code>: Upgrade (Installs if missing)</li>
+                    <li><code>-F</code>: Freshen (Only upgrades existing)</li>
+                    <li><code>-e</code>: Erase (Uninstall)</li>
+                    <li><code>-V</code>: Verify integrity</li>
+                    <li><code>-qi</code>: Query information</li>
+                </ul>
+            </div>
+            <div>
+                <h4>DNF / APT (Repo)</h4>
+                <ul>
+                    <li><code>dnf install [pkg]</code></li>
+                    <li><code>dnf search [string]</code></li>
+                    <li><code>apt update</code> (refresh lists)</li>
+                    <li><code>apt install [pkg]</code></li>
+                    <li><code>apt upgrade</code> (apply updates)</li>
+                </ul>
+            </div>
+            <div>
+                <h4>Shared Libraries</h4>
+                <ul>
+                    <li><code>ldd [path]</code>: List dependencies</li>
+                    <li><code>ldconfig</code>: Update library cache</li>
+                </ul>
+            </div>
+            <div>
+                <h4>Source Build</h4>
+                <ol>
+                    <li><code>tar -xvf [file]</code></li>
+                    <li><code>./configure</code></li>
+                    <li><code>make</code></li>
+                    <li><code>make install</code></li>
+                </ol>
+            </div>
+        </div>
+        <button class="btn-primary" onclick="app.toggleCheatSheet()" style="margin-top: 20px;">Close Reference</button>
+    </div>
+
+    <script>
+        /**
+         * LEARNER DATA MODEL
+         */
+        const DATA = {
+            modules: [
+                {
+                    id: 0,
+                    title: "Foundations",
+                    content: `
+                        <h2>Package Management Foundations</h2>
+                        <p>Modern Linux distributions use package managers to handle the "Lifecycle" of software. A package isn't just a file; it contains metadata (version, description) and a list of <strong>dependencies</strong>.</p>
+                        <p><strong>Dependency Hell:</strong> Historically, if Program A needed Library B, you had to find and install Library B yourself. Modern tools (DNF, APT) solve this by checking repositories and fetching prerequisites automatically.</p>
+                        <div class="exam-tip">
+                            <strong>Key Concept:</strong> Local tools (RPM, dpkg) install files. Repository tools (DNF, APT) resolve dependencies.
+                        </div>
+                    `,
+                    activity: {
+                        type: "quiz",
+                        question: "Why would an administrator use DNF instead of a raw RPM command to install a new web server?",
+                        options: [
+                            { text: "RPM commands are deprecated and no longer function.", correct: false, feedback: "Incorrect. RPM is still the underlying engine for DHEL/Fedora." },
+                            { text: "DNF automatically resolves and installs required dependencies from repositories.", correct: true, feedback: "Correct! DNF is a 'meta' package manager that understands repository relationships." },
+                            { text: "DNF is the only tool that can verify package integrity.", correct: false, feedback: "Actually, 'rpm -V' is the primary tool for verifying package files." }
+                        ]
+                    }
+                },
+                {
+                    id: 1,
+                    title: "RPM Essentials",
+                    content: `
+                        <h2>The RPM Package Manager</h2>
+                        <p>RPM (Red Hat Package Manager) is the low-level tool for Red Hat-based systems. You should recognize these switches:</p>
+                        <ul>
+                            <li><code>-i</code>: Install</li>
+                            <li><code>-U</code>: Upgrade (Installs if missing, replaces if present)</li>
+                            <li><code>-F</code>: Freshen (Only replaces if an older version is already present)</li>
+                            <li><code>-e</code>: Erase (Remove)</li>
+                        </ul>
+                        <h3>Package Verification</h3>
+                        <p>Run <code>rpm -V [name]</code> to check if files have been altered since installation. Symbols like <code>S</code> (Size), <code>M</code> (Mode), or <code>5</code> (MD5 hash) indicate changes.</p>
+                    `,
+                    activity: {
+                        type: "terminal",
+                        prompt: "Task: Someone may have tampered with the 'nginx' package. Use the terminal to <strong>verify</strong> the integrity of the 'nginx' package.",
+                        hint: "Try the command: rpm -V nginx",
+                        requiredCommand: "rpm -V nginx",
+                        output: "S.5....T.  c /etc/nginx/nginx.conf\n(Warning: File size and MD5 hash changed!)"
+                    }
+                },
+                {
+                    id: 2,
+                    title: "DNF & Repos",
+                    content: `
+                        <h2>DNF: Next-Gen YUM</h2>
+                        <p>DNF (Dandified YUM) is the successor to YUM. It is "repository-aware." Repositories are defined in <code>/etc/yum.repos.d/</code> as <code>.repo</code> files.</p>
+                        <h3>Common DNF tasks:</h3>
+                        <ul>
+                            <li><code>dnf install [pkg]</code> - Standard install</li>
+                            <li><code>dnf provides [file]</code> - Find which package contains a specific file</li>
+                            <li><code>dnf repolist</code> - See enabled software sources</li>
+                        </ul>
+                    `,
+                    activity: {
+                        type: "terminal",
+                        prompt: "Task: You need to find out which package provides the file '/etc/mime.types'.",
+                        hint: "The command structure is: dnf provides [filename]",
+                        requiredCommand: "dnf provides /etc/mime.types",
+                        output: "mailcap-2.1.48-3.el9.noarch : Helpers for MIME content-type management\nMatched from: Filename : /etc/mime.types"
+                    }
+                },
+                {
+                    id: 3,
+                    title: "Debian & APT",
+                    content: `
+                        <h2>The Debian Workflow</h2>
+                        <p>Debian-based systems (like Ubuntu) use <code>.deb</code> files. The relationship is similar to the RHEL world:</p>
+                        <ul>
+                            <li><strong>dpkg</strong>: Local package tool (like RPM).</li>
+                            <li><strong>APT</strong>: Repository tool (like DNF).</li>
+                        </ul>
+                        <div class="exam-tip">
+                            <strong>Note:</strong> Always run <code>apt update</code> before <code>apt upgrade</code> to ensure your local cache of available versions is current.
+                        </div>
+                    `,
+                    activity: {
+                        type: "matching",
+                        question: "Match the Debian tool to its primary function:",
+                        pairs: [
+                            { item: "apt update", target: "Refresh repository metadata" },
+                            { item: "dpkg -i", target: "Install a local .deb file" },
+                            { item: "apt-cache search", target: "Query repo for keywords" }
+                        ]
+                    }
+                },
+                {
+                    id: 4,
+                    title: "Source Install",
+                    content: `
+                        <h2>Compiling from Source</h2>
+                        <p>Sometimes software isn't in a repo. You must build it. The standard workflow is:</p>
+                        <ol>
+                            <li><strong>Extract</strong>: <code>tar -zxvf source.tar.gz</code></li>
+                            <li><strong>Configure</strong>: <code>./configure</code> (Checks for dependencies/compilers)</li>
+                            <li><strong>Build</strong>: <code>make</code> (Compiles source into binaries)</li>
+                            <li><strong>Install</strong>: <code>sudo make install</code> (Moves files to system paths)</li>
+                        </ol>
+                    `,
+                    activity: {
+                        type: "sequencing",
+                        question: "Sequence the steps to install software from source code:",
+                        items: ["./configure", "make", "make install", "tar -xvf source.tar.gz"],
+                        correctOrder: [3, 0, 1, 2] // Index of the items in correct order
+                    }
+                },
+                {
+                    id: 5,
+                    title: "Shared Libraries",
+                    content: `
+                        <h2>Shared Libraries (.so)</h2>
+                        <p>Linux binaries often rely on "Shared Objects" (<code>.so</code> files). These are loaded at runtime.</p>
+                        <h3>Troubleshooting Tools:</h3>
+                        <ul>
+                            <li><code>ldd [binary]</code>: Lists all libraries a binary needs and where it finds them.</li>
+                            <li><code>ldconfig</code>: Updates the system library cache (<code>/etc/ld.so.cache</code>).</li>
+                            <li><code>LD_LIBRARY_PATH</code>: An environment variable used to specify non-standard library locations.</li>
+                        </ul>
+                    `,
+                    activity: {
+                        type: "terminal",
+                        prompt: "Task: A custom app '/usr/local/bin/app' isn't starting. Use the terminal to check its library dependencies.",
+                        hint: "Use the command: ldd /usr/local/bin/app",
+                        requiredCommand: "ldd /usr/local/bin/app",
+                        output: "linux-vdso.so.1 => (0x00007ffd)\nlibssl.so.1.1 => not found\nlibc.so.6 => /lib64/libc.so.6"
+                    }
+                },
+                {
+                    id: 6,
+                    title: "Capstone",
+                    content: `
+                        <h2>Final Capstone: Troubleshooting</h2>
+                        <p>You are now the lead admin. Apply your knowledge to solve real-world tickets.</p>
+                        <div id="capstone-results" class="hidden">
+                             <h3>Lab Complete!</h3>
+                             <p id="scoreSummary"></p>
+                             <button class="btn-primary" onclick="location.reload()">Restart Lab</button>
+                        </div>
+                    `,
+                    activity: {
+                        type: "scenario",
+                        scenarios: [
+                            {
+                                text: "Ticket 1: A user downloaded 'web-tool.rpm' but it fails to install because 'libcurl' is missing. What is the best solution?",
+                                options: [
+                                    { text: "Force install with 'rpm -i --nodeps web-tool.rpm'", correct: false, feedback: "No! This will result in a broken application that crashes at runtime." },
+                                    { text: "Install using 'dnf localinstall web-tool.rpm'", correct: true, feedback: "Correct! DNF can install a local file while fetching its dependencies from the repos." },
+                                    { text: "Compile libcurl from source manually.", correct: false, feedback: "Too much work. Let the package manager handle it." }
+                                ]
+                            },
+                            {
+                                text: "Ticket 2: You suspect a system binary has been modified by malware. Which command helps verify if the file on disk matches the original package?",
+                                options: [
+                                    { text: "rpm -V [package]", correct: true, feedback: "Exactly. The Verify command checks size, hashes, and permissions." },
+                                    { text: "dnf list installed", correct: false, feedback: "That just lists packages, it doesn't check integrity." }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
+
+        /**
+         * APP LOGIC
+         */
+        const app = {
+            state: {
+                currentModule: 0,
+                completedModules: [],
+                score: 0,
+                totalPossible: 0,
+                theme: 'light'
+            },
+
+            init() {
+                this.renderNav();
+                this.setupEventListeners();
+                this.updateUI();
+            },
+
+            setupEventListeners() {
+                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
+                
+                const termInput = document.getElementById('terminalInput');
+                termInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleTerminal(termInput.value);
+                        termInput.value = '';
+                    }
+                };
+
+                // Click terminal to focus input
+                document.getElementById('terminal').onclick = () => termInput.focus();
+            },
+
+            toggleTheme() {
+                const html = document.documentElement;
+                this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
+                html.setAttribute('data-theme', this.state.theme);
+                document.getElementById('themeToggle').innerText = this.state.theme === 'light' ? '🌙' : '☀️';
+            },
+
+            startLab() {
+                this.renderModule(0);
+            },
+
+            renderNav() {
+                const nav = document.getElementById('moduleNav');
+                nav.innerHTML = '';
+                DATA.modules.forEach((mod, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `nav-item ${this.state.currentModule === idx ? 'active' : ''} ${this.state.completedModules.includes(idx) ? 'completed' : ''}`;
+                    btn.innerText = mod.title;
+                    btn.onclick = () => this.renderModule(idx);
+                    nav.appendChild(btn);
+                });
+            },
+
+            renderModule(id) {
+                this.state.currentModule = id;
+                const mod = DATA.modules[id];
+                const area = document.getElementById('contentArea');
+                
+                let html = `<div class="animate-fade">
+                    <span class="badge">Module ${id + 1}</span>
+                    ${mod.content}
+                    <div id="activityZone" style="margin-top:30px; padding-top:20px; border-top: 1px solid var(--border);">
+                        <h3>Interactive Challenge</h3>
+                `;
+
+                if (mod.activity.type === 'quiz') {
+                    html += `<p>${mod.activity.question}</p>`;
+                    mod.activity.options.forEach((opt, i) => {
+                        html += `<button class="quiz-option" onclick="app.checkQuiz(${i})">${opt.text}</button>`;
+                    });
+                } else if (mod.activity.type === 'terminal') {
+                    html += `<p><strong>${mod.activity.prompt}</strong></p>
+                             <div class="exam-tip">${mod.activity.hint}</div>`;
+                } else if (mod.activity.type === 'matching') {
+                    html += `<p>${mod.activity.question}</p>`;
+                    mod.activity.pairs.forEach((pair, i) => {
+                        html += `<div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
+                            <span class="badge" style="min-width:120px">${pair.item}</span>
+                            <select id="match-${i}" class="btn-outline" style="padding:4px; font-size:0.8rem; flex-grow:1;">
+                                <option>Select match...</option>
+                                ${mod.activity.pairs.map(p => `<option>${p.target}</option>`).sort().join('')}
+                            </select>
+                        </div>`;
+                    });
+                    html += `<button class="btn-primary" onclick="app.checkMatching()">Check Matches</button>`;
+                } else if (mod.activity.type === 'sequencing') {
+                    html += `<p>${mod.activity.question}</p><div id="sequenceList">`;
+                    mod.activity.items.forEach((item, i) => {
+                        html += `<div class="chip" onclick="app.toggleSequence(${i})" id="seq-${i}">${item}</div> `;
+                    });
+                    html += `</div><div id="seqFeedback" style="margin-top:10px; font-weight:bold;">Selection order: <span id="seqOrder"></span></div>
+                             <button class="btn-primary" style="margin-top:10px" onclick="app.checkSequence()">Verify Order</button>
+                             <button class="btn-outline" style="margin-top:10px" onclick="app.resetSequence()">Reset</button>`;
+                } else if (mod.activity.type === 'scenario') {
+                    const s = mod.activity.scenarios[0]; // Simplified for now
+                    html += `<div id="scenario-container">
+                        <p>${s.text}</p>
+                        ${s.options.map((o, i) => `<button class="quiz-option" onclick="app.checkScenario(0, ${i})">${o.text}</button>`).join('')}
+                    </div>`;
+                }
+
+                html += `</div><div id="feedbackBox" class="feedback"></div>`;
+                
+                // Add "Next" button if completed
+                if (this.state.completedModules.includes(id) && id < DATA.modules.length - 1) {
+                    html += `<button class="btn-primary" style="margin-top:20px" onclick="app.renderModule(${id+1})">Continue to Next Module →</button>`;
+                }
+
+                html += `</div>`;
+                area.innerHTML = html;
+                
+                this.renderNav();
+                this.updateUI();
+            },
+
+            checkQuiz(optIndex) {
+                const mod = DATA.modules[this.state.currentModule];
+                const opt = mod.activity.options[optIndex];
+                const box = document.getElementById('feedbackBox');
+                
+                box.className = `feedback visible ${opt.correct ? 'feedback-success' : 'feedback-error'}`;
+                box.innerHTML = `<strong>${opt.correct ? 'Correct!' : 'Try Again'}</strong><br>${opt.feedback}`;
+                
+                if (opt.correct) this.markModuleComplete();
+            },
+
+            checkScenario(sIndex, oIndex) {
+                const s = DATA.modules[this.state.currentModule].activity.scenarios[sIndex];
+                const opt = s.options[oIndex];
+                const box = document.getElementById('feedbackBox');
+                
+                box.className = `feedback visible ${opt.correct ? 'feedback-success' : 'feedback-error'}`;
+                box.innerHTML = `<strong>${opt.correct ? 'Correct!' : 'Incorrect'}</strong><br>${opt.feedback}`;
+                
+                if (opt.correct) {
+                    // Logic to show next scenario or complete module
+                    this.markModuleComplete();
+                    if (this.state.currentModule === 6) {
+                        document.getElementById('capstone-results').classList.remove('hidden');
+                        document.getElementById('scoreSummary').innerText = "Congratulations! You have successfully mastered Linux Software Management principles.";
+                    }
+                }
+            },
+
+            checkMatching() {
+                const mod = DATA.modules[this.state.currentModule];
+                let allCorrect = true;
+                mod.activity.pairs.forEach((pair, i) => {
+                    const val = document.getElementById(`match-${i}`).value;
+                    if (val !== pair.target) allCorrect = false;
+                });
+
+                const box = document.getElementById('feedbackBox');
+                if (allCorrect) {
+                    box.className = "feedback visible feedback-success";
+                    box.innerText = "Excellent! All tool mappings are correct.";
+                    this.markModuleComplete();
+                } else {
+                    box.className = "feedback visible feedback-error";
+                    box.innerText = "Some mappings are incorrect. Review the logic of APT vs dpkg.";
+                }
+            },
+
+            // Sequencing Logic
+            seqState: [],
+            toggleSequence(id) {
+                if (this.seqState.includes(id)) return;
+                this.seqState.push(id);
+                document.getElementById(`seq-${id}`).classList.add('selected');
+                document.getElementById('seqOrder').innerText = this.seqState.map(i => DATA.modules[this.state.currentModule].activity.items[i]).join(' → ');
+            },
+            resetSequence() {
+                this.seqState = [];
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+                document.getElementById('seqOrder').innerText = "";
+            },
+            checkSequence() {
+                const mod = DATA.modules[this.state.currentModule];
+                const isCorrect = JSON.stringify(this.seqState) === JSON.stringify(mod.activity.correctOrder);
+                const box = document.getElementById('feedbackBox');
+                if (isCorrect) {
+                    box.className = "feedback visible feedback-success";
+                    box.innerText = "Correct Sequence! Extraction -> Configuration -> Compilation -> Installation.";
+                    this.markModuleComplete();
+                } else {
+                    box.className = "feedback visible feedback-error";
+                    box.innerText = "Wrong sequence. Remember: you must extract and configure the environment before you can 'make' the binary.";
+                    this.resetSequence();
+                }
+            },
+
+            handleTerminal(cmd) {
+                const term = document.getElementById('terminalOutput');
+                const cleanCmd = cmd.trim().toLowerCase();
+                
+                term.innerText += `\n[learner@linux-lab ~]$ ${cmd}`;
+
+                if (cleanCmd === 'clear') {
+                    term.innerText = "Terminal Cleared.";
+                    return;
+                }
+
+                if (cleanCmd === 'help') {
+                    term.innerText += "\nAvailable commands: rpm, dnf, apt, ldd, tar, make, ls, clear, help.";
+                    return;
+                }
+
+                // Logic for active module task
+                const mod = DATA.modules[this.state.currentModule];
+                if (mod.activity.type === 'terminal') {
+                    if (cleanCmd === mod.activity.requiredCommand.toLowerCase()) {
+                        term.innerText += `\n${mod.activity.output}`;
+                        term.innerText += "\n[SUCCESS] Task requirement met.";
+                        this.markModuleComplete();
+                    } else {
+                        term.innerText += `\nCommand executed, but didn't match the objective. Try: ${mod.activity.requiredCommand}`;
+                    }
+                } else {
+                    // Generic responses
+                    if (cleanCmd.startsWith('rpm')) term.innerText += "\nRPM: Command valid, but no specific task active for this module.";
+                    else if (cleanCmd.startsWith('dnf')) term.innerText += "\nDNF: Metadata cache is up to date.";
+                    else term.innerText += `\n${cmd}: command not found or not relevant to current task.`;
+                }
+
+                // Scroll to bottom
+                document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+            },
+
+            markModuleComplete() {
+                if (!this.state.completedModules.includes(this.state.currentModule)) {
+                    this.state.completedModules.push(this.state.currentModule);
+                    this.renderNav();
+                    this.updateUI();
+                    
+                    // Show continue button in content area
+                    if (this.state.currentModule < DATA.modules.length - 1) {
+                        const area = document.getElementById('contentArea');
+                        if (!area.innerHTML.includes('Continue to Next Module')) {
+                            const btn = document.createElement('button');
+                            btn.className = "btn-primary animate-fade";
+                            btn.style.marginTop = "20px";
+                            btn.innerText = "Continue to Next Module →";
+                            btn.onclick = () => this.renderModule(this.state.currentModule + 1);
+                            area.appendChild(btn);
+                        }
+                    }
+                }
+            },
+
+            updateUI() {
+                const total = DATA.modules.length;
+                const completed = this.state.completedModules.length;
+                const perc = Math.round((completed / total) * 100);
+                
+                document.getElementById('progressBar').style.width = `${perc}%`;
+                document.getElementById('progressText').innerText = `${perc}%`;
+            },
+
+            toggleCheatSheet() {
+                const sheet = document.getElementById('cheatSheet');
+                const overlay = document.getElementById('overlay');
+                sheet.classList.toggle('hidden');
+                overlay.classList.toggle('hidden');
+            }
+        };
+
+        // Initialize on load
+        window.onload = () => app.init();
+
+    </script>
+</body>
+</html>
