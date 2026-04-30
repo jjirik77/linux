@@ -52,7 +52,6 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        /* Layout */
         .app-container {
             display: grid;
             grid-template-columns: 280px 1fr 320px;
@@ -60,7 +59,6 @@
             gap: 0;
         }
 
-        /* Sidebar Nav */
         .sidebar {
             background: var(--bg-sidebar);
             border-right: 1px solid var(--border);
@@ -93,7 +91,6 @@
             color: var(--success);
         }
 
-        /* Main Content */
         .main-stage {
             overflow-y: auto;
             padding: 2rem;
@@ -102,9 +99,8 @@
             gap: 1.5rem;
         }
 
-        /* Terminal Simulation */
         .terminal-wrap {
-            background: #0f172a; /* Keep terminal dark for contrast */
+            background: #0f172a;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-family: 'Fira Code', monospace;
@@ -143,12 +139,10 @@
 
         .prompt { color: #22c55e; font-weight: bold; margin-right: 8px; }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
 
-        /* Animation */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
@@ -191,7 +185,7 @@
 
         @media (max-width: 1100px) {
             .app-container {
-                grid-template-columns: 240px 1fr;
+                grid-template-columns: 280px 1fr 320px;
             }
             .right-panel { display: none; }
         }
@@ -201,7 +195,6 @@
 
     <div class="app-container">
         
-        <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="p-6 border-b border-black/5">
                 <div class="flex items-center gap-3 mb-1">
@@ -213,9 +206,7 @@
                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Admin Training v2.5</p>
             </div>
 
-            <nav class="flex-grow py-4 overflow-y-auto" id="sidebar-nav">
-                <!-- Navigation items injected via JS -->
-            </nav>
+            <nav class="flex-grow py-4 overflow-y-auto" id="sidebar-nav"></nav>
 
             <div class="p-4 border-t border-black/5">
                 <div class="bg-slate-200/50 rounded-lg p-3">
@@ -234,10 +225,7 @@
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <main class="main-stage">
-            
-            <!-- Global Boot Pipeline -->
             <div class="glass rounded-xl p-4 flex items-center justify-between px-8">
                 <div class="flex flex-col items-center pipeline-node" data-phase="firmware">
                     <div class="w-10 h-10 rounded-full border-2 border-slate-300 flex items-center justify-center bg-slate-50 text-xs font-bold transition-all duration-500">1</div>
@@ -267,12 +255,8 @@
                 </div>
             </div>
 
-            <!-- Content Window -->
-            <div id="content-area" class="flex-grow glass rounded-xl p-8 overflow-y-auto">
-                <!-- Lesson HTML Injected Here -->
-            </div>
+            <div id="content-area" class="flex-grow glass rounded-xl p-8 overflow-y-auto"></div>
 
-            <!-- Docked Terminal -->
             <div class="terminal-wrap">
                 <div class="terminal-header">
                     <div class="dot bg-red-500"></div>
@@ -290,7 +274,6 @@
             </div>
         </main>
 
-        <!-- Right Panel HUD -->
         <aside class="right-panel glass border-l border-black/5 p-6 space-y-6">
             <div>
                 <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Diagnostic HUD</h3>
@@ -319,18 +302,7 @@
             <div>
                 <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Unit Health</h3>
                 <div id="unit-health-list" class="space-y-2">
-                    <div class="flex items-center justify-between p-2 rounded bg-black/5">
-                        <span class="text-[10px] text-slate-600">sshd.service</span>
-                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
-                    </div>
-                    <div class="flex items-center justify-between p-2 rounded bg-black/5">
-                        <span class="text-[10px] text-slate-600">network.service</span>
-                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
-                    </div>
-                    <div class="flex items-center justify-between p-2 rounded bg-black/5">
-                        <span class="text-[10px] text-slate-600">db-mount.target</span>
-                        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                    </div>
+                    <!-- Unit Health items injected via JS -->
                 </div>
             </div>
 
@@ -344,10 +316,8 @@
                 </p>
             </div>
         </aside>
-
     </div>
 
-    <!-- Success Overlays -->
     <div id="modal-overlay" class="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 hidden">
         <div class="glass max-w-sm w-full p-8 rounded-2xl text-center shadow-2xl">
             <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -367,7 +337,12 @@
             target: 'graphical.target',
             bootPhase: 'firmware',
             terminalHistory: [],
-            labComplete: false
+            labComplete: false,
+            units: [
+                { name: 'sshd.service', status: 'healthy' },
+                { name: 'network.service', status: 'healthy' },
+                { name: 'db-mount.target', status: 'failed' }
+            ]
         };
 
         const LESSONS = [
@@ -394,7 +369,7 @@
                                 <p class="text-sm text-slate-700">Troubleshoot systemd unit failures.</p>
                             </div>
                         </div>
-                        <p class="text-sm text-slate-500">Click <strong class="text-slate-800">Firmware Stage</strong> in the sidebar to begin diagnostics.</p>
+                        <button onclick="completePhase('Mission Briefing Complete', 'You are ready to begin the technical investigation.')" class="w-full py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-900 transition-all">Begin Mission</button>
                     </div>
                 `
             },
@@ -407,7 +382,6 @@
                     <div class="fade-in space-y-6">
                         <h2 class="text-2xl font-bold text-slate-800">Hardware Initialization</h2>
                         <p class="text-slate-600 text-sm">The firmware (BIOS or UEFI) performs the Power-On Self-Test (POST) and looks for a bootloader.</p>
-                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <button onclick="setFirmware('BIOS')" class="p-5 glass rounded-2xl text-left hover:border-sky-500/50 transition-all group bg-white">
                                 <div class="flex justify-between mb-2">
@@ -424,10 +398,9 @@
                                 <p class="text-[11px] text-slate-500">Supports Secure Boot and large disks (>2TB). Loads EFI apps from the system partition.</p>
                             </button>
                         </div>
-
                         <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                             <h4 class="text-xs font-bold text-sky-600 uppercase mb-2">Action Required</h4>
-                            <p class="text-xs text-slate-500">The current system is in UEFI mode. Use the terminal to inspect the EFI boot entries by typing <code class="bg-slate-800 text-emerald-400 px-1 rounded">efibootmgr</code>.</p>
+                            <p class="text-xs text-slate-500">Inspect the EFI boot entries by typing <code class="bg-slate-800 text-emerald-400 px-1 rounded">efibootmgr</code>.</p>
                         </div>
                     </div>
                 `
@@ -440,27 +413,8 @@
                 html: `
                     <div class="fade-in space-y-6">
                         <h2 class="text-2xl font-bold text-slate-800">Bootloader Stage</h2>
-                        <p class="text-slate-600 text-sm">GRUB2 (Grand Unified Bootloader) is responsible for loading the Linux kernel into memory.</p>
-                        
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Config Editor: /etc/default/grub</label>
-                            <textarea id="grub-edit" class="config-code h-32" spellcheck="false">GRUB_TIMEOUT=5
-GRUB_DISTRIBUTOR="Lab-OS"
-GRUB_DEFAULT=saved
-GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
-                        </div>
-
-                        <div class="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                            <div class="flex gap-3">
-                                <div class="text-amber-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                                </div>
-                                <div>
-                                    <h4 class="text-xs font-bold text-amber-700 uppercase">Rebuild Required</h4>
-                                    <p class="text-[11px] text-amber-800/80">Changing the timeout isn't enough. You must write the changes. Run <code class="text-slate-900 font-bold">grub2-mkconfig -o /boot/grub2/grub.cfg</code> in the console.</p>
-                                </div>
-                            </div>
-                        </div>
+                        <p class="text-slate-600 text-sm">GRUB2 loads the kernel. Rebuild config with <code class="text-slate-900 font-bold">grub2-mkconfig -o /boot/grub2/grub.cfg</code>.</p>
+                        <textarea id="grub-edit" class="config-code h-32" spellcheck="false">GRUB_TIMEOUT=5\nGRUB_DISTRIBUTOR="Lab-OS"\nGRUB_DEFAULT=saved\nGRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
                     </div>
                 `
             },
@@ -468,29 +422,11 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
                 id: 'systemd',
                 title: 'systemd & Targets',
                 phase: 'init',
-                hint: 'In systemd, "targets" are the modern equivalent of SysV runlevels. multi-user.target is equivalent to Runlevel 3.',
+                hint: 'multi-user.target is equivalent to Runlevel 3.',
                 html: `
                     <div class="fade-in space-y-6">
                         <h2 class="text-2xl font-bold text-slate-800">The Init System</h2>
-                        <p class="text-slate-600 text-sm">Once the kernel loads, it starts Process ID 1: <strong class="text-slate-800">systemd</strong>. This manages the dependencies for all system services.</p>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 glass rounded-xl bg-white">
-                                <span class="text-[10px] text-slate-400 font-bold uppercase">Legacy Runlevel</span>
-                                <div class="text-lg font-bold text-slate-700">5</div>
-                                <div class="text-[11px] text-slate-500 mt-1">Graphical UI</div>
-                            </div>
-                            <div class="p-4 glass rounded-xl border border-sky-200 bg-sky-50">
-                                <span class="text-[10px] text-sky-600 font-bold uppercase tracking-widest">systemd Target</span>
-                                <div class="text-lg font-bold text-sky-700">graphical.target</div>
-                                <div class="text-[11px] text-sky-600/70 mt-1">Active state</div>
-                            </div>
-                        </div>
-
-                        <div class="p-5 glass rounded-2xl border-l-4 border-emerald-500 bg-white">
-                            <h4 class="text-xs font-bold text-emerald-600 uppercase mb-2">Check Health</h4>
-                            <p class="text-xs text-slate-500 mb-3">Does your system know what its goal is? Find out the default boot target by running <code class="text-slate-800 font-bold">systemctl get-default</code>.</p>
-                        </div>
+                        <p class="text-slate-600 text-sm">Check the default boot target by running <code class="text-slate-800 font-bold">systemctl get-default</code>.</p>
                     </div>
                 `
             },
@@ -498,27 +434,11 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
                 id: 'recovery',
                 title: 'Capstone: Recovery',
                 phase: 'init',
-                hint: 'When the graphical target fails to load, use "systemctl isolate multi-user.target" to drop to a text-only mode and fix the issue.',
+                hint: 'Use "systemctl isolate multi-user.target" to fix the issue.',
                 html: `
                     <div class="fade-in space-y-6">
-                        <div class="p-6 bg-red-50 border border-red-100 rounded-2xl">
-                            <h2 class="text-2xl font-bold text-red-600 mb-2">Critical Failure</h2>
-                            <p class="text-red-800/70 text-sm">The graphical subsystem is failing to mount its storage dependency. The system is hanging. You need to bypass the failure and get to a shell.</p>
-                        </div>
-
-                        <div class="space-y-4">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Recovery Sequence</h3>
-                            <div class="grid grid-cols-1 gap-3">
-                                <div class="flex items-center gap-4 p-3 glass rounded-xl bg-white">
-                                    <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">1</div>
-                                    <p class="text-[11px] text-slate-600">Identify failed units with <code class="text-sky-600 font-bold">systemctl --failed</code></p>
-                                </div>
-                                <div class="flex items-center gap-4 p-3 glass rounded-xl bg-white">
-                                    <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">2</div>
-                                    <p class="text-[11px] text-slate-600">Switch to Multi-User mode using <code class="text-sky-600 font-bold">systemctl isolate multi-user.target</code></p>
-                                </div>
-                            </div>
-                        </div>
+                        <h2 class="text-2xl font-bold text-red-600">Critical Failure</h2>
+                        <p class="text-red-800/70 text-sm">Bypass failure with <code class="text-sky-600 font-bold">systemctl isolate multi-user.target</code>.</p>
                     </div>
                 `
             }
@@ -529,6 +449,7 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
             loadLesson(0);
             setupTerminal();
             setupEventListeners();
+            updateUI();
         }
 
         function renderSidebar() {
@@ -548,11 +469,8 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
         function loadLesson(index) {
             AppState.currentStep = index;
             const lesson = LESSONS[index];
-            
             document.getElementById('content-area').innerHTML = lesson.html;
             document.getElementById('hint-text').innerText = lesson.hint;
-            
-            // Update Pipeline
             updatePipeline(lesson.phase);
             renderSidebar();
             updateUI();
@@ -561,16 +479,11 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
         function updatePipeline(phase) {
             const nodes = document.querySelectorAll('.pipeline-node');
             const lines = document.querySelectorAll('.pipeline-line');
-            
-            let phaseReached = false;
             let phaseIdx = ['firmware', 'bootloader', 'kernel', 'init', 'login'].indexOf(phase);
-
             nodes.forEach((node, idx) => {
                 const circle = node.querySelector('div');
                 const label = node.querySelector('span');
-                
                 circle.classList.remove('border-sky-500', 'bg-sky-500', 'text-white', 'border-slate-300', 'bg-slate-50');
-                
                 if (idx <= phaseIdx) {
                     circle.classList.add('border-sky-500', 'text-sky-600', 'bg-white');
                     label.classList.add('text-sky-600');
@@ -581,7 +494,6 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
                     label.classList.remove('text-sky-600');
                 }
             });
-
             lines.forEach((line, idx) => {
                 if (idx < phaseIdx) line.classList.add('active');
                 else line.classList.remove('active');
@@ -600,82 +512,71 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
             });
         }
 
+        function closeModalAndContinue() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            if (AppState.currentStep < LESSONS.length - 1) {
+                loadLesson(AppState.currentStep + 1);
+            }
+        }
+
         function setupEventListeners() {
-            const modalClose = document.getElementById('modal-close');
-            if (modalClose) {
-                modalClose.onclick = () => {
-                    document.getElementById('modal-overlay').classList.add('hidden');
-                    if (AppState.currentStep < LESSONS.length - 1) loadLesson(AppState.currentStep + 1);
-                };
-            }
+            document.getElementById('modal-close').onclick = closeModalAndContinue;
+            
+            // Handle global 'Enter' key to close modal if it's open
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const modal = document.getElementById('modal-overlay');
+                    if (!modal.classList.contains('hidden')) {
+                        closeModalAndContinue();
+                    }
+                }
+            });
 
-            const resetLab = document.getElementById('reset-lab');
-            if (resetLab) {
-                resetLab.onclick = () => {
-                    if(confirm("Wipe all lab progress?")) location.reload();
-                };
-            }
-
-            const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) {
-                themeToggle.onclick = () => {
-                    document.body.classList.toggle('dark-mode');
-                    document.body.classList.toggle('light-mode');
-                };
-            }
+            document.getElementById('reset-lab').onclick = () => { 
+                if(confirm("Wipe all lab progress?")) location.reload(); 
+            };
+            
+            document.getElementById('theme-toggle').onclick = () => {
+                document.body.classList.toggle('dark-mode');
+                document.body.classList.toggle('light-mode');
+            };
         }
 
         function print(text, type = 'default') {
             const body = document.getElementById('terminal-body');
             const line = document.createElement('div');
             line.className = `my-1 ${type === 'error' ? 'text-red-400' : type === 'success' ? 'text-emerald-400' : 'text-slate-300'}`;
-            
-            if (type === 'cmd') {
-                line.innerHTML = `<span class="text-emerald-500 font-bold">admin@lab:~$</span> <span class="text-white">${text}</span>`;
-            } else {
-                line.innerText = text;
-            }
-            
+            if (type === 'cmd') line.innerHTML = `<span class="text-emerald-500 font-bold">admin@lab:~$</span> <span class="text-white">${text}</span>`;
+            else line.innerText = text;
             body.appendChild(line);
             body.scrollTop = body.scrollHeight;
         }
 
         function processCommand(cmd) {
             print(cmd, 'cmd');
-
-            if (cmd === 'help') {
-                print("Available: efibootmgr, systemctl, journalctl, grub2-mkconfig, clear, help");
-            } else if (cmd === 'clear') {
-                document.getElementById('terminal-body').innerHTML = '';
-            } else if (cmd === 'efibootmgr') {
+            if (cmd === 'help') print("Available: efibootmgr, systemctl, journalctl, grub2-mkconfig, clear, help");
+            else if (cmd === 'clear') document.getElementById('terminal-body').innerHTML = '';
+            else if (cmd === 'efibootmgr') {
                 print("BootCurrent: 0001\nTimeout: 2 seconds\nBootOrder: 0001,0002\nBoot0001* Lab-OS (UEFI)\nBoot0002* PXE Network Boot");
                 if (AppState.currentStep === 1) completePhase("Firmware Verified", "The system is indeed booting from the EFI partition.");
             } else if (cmd.includes('grub2-mkconfig')) {
-                print("Generating configuration file...");
-                print("Found linux image: /boot/vmlinuz-5.14.0", "success");
-                print("Done.", "success");
+                print("Generating configuration file...\nFound linux image: /boot/vmlinuz-5.14.0\nDone.", "success");
                 if (AppState.currentStep === 2) completePhase("Config Rebuilt", "Your changes to the boot timeout are now active.");
             } else if (cmd === 'systemctl get-default') {
                 print("graphical.target");
                 if (AppState.currentStep === 3) completePhase("Target Mapped", "You've identified the default target state.");
             } else if (cmd === 'systemctl --failed') {
-                print("  UNIT                     LOAD   ACTIVE SUB    DESCRIPTION\n● db-mount.service         loaded failed failed Database Storage Mount");
-                const unitList = document.getElementById('unit-health-list');
-                if (unitList && !unitList.innerText.includes('db-mount.service')) {
-                   unitList.innerHTML += `<div class="flex items-center justify-between p-2 rounded bg-red-50 mt-1">
-                        <span class="text-[10px] text-red-600">db-mount.service</span>
-                        <div class="w-2 h-2 rounded-full bg-red-500"></div>
-                   </div>`;
-                }
+                print("  UNIT                     LOAD   ACTIVE SUB    DESCRIPTION\n● db-mount.target          loaded failed failed Database Storage Mount");
             } else if (cmd.includes('isolate multi-user.target')) {
-                print("Changing system state to Multi-User mode...");
-                print("Reached target Multi-User System.", "success");
+                print("Changing system state to Multi-User mode...\nReached target Multi-User System.", "success");
                 AppState.target = 'multi-user.target';
+                // Update unit health state
+                const dbUnit = AppState.units.find(u => u.name === 'db-mount.target');
+                if (dbUnit) dbUnit.status = 'healthy';
+                
                 updateUI();
-                if (AppState.currentStep === 4) completePhase("Lab Complete", "You recovered the system by dropping to multi-user mode!");
-            } else {
-                print(`Command not found: ${cmd}`, 'error');
-            }
+                if (AppState.currentStep === 4) completePhase("Lab Complete", "You recovered the system by dropping to multi-user mode! Check the Diagnostic HUD to see the healthy unit status.");
+            } else print(`Command not found: ${cmd}`, 'error');
         }
 
         function setFirmware(f) {
@@ -685,27 +586,40 @@ GRUB_CMDLINE_LINUX="rhgb quiet splash"</textarea>
         }
 
         function completePhase(title, desc) {
-            if (!AppState.completedSteps.includes(AppState.currentStep)) {
-                AppState.completedSteps.push(AppState.currentStep);
-            }
-            
+            if (!AppState.completedSteps.includes(AppState.currentStep)) AppState.completedSteps.push(AppState.currentStep);
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-desc').innerText = desc;
             document.getElementById('modal-overlay').classList.remove('hidden');
-            
             renderSidebar();
             updateUI();
         }
 
         function updateUI() {
-            document.getElementById('hud-firmware').innerText = AppState.firmware;
-            document.getElementById('hud-target').innerText = AppState.target;
+            const fwEl = document.getElementById('hud-firmware');
+            if (fwEl) fwEl.innerText = AppState.firmware;
             
-            const pct = Math.round((AppState.completedSteps.length / LESSONS.length) * 100);
-            document.getElementById('progress-pct').innerText = `${pct}%`;
-            document.getElementById('progress-bar').style.width = `${pct}%`;
-        }
+            const targetEl = document.getElementById('hud-target');
+            if (targetEl) targetEl.innerText = AppState.target;
 
+            // Update Unit Health List
+            const unitList = document.getElementById('unit-health-list');
+            if (unitList) {
+                unitList.innerHTML = AppState.units.map(unit => `
+                    <div class="flex items-center justify-between p-2 rounded bg-black/5">
+                        <span class="text-[10px] text-slate-600">${unit.name}</span>
+                        <div class="w-2 h-2 rounded-full ${unit.status === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : 'bg-red-500 animate-pulse'}"></div>
+                    </div>
+                `).join('');
+            }
+
+            const pctEl = document.getElementById('progress-pct');
+            if (pctEl) {
+                const pct = Math.round((AppState.completedSteps.length / LESSONS.length) * 100);
+                pctEl.innerText = `${pct}%`;
+                const pbEl = document.getElementById('progress-bar');
+                if (pbEl) pbEl.style.width = `${pct}%`;
+            }
+        }
         window.onload = init;
     </script>
 </body>
