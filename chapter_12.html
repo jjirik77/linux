@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managing Hardware Under Linux - Interactive Lab</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --terminal-bg: #1e293b;
+            --pane-border: #cbd5e1;
+            --font-mono: 'Fira Code', 'Courier New', monospace;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --terminal-bg: #000000;
+            --pane-border: #334155;
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.2s, color 0.2s; }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--pane-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 400px;
+            grid-template-rows: 1fr 340px;
+            gap: 1px;
+            background: var(--pane-border);
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .pane { background: var(--bg-primary); display: flex; flex-direction: column; overflow: hidden; }
+
+        .pane-header {
+            padding: 0.65rem 1rem;
+            background: var(--bg-secondary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--pane-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar { grid-row: 1 / 3; background: var(--bg-secondary); }
+        .module-list { list-style: none; padding: 0; margin: 0; }
+        .module-item {
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--pane-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0.7;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .module-item.active { opacity: 1; color: var(--accent); background: var(--bg-primary); border-left: 4px solid var(--accent); }
+        .module-item.locked { cursor: not-allowed; opacity: 0.3; }
+
+        /* Terminal Style */
+        .terminal-container { 
+            grid-column: 2; 
+            border-top: 1px solid var(--pane-border); 
+            cursor: text;
+        }
+        .terminal-pane {
+            background: var(--terminal-bg);
+            color: #e2e8f0;
+            font-family: var(--font-mono);
+            padding: 1.25rem;
+            overflow-y: auto;
+            height: 100%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .terminal-line { margin-bottom: 0.2rem; white-space: pre-wrap; }
+        .terminal-prompt { color: var(--success); font-weight: bold; }
+        .terminal-input-line { display: flex; align-items: center; gap: 0.5rem; }
+        #terminal-input {
+            background: transparent; border: none; color: white;
+            font-family: var(--font-mono); outline: none; flex-grow: 1;
+            font-size: 0.9rem;
+            caret-color: var(--success);
+        }
+
+        /* Evidence & Visualizations */
+        .evidence-pane { grid-column: 2; padding: 1.5rem; overflow-y: auto; }
+        .visual-container { display: flex; flex-direction: column; gap: 1.25rem; }
+        .device-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--pane-border);
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            animation: slideIn 0.3s ease;
+        }
+        .node { padding-left: 1.5rem; border-left: 1px dashed #cbd5e1; position: relative; margin: 0.4rem 0; }
+        .node::before { content: ""; position: absolute; left: 0; top: 0.6rem; width: 0.8rem; border-top: 1px dashed #cbd5e1; }
+
+        /* Reflection & Progress */
+        .reflection-pane { grid-column: 3; grid-row: 1 / 3; padding: 1.5rem; background: var(--bg-secondary); border-left: 1px solid var(--pane-border); overflow-y: auto; }
+        .concept-card { background: var(--bg-primary); padding: 1.25rem; border-radius: 0.75rem; border-left: 4px solid var(--accent); margin-bottom: 1.5rem; }
+        .quiz-option {
+            display: block; width: 100%; padding: 0.8rem 1rem; margin-bottom: 0.6rem;
+            background: var(--bg-secondary); border: 1px solid var(--pane-border);
+            border-radius: 0.5rem; text-align: left; cursor: pointer; font-size: 0.85rem;
+        }
+        .quiz-option.correct { border-color: var(--success); background: #ecfdf5; color: #065f46; }
+        .quiz-option.wrong { border-color: var(--error); background: #fef2f2; color: #991b1b; }
+
+        .progress-container { width: 150px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; }
+        
+        .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--pane-border); cursor: pointer; font-size: 0.8rem; background: white; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .hidden { display: none !important; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body data-theme="light">
+
+<header>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="background: var(--accent); color: white; width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+            <i class="fa-solid fa-microchip"></i>
+        </div>
+        <div>
+            <h1 style="margin: 0; font-size: 1.05rem; font-weight: 800;">Managing Hardware Under Linux</h1>
+            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Hardware Discovery & Kernel Management</span>
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <div style="text-align: right;">
+            <div style="font-size: 0.6rem; font-weight: 800; color: var(--text-secondary);">MISSION PROGRESS</div>
+            <div class="progress-container"><div id="main-progress" class="progress-bar"></div></div>
+        </div>
+        <button id="theme-toggle" class="btn"><i class="fa-solid fa-moon"></i></button>
+    </div>
+</header>
+
+<div class="main-container">
+    <aside class="pane sidebar">
+        <div class="pane-header">Learning Path</div>
+        <ul class="module-list" id="module-nav"></ul>
+        <div style="margin-top: auto; padding: 1.25rem; border-top: 1px solid var(--pane-border); background: var(--bg-primary);">
+            <div style="font-size: 0.6rem; color: var(--text-secondary); font-weight: 800; margin-bottom: 4px;">SYSTEM STATUS</div>
+            <div id="scenario-brief" style="font-weight: 600; font-size: 0.8rem; line-height: 1.4;">Awaiting User Input...</div>
+        </div>
+    </aside>
+
+    <main class="pane evidence-pane">
+        <div class="pane-header">Discovery Evidence <span style="font-size: 0.6rem; background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 10px;">ACTIVE</span></div>
+        <div id="visual-output" class="visual-container">
+            <div class="device-card">
+                <h4>Welcome to the Lab</h4>
+                <p>Click on the terminal below to start typing. Use the sidebar to track your progress through the hardware discovery layers.</p>
+            </div>
+        </div>
+    </main>
+
+    <section class="pane reflection-pane">
+        <div class="pane-header">Instruction & Analysis</div>
+        <div id="concept-area">
+            <div class="concept-card" id="current-concept"></div>
+        </div>
+        <div id="quiz-area" class="hidden">
+            <h4 id="quiz-question" style="margin: 0 0 1rem; font-size: 0.95rem;"></h4>
+            <div id="quiz-options"></div>
+            <div id="quiz-feedback" style="margin-top: 1rem; padding: 0.75rem; font-size: 0.85rem; font-weight: 600; border-radius: 6px;"></div>
+        </div>
+        <div id="hint-area" style="margin-top: 2rem;">
+            <button id="get-hint" class="btn" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-lightbulb"></i> View Admin Suggestion
+            </button>
+            <p id="hint-text" class="hidden" style="font-size: 0.8rem; color: var(--warning); margin-top: 0.75rem; padding: 0.75rem; background: #fffcf0; border: 1px solid #ffeeba; border-radius: 6px;"></p>
+        </div>
+    </section>
+
+    <section class="pane terminal-container" id="terminal-clickable">
+        <div class="pane-header">Linux Terminal (Click to Type)</div>
+        <div id="terminal-display" class="terminal-pane">
+            <div id="terminal-history"></div>
+            <div class="terminal-input-line">
+                <span class="terminal-prompt">root@linux-lab:~#</span>
+                <input type="text" id="terminal-input" spellcheck="false" autocomplete="off" autofocus>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+(function() {
+    "use strict";
+
+    const state = {
+        currentIdx: 0,
+        theme: 'light'
+    };
+
+    const modules = [
+        {
+            title: "Hardware Discovery",
+            icon: "fa-search",
+            brief: "Initial hardware inventory audit.",
+            concept: "Hardware discovery moves from Physical Bus → Kernel → User-space. We use 'lshw' for a high-level summary of detected hardware.",
+            goal: "Run 'lshw -short' to view the hardware inventory.",
+            requiredCmd: "lshw -short",
+            hint: "Try the command that lists hardware in a 'short' summarized format.",
+            quiz: {
+                question: "Which virtual filesystem provides user-space access to device files?",
+                options: ["/sys", "/dev", "/proc", "/etc"],
+                correct: 1
+            }
+        },
+        {
+            title: "Kernel Ring Buffer (dmesg)",
+            icon: "fa-list-ul",
+            brief: "Analyzing system detection logs.",
+            concept: "The kernel records hardware attachment events in a ring buffer. 'dmesg' allows us to read these logs to trace device detection.",
+            goal: "Filter the kernel buffer for USB-related logs using 'dmesg | grep usb'.",
+            requiredCmd: "dmesg | grep usb",
+            hint: "Combine 'dmesg' with a filter for the word 'usb'.",
+            quiz: {
+                question: "What is the primary purpose of the kernel ring buffer?",
+                options: ["Storing user passwords", "Logging hardware and boot events", "Managing CPU scheduling", "Caching web pages"],
+                correct: 1
+            }
+        },
+        {
+            title: "USB Bus Discovery",
+            icon: "fa-usb",
+            brief: "Mapping the USB hierarchy.",
+            concept: "USB is a hierarchical bus. 'lsusb -t' reveals the tree of hubs, devices, and their negotiated speeds.",
+            goal: "Inspect the physical USB layout using the tree view flag.",
+            requiredCmd: "lsusb -t",
+            hint: "Run 'lsusb' with the flag that displays a 'tree' topology.",
+            quiz: {
+                question: "Which command shows detailed descriptor information for a specific USB device?",
+                options: ["lsusb -v", "lsusb -t", "lspci", "lsblk"],
+                correct: 0
+            }
+        },
+        {
+            title: "PCI Infrastructure",
+            icon: "fa-microchip",
+            brief: "Internal bus inspection.",
+            concept: "High-speed internal devices use PCI. 'lspci -nn' provides the critical Vendor:Device ID pair used to find matching drivers.",
+            goal: "Identify numeric IDs for all internal PCI devices.",
+            requiredCmd: "lspci -nn",
+            hint: "Use lspci with the 'numeric' tag flag.",
+            quiz: {
+                question: "What does the numeric pair [8086:06ed] represent?",
+                options: ["The device temperature", "Vendor and Device ID", "Interrupt Request line", "Memory address"],
+                correct: 1
+            }
+        },
+        {
+            title: "Kernel Module Management",
+            icon: "fa-puzzle-piece",
+            brief: "Managing drivers at runtime.",
+            concept: "Linux uses Loadable Kernel Modules (LKM). 'lsmod' lists active modules, while 'modprobe' handles loading and dependencies.",
+            goal: "Check if the required 'joydev' module is currently loaded.",
+            requiredCmd: "lsmod",
+            hint: "List all currently loaded modules with 'lsmod'.",
+            quiz: {
+                question: "Why use 'modprobe' instead of 'insmod'?",
+                options: ["It is faster", "It handles dependencies automatically", "It compiles code", "It requires no root"],
+                correct: 1
+            }
+        },
+        {
+            title: "udev & /sys properties",
+            icon: "fa-folder-tree",
+            brief: "Analyzing device properties.",
+            concept: "udev manages /dev nodes based on events from /sys. 'udevadm info' queries the database for device-specific attributes.",
+            goal: "Query the properties of the device /dev/sdb.",
+            requiredCmd: "udevadm info -q property -n /dev/sdb",
+            hint: "The 'udevadm' tool is the 'Swiss Army Knife' for udev. To see the database entries (properties) for a specific node like /dev/sdb, use 'udevadm info' with the '-q property' and '-n' flags.",
+            quiz: {
+                question: "Where are persistent udev rules typically stored by admins?",
+                options: ["/sys/rules.d/", "/etc/udev/rules.d/", "/proc/rules/", "/var/udev/"],
+                correct: 1
+            }
+        },
+        {
+            title: "Capstone Challenge",
+            icon: "fa-trophy",
+            brief: "Integrated troubleshooting.",
+            concept: "The joystick is detected but missing its module. Complete the path by loading the correct driver.",
+            goal: "Load the 'joydev' module to resolve the missing device node.",
+            requiredCmd: "modprobe joydev",
+            hint: "Use the command to intelligently load kernel modules.",
+            quiz: {
+                question: "Which file contains the dependency map used by modprobe?",
+                options: ["modules.dep", "fstab", "bashrc", "syslog"],
+                correct: 0
+            }
+        }
+    ];
+
+    const terminalData = {
+        "lshw -short": "H/W path      Device      Class          Description\n========================================================\n/0                          node           Linux Lab\n/0/1                        bus            PCI Bridge\n/0/4          /dev/sdb      disk           1TB USB Drive [UNMAPPED]",
+        "dmesg | grep usb": "[  1.203] usb 1-1: new high-speed USB device found\n[  5.432] usb-storage 1-1:1.0: USB Mass Storage detected\n[  5.435] sd 2:0:0:0: [sdb] Attached SCSI disk",
+        "lsusb -t": "/:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/6p, 5000M\n/:  Bus 01.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/12p, 480M\n    |__ Port 2: Dev 2, Mass Storage, Driver=usb-storage, 480M",
+        "lspci -nn": "00:00.0 Host bridge [8086:9b61]\n00:02.0 VGA controller [8086:9bca]\n00:14.0 USB controller [8086:06ed]",
+        "lsmod": "Module                  Size  Used by\nusb_storage            77824  0\nscsi_mod              253952  2 usb_storage\n[INFO: Module 'joydev' not found in active stack]",
+        "udevadm info -q property -n /dev/sdb": "DEVNAME=/dev/sdb\nDEVPATH=/devices/pci.../usb1/1-1/block/sdb\nID_VENDOR=Kingston\nID_BUS=usb\nID_MODEL=DataTraveler_3.0",
+        "modprobe joydev": "Loading module 'joydev'...\nDependencies: input-core [LOADED]\nSuccess: Device node /dev/input/js0 created.",
+        "help": "Commands: lshw, dmesg, lsusb, lspci, lsmod, modprobe, udevadm, clear",
+        "clear": "CLEAR_TERMINAL"
+    };
+
+    const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+
+    function addTerminalLine(text, type) {
+        const hist = document.getElementById('terminal-history');
+        if (!hist) return;
+        const div = document.createElement('div');
+        div.className = 'terminal-line';
+        if (type === 'user') div.innerHTML = `<span class="terminal-prompt">root@linux-lab:~#</span> ${text}`;
+        else if (type === 'error') div.style.color = 'var(--error)';
+        else if (type === 'info') div.style.color = '#38bdf8';
+        else div.innerText = text;
+        hist.appendChild(div);
+        const disp = document.getElementById('terminal-display');
+        if (disp) disp.scrollTop = disp.scrollHeight;
+    }
+
+    function renderVisual(cmd) {
+        const out = document.getElementById('visual-output');
+        if (!out) return;
+        out.innerHTML = '';
+        const card = document.createElement('div');
+        card.className = 'device-card';
+
+        if (cmd === 'lshw -short') {
+            card.innerHTML = `<h4>Inventory Map</h4><div class="node">CPU: Intel x86_64</div><div class="node" style="color:var(--error)">Storage: /dev/sdb (No Driver)</div>`;
+        } else if (cmd === 'lsusb -t') {
+            card.innerHTML = `<h4>USB Topology</h4><div class="node">Bus 001 Hub<div class="node">Port 2: Flash Drive [480M]</div></div>`;
+        } else if (cmd.includes('dmesg')) {
+            card.innerHTML = `<h4>Kernel Timeline</h4><div style="font-size:0.8rem; border-left:2px solid var(--accent); padding-left:10px;">[1.2s] USB Stack Init<br>[5.4s] Device Found: sdb</div>`;
+        } else if (cmd === 'lsmod' || cmd.includes('modprobe')) {
+            const ok = cmd.includes('joydev');
+            card.innerHTML = `<h4>Driver Dependency Graph</h4><div style="display:flex; gap:10px; align-items:center;">
+                <div style="padding:6px; border:1px solid #ccc">input-core</div><i class="fa-solid fa-link"></i>
+                <div style="padding:6px; border: 2px solid ${ok ? 'var(--success)' : 'var(--error)'}">joydev</div>
+            </div>`;
+        } else {
+            card.innerHTML = `<h4>System Context</h4><p>Command "${cmd}" executed. Viewing current kernel state objects.</p>`;
+        }
+        out.appendChild(card);
+    }
+
+    function handleQuiz() {
+        const mod = modules[state.currentIdx];
+        const area = document.getElementById('quiz-area');
+        const opts = document.getElementById('quiz-options');
+        const feed = document.getElementById('quiz-feedback');
+        
+        if (!area || !opts || !feed) return;
+        area.classList.remove('hidden');
+        document.getElementById('quiz-question').innerText = mod.quiz.question;
+        opts.innerHTML = '';
+        feed.innerText = '';
+        feed.style.background = 'transparent';
+
+        mod.quiz.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option';
+            btn.innerText = opt;
+            btn.onclick = function() {
+                const buttons = opts.querySelectorAll('.quiz-option');
+                buttons.forEach(b => b.classList.remove('correct', 'wrong'));
+                if (idx === mod.quiz.correct) {
+                    btn.classList.add('correct');
+                    feed.innerText = "Verified: Diagnostic complete.";
+                    feed.style.background = "#ecfdf5";
+                    if (state.currentIdx < modules.length - 1) {
+                        setTimeout(() => loadModule(state.currentIdx + 1), 1200);
+                    } else {
+                        document.getElementById('main-progress').style.width = '100%';
+                        addTerminalLine("MISSION COMPLETE. System architecture verified.", "info");
+                    }
+                } else {
+                    btn.classList.add('wrong');
+                    feed.innerText = "Incorrect analysis. Review the evidence.";
+                    feed.style.background = "#fef2f2";
+                }
+            };
+            opts.appendChild(btn);
+        });
+    }
+
+    function loadModule(idx) {
+        state.currentIdx = idx;
+        const mod = modules[idx];
+        
+        const nav = document.getElementById('module-nav');
+        if (nav) {
+            nav.innerHTML = '';
+            modules.forEach((m, i) => {
+                const li = document.createElement('li');
+                li.className = `module-item ${i === idx ? 'active' : ''} ${i > idx ? 'locked' : ''}`;
+                li.innerHTML = `<i class="fa-solid ${m.icon}"></i> <span>${m.title}</span>`;
+                li.onclick = () => { if (i <= state.currentIdx) loadModule(i); };
+                nav.appendChild(li);
+            });
+        }
+
+        const brief = document.getElementById('scenario-brief');
+        if (brief) brief.innerText = mod.brief;
+
+        const concept = document.getElementById('current-concept');
+        if (concept) {
+            concept.innerHTML = `<h3>${mod.title}</h3><p>${mod.concept}</p><div style="margin-top:10px; padding:8px; background:var(--bg-secondary); border-left:4px solid var(--accent); font-size:0.8rem;"><strong>GOAL:</strong> ${mod.goal}</div>`;
+        }
+        
+        addTerminalLine(`\n--- Active Module: ${mod.title} ---`, 'info');
+        document.getElementById('quiz-area').classList.add('hidden');
+        document.getElementById('hint-text').classList.add('hidden');
+        document.getElementById('main-progress').style.width = ((idx / modules.length) * 100) + '%';
+        
+        const input = document.getElementById('terminal-input');
+        if (input) input.focus();
+    }
+
+    function init() {
+        const input = document.getElementById('terminal-input');
+        const clickableTerminal = document.getElementById('terminal-clickable');
+
+        if (clickableTerminal && input) {
+            clickableTerminal.addEventListener('click', () => input.focus());
+        }
+
+        if (input) {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const val = input.value.trim();
+                    if (!val) return;
+                    addTerminalLine(val, 'user');
+                    input.value = '';
+
+                    const normalized = normalize(val);
+                    if (terminalData[normalized]) {
+                        if (terminalData[normalized] === "CLEAR_TERMINAL") {
+                            document.getElementById('terminal-history').innerHTML = '';
+                        } else {
+                            addTerminalLine(terminalData[normalized]);
+                            renderVisual(normalized);
+                            if (normalized === normalize(modules[state.currentIdx].requiredCmd)) {
+                                handleQuiz();
+                            }
+                        }
+                    } else if (normalized === 'help') {
+                        addTerminalLine(terminalData['help'], 'info');
+                    } else {
+                        addTerminalLine(`-bash: ${val.split(' ')[0]}: command not found. Type 'help' for options.`, 'error');
+                    }
+                }
+            });
+        }
+
+        const hintBtn = document.getElementById('get-hint');
+        if (hintBtn) {
+            hintBtn.onclick = () => {
+                const h = document.getElementById('hint-text');
+                if (h) {
+                    h.innerText = modules[state.currentIdx].hint;
+                    h.classList.toggle('hidden');
+                }
+            };
+        }
+
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) {
+            themeBtn.onclick = () => {
+                const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+                document.body.setAttribute('data-theme', next);
+                themeBtn.innerHTML = next === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+            };
+        }
+
+        loadModule(0);
+    }
+
+    // Immediate execution safety
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
