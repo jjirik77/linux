@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Managing Hardware Under Linux - Interactive Lab</title>
+    <title>Managing Hardware Under Linux - Interactive Lab (Demo Mode)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -91,12 +91,12 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            opacity: 0.7;
             font-size: 0.85rem;
             font-weight: 500;
+            color: var(--text-secondary);
         }
-        .module-item.active { opacity: 1; color: var(--accent); background: var(--bg-primary); border-left: 4px solid var(--accent); }
-        .module-item.locked { cursor: not-allowed; opacity: 0.3; }
+        .module-item:hover { background: var(--bg-primary); color: var(--accent); }
+        .module-item.active { color: var(--accent); background: var(--bg-primary); border-left: 4px solid var(--accent); font-weight: 700; }
 
         /* Terminal Style */
         .terminal-container { 
@@ -138,9 +138,24 @@
         .node { padding-left: 1.5rem; border-left: 1px dashed #cbd5e1; position: relative; margin: 0.4rem 0; }
         .node::before { content: ""; position: absolute; left: 0; top: 0.6rem; width: 0.8rem; border-top: 1px dashed #cbd5e1; }
 
-        /* Reflection & Progress */
+        /* Reflection & AI Pane */
         .reflection-pane { grid-column: 3; grid-row: 1 / 3; padding: 1.5rem; background: var(--bg-secondary); border-left: 1px solid var(--pane-border); overflow-y: auto; }
         .concept-card { background: var(--bg-primary); padding: 1.25rem; border-radius: 0.75rem; border-left: 4px solid var(--accent); margin-bottom: 1.5rem; }
+        
+        /* AI Assistant Interface */
+        .ai-assistant-box {
+            background: #f0f7ff;
+            border: 1px solid #cce3ff;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        .ai-header { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: var(--accent); font-size: 0.85rem; margin-bottom: 0.5rem; }
+        #ai-response { font-size: 0.85rem; line-height: 1.5; color: #1e3a8a; min-height: 20px; }
+        .ai-input-wrapper { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        #ai-query { flex-grow: 1; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0.4rem; font-size: 0.8rem; outline: none; }
+        #ai-query:focus { border-color: var(--accent); }
+
         .quiz-option {
             display: block; width: 100%; padding: 0.8rem 1rem; margin-bottom: 0.6rem;
             background: var(--bg-secondary); border: 1px solid var(--pane-border);
@@ -153,8 +168,29 @@
         .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; }
         
         .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--pane-border); cursor: pointer; font-size: 0.8rem; background: white; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background: var(--accent); color: white; border: none; }
+        .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        
         .hidden { display: none !important; }
+        
+        /* Glossary Styling */
+        .glossary-item { margin-bottom: 1rem; border-bottom: 1px solid var(--pane-border); padding-bottom: 0.5rem; }
+        .glossary-term { font-weight: 800; color: var(--accent); font-family: var(--font-mono); font-size: 0.9rem; }
+        .glossary-def { font-size: 0.85rem; line-height: 1.4; color: var(--text-secondary); margin-top: 0.25rem; }
+
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body data-theme="light">
@@ -166,7 +202,10 @@
         </div>
         <div>
             <h1 style="margin: 0; font-size: 1.05rem; font-weight: 800;">Managing Hardware Under Linux</h1>
-            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">Hardware Discovery & Kernel Management</span>
+            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase;">
+                <span style="background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; margin-right:5px;">Demo Mode</span> 
+                Hardware Discovery & Management
+            </span>
         </div>
     </div>
     <div style="display: flex; align-items: center; gap: 1.5rem;">
@@ -180,44 +219,59 @@
 
 <div class="main-container">
     <aside class="pane sidebar">
-        <div class="pane-header">Learning Path</div>
+        <div class="pane-header">Interactive Path (Unlocked)</div>
         <ul class="module-list" id="module-nav"></ul>
         <div style="margin-top: auto; padding: 1.25rem; border-top: 1px solid var(--pane-border); background: var(--bg-primary);">
-            <div style="font-size: 0.6rem; color: var(--text-secondary); font-weight: 800; margin-bottom: 4px;">SYSTEM STATUS</div>
-            <div id="scenario-brief" style="font-weight: 600; font-size: 0.8rem; line-height: 1.4;">Awaiting User Input...</div>
+            <div style="font-size: 0.6rem; color: var(--text-secondary); font-weight: 800; margin-bottom: 4px;">DEMO STATUS</div>
+            <div id="scenario-brief" style="font-weight: 600; font-size: 0.8rem; line-height: 1.4;">Free Navigation Enabled</div>
         </div>
     </aside>
 
     <main class="pane evidence-pane">
-        <div class="pane-header">Discovery Evidence <span style="font-size: 0.6rem; background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 10px;">ACTIVE</span></div>
+        <div class="pane-header">Hardware Evidence <span style="font-size: 0.6rem; background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 10px;">LIVE</span></div>
         <div id="visual-output" class="visual-container">
-            <div class="device-card">
-                <h4>Welcome to the Lab</h4>
-                <p>Click on the terminal below to start typing. Use the sidebar to track your progress through the hardware discovery layers.</p>
-            </div>
+            <!-- Dynamic visualizations -->
         </div>
     </main>
 
     <section class="pane reflection-pane">
-        <div class="pane-header">Instruction & Analysis</div>
+        <div class="pane-header">Instruction & AI Assistant</div>
         <div id="concept-area">
             <div class="concept-card" id="current-concept"></div>
         </div>
-        <div id="quiz-area" class="hidden">
+
+        <!-- AI Assistant Box -->
+        <div class="ai-assistant-box">
+            <div class="ai-header"><i class="fa-solid fa-robot"></i> Lab Assistant (Gemini)</div>
+            <div id="ai-response">Ask me anything about the current module...</div>
+            <div class="ai-input-wrapper">
+                <input type="text" id="ai-query" placeholder="How does this command work?" autocomplete="off">
+                <button id="ai-send" class="btn btn-primary" title="Ask Gemini">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-area" class="hidden" style="margin-top:1.5rem; border-top: 1px solid var(--pane-border); padding-top:1.5rem;">
             <h4 id="quiz-question" style="margin: 0 0 1rem; font-size: 0.95rem;"></h4>
             <div id="quiz-options"></div>
             <div id="quiz-feedback" style="margin-top: 1rem; padding: 0.75rem; font-size: 0.85rem; font-weight: 600; border-radius: 6px;"></div>
+            <!-- Next Module Button -->
+            <button id="next-module-btn" class="btn btn-primary hidden" style="width: 100%; margin-top: 1rem; justify-content: center; padding: 0.75rem;">
+                Next Module <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+            </button>
         </div>
+        
         <div id="hint-area" style="margin-top: 2rem;">
             <button id="get-hint" class="btn" style="width: 100%; justify-content: center;">
-                <i class="fa-solid fa-lightbulb"></i> View Admin Suggestion
+                <i class="fa-solid fa-lightbulb"></i> View Diagnostic Hint
             </button>
             <p id="hint-text" class="hidden" style="font-size: 0.8rem; color: var(--warning); margin-top: 0.75rem; padding: 0.75rem; background: #fffcf0; border: 1px solid #ffeeba; border-radius: 6px;"></p>
         </div>
     </section>
 
     <section class="pane terminal-container" id="terminal-clickable">
-        <div class="pane-header">Linux Terminal (Click to Type)</div>
+        <div class="pane-header">Linux Terminal Emulator</div>
         <div id="terminal-display" class="terminal-pane">
             <div id="terminal-history"></div>
             <div class="terminal-input-line">
@@ -315,7 +369,7 @@
             concept: "udev manages /dev nodes based on events from /sys. 'udevadm info' queries the database for device-specific attributes.",
             goal: "Query the properties of the device /dev/sdb.",
             requiredCmd: "udevadm info -q property -n /dev/sdb",
-            hint: "The 'udevadm' tool is the 'Swiss Army Knife' for udev. To see the database entries (properties) for a specific node like /dev/sdb, use 'udevadm info' with the '-q property' and '-n' flags.",
+            hint: "The 'udevadm' tool is the 'Swiss Army Knife' for udev. To see properties for /dev/sdb, use 'udevadm info -q property -n /dev/sdb'.",
             quiz: {
                 question: "Where are persistent udev rules typically stored by admins?",
                 options: ["/sys/rules.d/", "/etc/udev/rules.d/", "/proc/rules/", "/var/udev/"],
@@ -335,6 +389,16 @@
                 options: ["modules.dep", "fstab", "bashrc", "syslog"],
                 correct: 0
             }
+        },
+        {
+            title: "Key Terms Review",
+            icon: "fa-book",
+            brief: "Final lesson glossary.",
+            concept: "Review the fundamental vocabulary of Linux hardware administration practiced in this lab.",
+            goal: "Review the glossary summary.",
+            requiredCmd: "exit",
+            hint: "Lab complete. Type 'exit' to finish.",
+            quiz: null
         }
     ];
 
@@ -347,10 +411,41 @@
         "udevadm info -q property -n /dev/sdb": "DEVNAME=/dev/sdb\nDEVPATH=/devices/pci.../usb1/1-1/block/sdb\nID_VENDOR=Kingston\nID_BUS=usb\nID_MODEL=DataTraveler_3.0",
         "modprobe joydev": "Loading module 'joydev'...\nDependencies: input-core [LOADED]\nSuccess: Device node /dev/input/js0 created.",
         "help": "Commands: lshw, dmesg, lsusb, lspci, lsmod, modprobe, udevadm, clear",
+        "exit": "Lab session finalized. Congratulations!",
         "clear": "CLEAR_TERMINAL"
     };
 
     const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+
+    async function callGeminiAPI(query) {
+        const apiKey = ""; // API Key handled by environment
+        const currentModule = modules[state.currentIdx];
+        const systemPrompt = `You are a Linux Hardware Lab Assistant. You are currently helping a student with a module titled "${currentModule.title}". 
+        The concept being taught is: ${currentModule.concept}. 
+        The goal is: ${currentModule.goal}. 
+        Answer technical questions concisely. If the user asks for the answer to the quiz, give a hint instead. Format your answer with basic HTML tags like <b> or <i> if needed.`;
+
+        const payload = {
+            contents: [{ parts: [{ text: query }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+
+        for (let i = 0; i < 5; i++) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('API request failed');
+                const result = await response.json();
+                return result.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+            } catch (err) {
+                await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+            }
+        }
+        return "I'm having trouble connecting to the system right now. Please try again in a moment.";
+    }
 
     function addTerminalLine(text, type) {
         const hist = document.getElementById('terminal-history');
@@ -370,6 +465,33 @@
         const out = document.getElementById('visual-output');
         if (!out) return;
         out.innerHTML = '';
+
+        if (state.currentIdx === modules.length - 1) {
+            const card = document.createElement('div');
+            card.className = 'device-card';
+            card.innerHTML = `
+                <h4><i class="fa-solid fa-book-open"></i> Key Terms Glossary</h4>
+                <div class="glossary-item">
+                    <div class="glossary-term">dmesg / Kernel Ring Buffer</div>
+                    <div class="glossary-def">A memory area where the kernel stores messages related to hardware detection, driver loading, and system initialization.</div>
+                </div>
+                <div class="glossary-item">
+                    <div class="glossary-term">sysfs (/sys)</div>
+                    <div class="glossary-def">A virtual filesystem used by the kernel to export information about device buses and hardware objects to user-space.</div>
+                </div>
+                <div class="glossary-item">
+                    <div class="glossary-term">udev</div>
+                    <div class="glossary-def">The device manager for the Linux kernel. It dynamically creates or removes device nodes in the /dev directory.</div>
+                </div>
+                <div class="glossary-item">
+                    <div class="glossary-term">modprobe</div>
+                    <div class="glossary-def">An intelligent module management tool that resolves dependencies automatically before loading a driver.</div>
+                </div>
+            `;
+            out.appendChild(card);
+            return;
+        }
+
         const card = document.createElement('div');
         card.className = 'device-card';
 
@@ -385,24 +507,33 @@
                 <div style="padding:6px; border:1px solid #ccc">input-core</div><i class="fa-solid fa-link"></i>
                 <div style="padding:6px; border: 2px solid ${ok ? 'var(--success)' : 'var(--error)'}">joydev</div>
             </div>`;
+        } else if (cmd.includes('udevadm')) {
+            card.innerHTML = `<h4>udev Database Entry</h4><table style="width:100%; font-size:0.8rem; border-collapse:collapse;">
+                <tr style="border-bottom:1px solid #eee"><td>ID_VENDOR</td><td>Kingston</td></tr>
+                <tr style="border-bottom:1px solid #eee"><td>ID_BUS</td><td>usb</td></tr>
+                <tr><td>DEVNAME</td><td>/dev/sdb</td></tr>
+            </table>`;
         } else {
-            card.innerHTML = `<h4>System Context</h4><p>Command "${cmd}" executed. Viewing current kernel state objects.</p>`;
+            card.innerHTML = `<h4>System Context</h4><p>Command "${cmd}" executed. Current Kernel/Bus state updated.</p>`;
         }
         out.appendChild(card);
     }
 
     function handleQuiz() {
         const mod = modules[state.currentIdx];
+        if (!mod.quiz) return;
+
         const area = document.getElementById('quiz-area');
         const opts = document.getElementById('quiz-options');
         const feed = document.getElementById('quiz-feedback');
+        const nextBtn = document.getElementById('next-module-btn');
         
-        if (!area || !opts || !feed) return;
         area.classList.remove('hidden');
         document.getElementById('quiz-question').innerText = mod.quiz.question;
         opts.innerHTML = '';
         feed.innerText = '';
         feed.style.background = 'transparent';
+        if(nextBtn) nextBtn.classList.add('hidden');
 
         mod.quiz.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
@@ -413,17 +544,17 @@
                 buttons.forEach(b => b.classList.remove('correct', 'wrong'));
                 if (idx === mod.quiz.correct) {
                     btn.classList.add('correct');
-                    feed.innerText = "Verified: Diagnostic complete.";
+                    feed.innerText = "Verified! Great analysis.";
                     feed.style.background = "#ecfdf5";
                     if (state.currentIdx < modules.length - 1) {
-                        setTimeout(() => loadModule(state.currentIdx + 1), 1200);
+                        if(nextBtn) nextBtn.classList.remove('hidden');
                     } else {
                         document.getElementById('main-progress').style.width = '100%';
                         addTerminalLine("MISSION COMPLETE. System architecture verified.", "info");
                     }
                 } else {
                     btn.classList.add('wrong');
-                    feed.innerText = "Incorrect analysis. Review the evidence.";
+                    feed.innerText = "Incorrect. Review the evidence provided.";
                     feed.style.background = "#fef2f2";
                 }
             };
@@ -432,6 +563,7 @@
     }
 
     function loadModule(idx) {
+        if (idx >= modules.length) return;
         state.currentIdx = idx;
         const mod = modules[idx];
         
@@ -440,9 +572,9 @@
             nav.innerHTML = '';
             modules.forEach((m, i) => {
                 const li = document.createElement('li');
-                li.className = `module-item ${i === idx ? 'active' : ''} ${i > idx ? 'locked' : ''}`;
+                li.className = `module-item ${i === idx ? 'active' : ''}`;
                 li.innerHTML = `<i class="fa-solid ${m.icon}"></i> <span>${m.title}</span>`;
-                li.onclick = () => { if (i <= state.currentIdx) loadModule(i); };
+                li.onclick = () => loadModule(i); // Free navigation enabled
                 nav.appendChild(li);
             });
         }
@@ -455,18 +587,45 @@
             concept.innerHTML = `<h3>${mod.title}</h3><p>${mod.concept}</p><div style="margin-top:10px; padding:8px; background:var(--bg-secondary); border-left:4px solid var(--accent); font-size:0.8rem;"><strong>GOAL:</strong> ${mod.goal}</div>`;
         }
         
-        addTerminalLine(`\n--- Active Module: ${mod.title} ---`, 'info');
+        addTerminalLine(`\n--- System View: ${mod.title} ---`, 'info');
         document.getElementById('quiz-area').classList.add('hidden');
         document.getElementById('hint-text').classList.add('hidden');
-        document.getElementById('main-progress').style.width = ((idx / modules.length) * 100) + '%';
         
+        const nextBtn = document.getElementById('next-module-btn');
+        if(nextBtn) nextBtn.classList.add('hidden');
+
+        document.getElementById('main-progress').style.width = ((idx / (modules.length - 1)) * 100) + '%';
+        
+        document.getElementById('ai-response').innerText = `I'm ready to help with "${mod.title}". What would you like to know?`;
+        
+        renderVisual(""); // Refresh for current step context
         const input = document.getElementById('terminal-input');
         if (input) input.focus();
+    }
+
+    async function handleAISend() {
+        const queryInput = document.getElementById('ai-query');
+        const responseBox = document.getElementById('ai-response');
+        const sendBtn = document.getElementById('ai-send');
+        const query = queryInput.value.trim();
+        
+        if (!query) return;
+
+        queryInput.value = '';
+        sendBtn.disabled = true;
+        responseBox.innerHTML = '<span class="spinner"></span> Thinking...';
+
+        const result = await callGeminiAPI(query);
+        responseBox.innerHTML = result;
+        sendBtn.disabled = false;
     }
 
     function init() {
         const input = document.getElementById('terminal-input');
         const clickableTerminal = document.getElementById('terminal-clickable');
+        const aiInput = document.getElementById('ai-query');
+        const aiBtn = document.getElementById('ai-send');
+        const nextBtn = document.getElementById('next-module-btn');
 
         if (clickableTerminal && input) {
             clickableTerminal.addEventListener('click', () => input.focus());
@@ -487,7 +646,7 @@
                         } else {
                             addTerminalLine(terminalData[normalized]);
                             renderVisual(normalized);
-                            if (normalized === normalize(modules[state.currentIdx].requiredCmd)) {
+                            if (modules[state.currentIdx].requiredCmd && normalized === normalize(modules[state.currentIdx].requiredCmd)) {
                                 handleQuiz();
                             }
                         }
@@ -500,25 +659,34 @@
             });
         }
 
-        const hintBtn = document.getElementById('get-hint');
-        if (hintBtn) {
-            hintBtn.onclick = () => {
-                const h = document.getElementById('hint-text');
-                if (h) {
-                    h.innerText = modules[state.currentIdx].hint;
-                    h.classList.toggle('hidden');
+        if (nextBtn) {
+            nextBtn.onclick = () => {
+                if (state.currentIdx < modules.length - 1) {
+                    loadModule(state.currentIdx + 1);
                 }
             };
         }
 
-        const themeBtn = document.getElementById('theme-toggle');
-        if (themeBtn) {
-            themeBtn.onclick = () => {
-                const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-                document.body.setAttribute('data-theme', next);
-                themeBtn.innerHTML = next === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
-            };
+        if (aiInput) {
+            aiInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAISend(); });
         }
+        if (aiBtn) {
+            aiBtn.onclick = handleAISend;
+        }
+
+        document.getElementById('get-hint').onclick = () => {
+            const h = document.getElementById('hint-text');
+            if (h) {
+                h.innerText = modules[state.currentIdx].hint;
+                h.classList.toggle('hidden');
+            }
+        };
+
+        document.getElementById('theme-toggle').onclick = () => {
+            const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', next);
+            document.getElementById('theme-toggle').innerHTML = next === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+        };
 
         loadModule(0);
     }
