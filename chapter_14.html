@@ -1,490 +1,416 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Network, 
-  Terminal as TerminalIcon, 
-  Globe, 
-  Settings, 
-  CheckCircle2, 
-  ArrowRight, 
-  ArrowLeft,
-  Server,
-  Zap,
-  Layers,
-  Database,
-  Cpu,
-  Activity,
-  ChevronRight,
-  Lightbulb
-} from 'lucide-react';
-
-// --- Shared Data ---
-
-const KEY_TERMS = [
-  { term: 'IP Address', definition: 'A logical 32-bit (IPv4) or 128-bit (IPv6) address used to identify a host on a network.' },
-  { term: 'Subnet Mask', definition: 'A bitmask that determines which part of an IP address belongs to the network and which part belongs to the host.' },
-  { term: 'Default Gateway', definition: 'The "exit point" for traffic leaving the local network segment for external destinations.' },
-  { term: 'DNS', definition: 'Domain Name System; resolves human-readable hostnames to IP addresses.' },
-  { term: 'MTU', definition: 'Maximum Transmission Unit; the largest packet size that can be sent over a network interface.' },
-  { term: 'Latency', definition: 'The delay between sending a request and receiving a response (ms).' }
-];
-
-const OSI_LAYERS = [
-  { layer: 7, name: 'Application', desc: 'Interfaces with software applications (HTTP, SSH, FTP).', icon: <Globe className="w-4 h-4" /> },
-  { layer: 6, name: 'Presentation', desc: 'Handles data formatting, encryption, and compression.', icon: <Settings className="w-4 h-4" /> },
-  { layer: 5, name: 'Session', desc: 'Manages sessions and dialogues between computers.', icon: <Activity className="w-4 h-4" /> },
-  { layer: 4, name: 'Transport', desc: 'Ensures reliable data transfer (TCP, UDP).', icon: <Zap className="w-4 h-4" /> },
-  { layer: 3, name: 'Network', desc: 'Handles routing and logical addressing (IP, ICMP).', icon: <Layers className="w-4 h-4" /> },
-  { layer: 2, name: 'Data Link', desc: 'Transfers data between nodes on a segment (MAC, Ethernet).', icon: <Database className="w-4 h-4" /> },
-  { layer: 1, name: 'Physical', desc: 'Transmission over a physical medium (Cables, Hubs).', icon: <Cpu className="w-4 h-4" /> }
-];
-
-const CAPSTONE_HINTS = [
-  { 
-    level: "Diagnostic Direction", 
-    text: "Start by investigating the current configuration. Use 'ip route show' to check for a default path and 'cat /etc/resolv.conf' to see if any nameservers are listed." 
-  },
-  { 
-    level: "Technical Analysis", 
-    text: "The system can see the local network but lacks an 'exit door' (Gateway) and a 'translator' (DNS). You need to manually add a default route to 10.0.0.1 and a nameserver entry for 8.8.8.8." 
-  },
-  { 
-    level: "Command Syntax", 
-    text: "Run these precisely:\n1. ip route add default via 10.0.0.1\n2. echo \"nameserver 8.8.8.8\" >> /etc/resolv.conf\n3. ping google.com" 
-  }
-];
-
-// --- Sub-components ---
-
-const BinaryLabUI = ({ target }) => {
-  const [bits, setBits] = useState(Array(8).fill(0));
-  const decimalValue = bits.reduce((acc, bit, idx) => acc + (bit ? Math.pow(2, 7 - idx) : 0), 0);
-  
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in zoom-in duration-300 max-w-xl mx-auto mt-10">
-      <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-widest uppercase text-sm"><Cpu className="w-4 h-4 text-blue-500"/> Binary-to-Decimal Diagnostic</h3>
-      <div className="flex justify-between gap-2">
-        {bits.map((bit, i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
-            <span className="text-[10px] text-slate-400 font-mono">{Math.pow(2, 7 - i)}</span>
-            <button 
-              onClick={() => {
-                const n = [...bits]; n[i] = n[i] === 0 ? 1 : 0; setBits(n);
-              }}
-              className={`w-10 h-14 rounded-lg font-black text-xl transition-all shadow-sm ${bit ? 'bg-blue-600 text-white scale-105 shadow-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
-            >
-              {bit}
-            </button>
-          </div>
-        ))}
-      </div>
-      <div className="mt-8 pt-8 border-t border-slate-100 flex items-center justify-between">
-        <div className="text-center flex-1 border-r">
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Current</div>
-          <div className="text-3xl font-black text-slate-800">{decimalValue}</div>
-        </div>
-        <div className="text-center flex-1">
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Target</div>
-          <div className="text-3xl font-black text-blue-600">{target}</div>
-        </div>
-      </div>
-      {decimalValue === target && (
-        <div className="mt-6 p-3 bg-emerald-50 text-emerald-700 text-center rounded-lg font-bold text-[10px] animate-bounce tracking-widest uppercase">
-          ✓ Mission Objective Complete
-        </div>
-      )}
-    </div>
-  );
-};
-
-const SubnetLabUI = () => {
-  const [cidr, setCidr] = useState(24);
-  const hosts = Math.pow(2, 32 - cidr) - 2;
-  
-  return (
-    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in zoom-in duration-300 max-w-xl mx-auto mt-10">
-      <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-widest uppercase text-sm"><Database className="w-4 h-4 text-blue-500"/> Subnet Capacity Analyzer</h3>
-      <div className="space-y-12">
-        <div>
-          <input 
-            type="range" min="16" max="30" value={cidr} 
-            onChange={(e) => setCidr(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-          <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-3 px-1 uppercase tracking-widest">
-            <span>/16 Prefix</span>
-            <span>/24 Prefix</span>
-            <span>/30 Prefix</span>
-          </div>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managing Linux Networking Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
         
-        <div className="grid grid-cols-3 gap-6">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Prefix</div>
-            <div className="text-2xl font-black text-blue-600">/{cidr}</div>
-          </div>
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Mask</div>
-            <div className="text-2xl font-black text-slate-800 truncate px-1">{cidr} bits</div>
-          </div>
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Hosts</div>
-            <div className="text-2xl font-black text-emerald-600">{hosts.toLocaleString()}</div>
-          </div>
-        </div>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
         
-        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 text-[11px] text-blue-800 leading-relaxed italic">
-          Usable hosts = (2<sup>32 - {cidr}</sup>) - 2.
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const MissionHeader = ({ current, total }) => {
-  const percent = Math.round((current / total) * 100);
-  return (
-    <div className="bg-slate-900 text-white p-4 border-b border-slate-700 shrink-0">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded shadow-lg shadow-blue-900/20">
-            <Network className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight uppercase">Managing Linux Networking</h1>
-            <div className="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-semibold">
-              <span className="text-blue-400 tracking-widest">Interactive Lab Session</span>
-              <span className="h-1 w-1 bg-slate-600 rounded-full" />
-              <span>Standardized Curriculum Mode</span>
-            </div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Progress</div>
-          <div className="text-xs font-mono font-bold text-blue-400">{percent}% COMPLETE</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SidebarAssistant = ({ title, children, onNext, onPrev, current, total }) => (
-  <div className="flex flex-col h-full bg-white border-r border-slate-200 shadow-xl relative z-10 overflow-hidden">
-    <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0">
-      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lab Assistant (Gemini)</span>
-    </div>
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
-      <h2 className="text-2xl font-black text-slate-800 leading-tight">{title}</h2>
-      <div className="prose prose-slate prose-sm max-w-none text-slate-600 leading-relaxed">
-        {children}
-      </div>
-    </div>
-    <div className="p-4 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0">
-      <button onClick={onPrev} disabled={current === 1} className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-tighter bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all">
-        <ArrowLeft className="w-4 h-4" /> Previous
-      </button>
-      <button onClick={onNext} disabled={current === total} className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-tighter bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30 transition-all shadow-lg shadow-blue-200">
-        Next Module <ArrowRight className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-);
-
-const TerminalEmulator = ({ history, onCommand, disabled }) => {
-  const [input, setInput] = useState('');
-  const scrollRef = useRef(null);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [history]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (input.trim()) {
-      onCommand(input.trim());
-      setInput('');
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-full bg-slate-950 rounded-xl border border-slate-800 shadow-2xl overflow-hidden font-mono text-sm cursor-text" onClick={() => inputRef.current?.focus()}>
-      <div className="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <TerminalIcon className="w-3 h-3 text-slate-500" />
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Linux Terminal Emulator</span>
-        </div>
-      </div>
-      <div ref={scrollRef} className="flex-1 p-6 overflow-y-auto space-y-4 scroll-smooth scrollbar-thin">
-        {history.map((entry, i) => (
-          <div key={i} className="animate-in fade-in duration-300">
-            <div className="flex gap-2 text-emerald-500 font-bold">
-              <span className="opacity-50 shrink-0">root@linux-lab:~#</span>
-              <span className="text-white">{entry.input}</span>
-            </div>
-            <div className="mt-1 text-slate-300 whitespace-pre-wrap leading-relaxed break-words">{entry.output}</div>
-          </div>
-        ))}
-        {!disabled && (
-          <form onSubmit={handleSubmit} className="flex gap-2 text-emerald-500 font-bold">
-            <span className="opacity-50 shrink-0">root@linux-lab:~#</span>
-            <input ref={inputRef} className="bg-transparent border-none outline-none text-white w-full p-0 m-0" value={input} onChange={(e) => setInput(e.target.value)} spellCheck={false} autoComplete="off" autoFocus />
-          </form>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- Main Application ---
-
-export default function App() {
-  const [screen, setScreen] = useState(1);
-  const [terminalHistory, setTerminalHistory] = useState([]);
-  const [activeTermIndex, setActiveTermIndex] = useState(null);
-  const [selectedLayer, setSelectedLayer] = useState(null);
-  const [capstoneFaults, setCapstoneFaults] = useState({ gateway: false, dns: false });
-  const [missionComplete, setMissionComplete] = useState(false);
-  const [hintLevel, setHintLevel] = useState(-1);
-
-  const totalScreens = 9;
-
-  const processCommand = (cmd) => {
-    const rawInput = cmd.trim();
-    const parts = rawInput.split(/\s+/);
-    const base = parts[0].toLowerCase();
-    let output = "";
-
-    if (base === 'clear') { setTerminalHistory([]); return; }
-    if (base === 'help') { output = "Available commands: ip, ping, cat, echo, clear, hostname, ifconfig"; }
-    else if (base === 'hostname') { output = "server-one"; }
-    else if (base === 'ip') {
-      const sub = parts[1]?.toLowerCase();
-      if (sub === 'addr') {
-        output = "1: lo: <LOOPBACK,UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n2: ens32: <BROADCAST,MULTICAST,UP> mtu 1500\n    inet 10.0.0.84/24 brd 10.0.0.255 scope global ens32";
-      } else if (sub === 'route') {
-        const action = parts[2]?.toLowerCase();
-        if (action === 'add' && parts[3] === 'default' && parts[4] === 'via' && parts[5] === '10.0.0.1') {
-          if (screen === 9) setCapstoneFaults(f => ({ ...f, gateway: true }));
-          output = "Default gateway 10.0.0.1 added to ens32.";
-        } else {
-          if (screen === 9 && !capstoneFaults.gateway) {
-            output = "10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
-          } else {
-            output = "default via 10.0.0.1 dev ens32\n10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
-          }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-      }
-    }
-    else if (base === 'ifconfig') {
-      output = "ens32: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n        inet 10.0.0.84  netmask 255.255.255.0  broadcast 10.0.0.255\n        ether 00:16:3e:ab:cd:ef  txqueuelen 1000";
-    }
-    else if (base === 'cat') {
-      if (parts[1]?.includes('resolv.conf')) {
-        output = "search mydom.com" + (capstoneFaults.dns ? "\nnameserver 8.8.8.8" : "");
-      } else if (parts[1]?.includes('hosts')) {
-        output = "127.0.0.1 localhost\n10.0.0.84 server-one";
-      } else { output = `cat: ${parts[1] || ''}: No such file or directory`; }
-    }
-    else if (base === 'echo') {
-      if (rawInput.includes('nameserver') && rawInput.includes('resolv.conf')) {
-        if (screen === 9) setCapstoneFaults(f => ({ ...f, dns: true }));
-        output = "Nameserver 8.8.8.8 added to /etc/resolv.conf successfully.";
-      } else { output = parts.slice(1).join(' ').replace(/[">]/g, ''); }
-    }
-    else if (base === 'ping') {
-      const target = parts[1];
-      if (target === '8.8.8.8') {
-        output = (screen === 9 && !capstoneFaults.gateway) ? "connect: Network is unreachable" : "64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=24ms\n64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=23ms\n^C\n--- 8.8.8.8 ping statistics ---";
-      } else if (target === 'google.com') {
-        if (screen === 9) {
-          if (!capstoneFaults.gateway) output = "connect: Network is unreachable";
-          else if (!capstoneFaults.dns) output = "ping: google.com: Temporary failure in name resolution";
-          else { 
-            output = "PING google.com (142.250.190.14) 56(84) bytes of data.\n64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15ms\n\nMISSION COMPLETE: Network functionality restored!"; 
-            setMissionComplete(true); 
-          }
-        } else { output = "64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15ms"; }
-      } else { output = `ping: ${target || ''}: Name or service not known`; }
-    }
-    else { output = `-bash: ${base}: command not found`; }
 
-    setTerminalHistory(prev => [...prev, { input: cmd, output }]);
-  };
+        input[type=range] {
+            accent-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-slate-100 overflow-hidden text-slate-900">
 
-  const renderSidebar = () => {
-    switch(screen) {
-      case 1:
-        return (
-          <SidebarAssistant title="System Initialization" current={screen} total={totalScreens} onNext={() => setScreen(2)} onPrev={() => {}}>
-            <p>Welcome to the <strong>Linux Networking Lab</strong>. Configure, verify, and repair Linux network connectivity in this standardized interactive environment.</p>
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg my-6 text-xs">
-              <h4 className="font-bold text-blue-900 uppercase mb-2 tracking-widest text-[10px]">Diagnostic Goals</h4>
-              <ul className="space-y-1 text-blue-800 list-disc pl-4">
-                <li>Understand the OSI and TCP/IP models</li>
-                <li>Practice binary IPv4 address construction</li>
-                <li>Troubleshoot real-world routing and DNS failures</li>
-              </ul>
-            </div>
-            <p className="text-xs text-slate-500 italic">"Use the navigation buttons below to progress through the modules."</p>
-          </SidebarAssistant>
-        );
-      case 2:
-        return (
-          <SidebarAssistant title="Key Networking Terms" current={screen} total={totalScreens} onNext={() => setScreen(3)} onPrev={() => setScreen(1)}>
-            <p>Master these core terms. Click a term to reveal its role in Linux networking.</p>
-            <div className="space-y-2 mt-4">
-              {KEY_TERMS.map((item, i) => (
-                <div key={i} onClick={() => setActiveTermIndex(i)} className={`p-3 rounded-lg border cursor-pointer transition-all ${activeTermIndex === i ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100'}`}>
-                  <div className="flex items-center justify-between font-bold text-xs">
-                    <span>{item.term}</span>
-                    <ChevronRight className={`w-3 h-3 ${activeTermIndex === i ? 'rotate-90 text-blue-500' : ''}`} />
-                  </div>
-                  {activeTermIndex === i && <p className="mt-2 text-[11px] text-blue-700 animate-in slide-in-from-top-1">{item.definition}</p>}
+    <!-- Mission Header -->
+    <header class="bg-slate-900 text-white p-4 border-b border-slate-700 shrink-0">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded shadow-lg shadow-blue-900/20">
+                    <i data-lucide="network" class="w-5 h-5"></i>
                 </div>
-              ))}
-            </div>
-          </SidebarAssistant>
-        );
-      case 3:
-        return (
-          <SidebarAssistant title="The Networking Stack" current={screen} total={totalScreens} onNext={() => setScreen(4)} onPrev={() => setScreen(2)}>
-            <p>The **TCP/IP stack** maps to the OSI model. Select a layer to analyze details in the interaction panel.</p>
-            <div className="space-y-1 mt-6">
-              {OSI_LAYERS.map(l => (
-                <div 
-                  key={l.layer} 
-                  onClick={() => setSelectedLayer(l)}
-                  className={`group flex items-center gap-3 p-2 rounded transition-all cursor-pointer ${selectedLayer?.layer === l.layer ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}
-                >
-                  <div className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-black ${selectedLayer?.layer === l.layer ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>L{l.layer}</div>
-                  <div className="text-xs font-bold">{l.name}</div>
-                </div>
-              ))}
-            </div>
-          </SidebarAssistant>
-        );
-      case 4:
-        return (
-          <SidebarAssistant title="IPv4 & Binary Logic" current={screen} total={totalScreens} onNext={() => setScreen(5)} onPrev={() => setScreen(3)}>
-            <p>Each octet in an IPv4 address is an 8-bit value. Construct the decimal value <strong>179</strong> in the converter tool.</p>
-          </SidebarAssistant>
-        );
-      case 5:
-        return (
-          <SidebarAssistant title="Subnetting & CIDR" current={screen} total={totalScreens} onNext={() => setScreen(6)} onPrev={() => setScreen(4)}>
-            <p>Adjust the slider in the interaction tool to see how prefix mask bits change host capacity.</p>
-          </SidebarAssistant>
-        );
-      case 6:
-      case 7:
-      case 8:
-        const subTitles = { 6: "Interface Management", 7: "Routing & Resolvers", 8: "Methodology" };
-        return (
-          <SidebarAssistant title={subTitles[screen]} current={screen} total={totalScreens} onNext={() => setScreen(s => Math.min(s+1, totalScreens))} onPrev={() => setScreen(s => Math.max(s-1, 1))}>
-            {screen === 6 && <p>Inspect your interfaces using <code>ip addr</code>. Predictable names like <code>ens32</code> identify NICs.</p>}
-            {screen === 7 && <p>Check <code>/etc/resolv.conf</code> and <code>ip route</code> for external communication pathing.</p>}
-            {screen === 8 && <p>Troubleshooting is a ladder. Always start at Layer 1 (Physical) and work up to Layer 7.</p>}
-          </SidebarAssistant>
-        );
-      case 9:
-        return (
-          <SidebarAssistant title="Capstone Mission" current={screen} total={totalScreens} onNext={() => {}} onPrev={() => setScreen(8)}>
-            <div className="space-y-6">
-              <p className="text-sm">Server-one is isolated. Fix the <strong>Routing</strong> and <strong>DNS</strong> faults using the terminal.</p>
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Diagnostic Hints</h4>
-                {hintLevel >= 0 && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg animate-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center gap-2 mb-2 text-amber-800 font-bold text-[10px] uppercase">
-                      <Lightbulb className="w-3 h-3" /> {CAPSTONE_HINTS[hintLevel].level}
+                <div>
+                    <h1 class="text-sm font-bold tracking-tight uppercase">Managing Linux Networking</h1>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-semibold">
+                        <span class="text-blue-400 tracking-widest">Active Session</span>
+                        <span class="h-1 w-1 bg-slate-600 rounded-full"></span>
+                        <span>Interactive Lab Mode</span>
                     </div>
-                    <p className="text-[11px] text-amber-900 leading-normal whitespace-pre-wrap">{CAPSTONE_HINTS[hintLevel].text}</p>
-                  </div>
-                )}
-                <button 
-                  onClick={() => setHintLevel(prev => (prev + 1) % 3)}
-                  className="w-full py-2 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 text-[10px] font-bold uppercase rounded-lg border border-slate-200 transition-colors"
-                >
-                  {hintLevel === -1 ? "View Diagnostic Hint" : "Get Next Level Hint"}
-                </button>
-              </div>
-              <div className="p-4 bg-rose-50 border border-rose-100 rounded-lg">
-                <h4 className="font-bold text-rose-800 text-[10px] uppercase mb-2">Target Objectives</h4>
-                <ul className="text-[11px] space-y-2">
-                  <li className={`flex items-center gap-2 ${capstoneFaults.gateway ? 'text-emerald-600 line-through' : 'text-rose-700'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Add Default Gateway
-                  </li>
-                  <li className={`flex items-center gap-2 ${capstoneFaults.dns ? 'text-emerald-600 line-through' : 'text-rose-700'}`}>
-                    <CheckCircle2 className="w-3 h-3" /> Restore DNS Resolver
-                  </li>
-                </ul>
-              </div>
+                </div>
             </div>
-          </SidebarAssistant>
-        );
-      default: return null;
-    }
-  };
-
-  return (
-    <div className="h-screen flex flex-col bg-slate-100 overflow-hidden text-slate-900 font-sans">
-      <MissionHeader current={screen} total={totalScreens} />
-      
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-80 md:w-96 flex-shrink-0">
-          {renderSidebar()}
+            <div class="text-right">
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Progress</div>
+                <div id="progress-text" class="text-xs font-mono font-bold text-blue-400">0% COMPLETE</div>
+            </div>
         </div>
+    </header>
 
-        <div className="flex-1 p-8 overflow-y-auto bg-slate-50 relative">
-          <div className="max-w-4xl mx-auto h-full flex flex-col gap-8">
-            {screen === 3 && selectedLayer && (
-              <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-xl space-y-4 animate-in zoom-in duration-300 max-w-xl mx-auto mt-10">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-600 text-white rounded-xl shadow-lg">{selectedLayer.icon}</div>
-                  <div>
-                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Layer {selectedLayer.layer}</div>
-                    <h3 className="text-2xl font-black text-slate-800">{selectedLayer.name}</h3>
-                  </div>
-                </div>
-                <p className="text-slate-600 italic border-l-4 border-slate-100 pl-4 leading-relaxed">"{selectedLayer.desc}"</p>
-                <div className="grid grid-cols-2 gap-4 mt-4 text-[10px] uppercase font-bold text-slate-400">
-                  <div className="bg-slate-50 p-3 rounded">
-                    Protocols: {selectedLayer.layer === 7 ? 'HTTP, SSH' : selectedLayer.layer === 4 ? 'TCP, UDP' : selectedLayer.layer === 3 ? 'IP, ICMP' : 'Varies'}
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded">
-                    Data Unit: {selectedLayer.layer >= 4 ? 'Segment' : selectedLayer.layer === 3 ? 'Packet' : selectedLayer.layer === 2 ? 'Frame' : 'Bits'}
-                  </div>
-                </div>
-              </div>
-            )}
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Assistant -->
+        <aside class="w-80 md:w-96 flex flex-col h-full bg-white border-r border-slate-200 shadow-xl relative z-10 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lab Assistant (Gemini)</span>
+            </div>
             
-            {screen === 4 && <BinaryLabUI target={179} />}
-            {screen === 5 && <SubnetLabUI />}
-            
-            {(screen >= 6) && (
-              <div className="flex-1 min-h-[400px] mb-8 animate-in slide-in-from-bottom-4 duration-500">
-                <TerminalEmulator history={terminalHistory} onCommand={processCommand} disabled={missionComplete && screen === 9} />
-              </div>
-            )}
+            <div id="sidebar-content" class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+                <!-- Content injected by JS -->
+            </div>
 
-            {missionComplete && screen === 9 && (
-              <div className="p-8 bg-emerald-600 rounded-2xl text-white text-center shadow-xl animate-in zoom-in duration-500">
-                <CheckCircle2 className="w-12 h-12 mx-auto mb-4" />
-                <h4 className="text-2xl font-black mb-2 uppercase tracking-tighter text-white">System Operational</h4>
-                <p className="text-sm opacity-90 max-w-md mx-auto leading-relaxed">Connectivity restored. Diagnostic lab complete.</p>
-              </div>
-            )}
+            <div class="p-4 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0">
+                <button id="prev-btn" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-tighter bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Previous
+                </button>
+                <button id="next-btn" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-tighter bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30 transition-all shadow-lg shadow-blue-200">
+                    Next Module <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </aside>
 
-            {terminalHistory.length === 0 && screen >= 6 && (
-              <div className="p-8 text-center text-slate-300 pointer-events-none absolute bottom-24 right-0 left-0">
-                <TerminalIcon className="w-12 h-12 mx-auto mb-4 opacity-10" />
-                <p className="text-xs italic opacity-20 tracking-widest uppercase">Console ready for user input</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+        <!-- Main Interaction Area -->
+        <main id="main-area" class="flex-1 p-8 overflow-y-auto bg-slate-50 relative scrollbar-thin">
+            <!-- Tool injected by JS -->
+        </main>
     </div>
-  );
-}
+
+    <script>
+        // --- State ---
+        let state = {
+            screen: 1,
+            totalScreens: 9,
+            activeTermIndex: null,
+            selectedLayerIndex: null,
+            binaryBits: Array(8).fill(0),
+            cidr: 24,
+            terminalHistory: [],
+            capstoneFaults: { gateway: false, dns: false },
+            missionComplete: false,
+            hintLevel: -1,
+            ifaceUp: true
+        };
+
+        const KEY_TERMS = [
+            { term: 'IP Address', definition: 'A logical 32-bit (IPv4) address used to identify a host on a network.' },
+            { term: 'Subnet Mask', definition: 'A bitmask that determines which part of an IP address belongs to the network and which part belongs to the host.' },
+            { term: 'Default Gateway', definition: 'The "exit point" for traffic leaving the local network segment for external destinations.' },
+            { term: 'DNS', definition: 'Domain Name System; resolves human-readable hostnames to IP addresses.' },
+            { term: 'MTU', definition: 'Maximum Transmission Unit; the largest packet size that can be sent over a network interface.' },
+            { term: 'Latency', definition: 'The delay between sending a request and receiving a response (ms).' }
+        ];
+
+        const OSI_LAYERS = [
+            { layer: 7, name: 'Application', desc: 'Interfaces with software applications (HTTP, SSH, FTP).', icon: 'globe' },
+            { layer: 6, name: 'Presentation', desc: 'Handles data formatting, encryption, and compression.', icon: 'settings' },
+            { layer: 5, name: 'Session', desc: 'Manages sessions and dialogues between computers.', icon: 'activity' },
+            { layer: 4, name: 'Transport', desc: 'Ensures reliable data transfer (TCP, UDP).', icon: 'zap' },
+            { layer: 3, name: 'Network', desc: 'Handles routing and logical addressing (IP, ICMP).', icon: 'layers' },
+            { layer: 2, name: 'Data Link', desc: 'Transfers data between nodes on a segment (MAC, Ethernet).', icon: 'database' },
+            { layer: 1, name: 'Physical', desc: 'Transmission over a physical medium (Cables, Hubs).', icon: 'cpu' }
+        ];
+
+        const CAPSTONE_HINTS = [
+            { level: "Diagnostic Direction", text: "Start by investigating the current configuration. Use 'ip route show' to check for a default path and 'cat /etc/resolv.conf' to see if any nameservers are listed." },
+            { level: "Technical Analysis", text: "The system can see the local network but lacks an 'exit door' (Gateway) and a 'translator' (DNS). You need to manually add a default route to 10.0.0.1 and a nameserver entry for 8.8.8.8." },
+            { level: "Command Syntax", text: "Run these precisely:\n1. ip route add default via 10.0.0.1\n2. echo \"nameserver 8.8.8.8\" >> /etc/resolv.conf\n3. ping google.com" }
+        ];
+
+        // --- Logic ---
+
+        function renderApp() {
+            const sidebar = document.getElementById('sidebar-content');
+            const main = document.getElementById('main-area');
+            const progressText = document.getElementById('progress-text');
+            const percent = Math.round((state.screen / state.totalScreens) * 100);
+            
+            progressText.innerText = `${percent}% COMPLETE`;
+            sidebar.innerHTML = '';
+            main.innerHTML = '';
+
+            document.getElementById('prev-btn').disabled = state.screen === 1;
+            document.getElementById('next-btn').disabled = state.screen === state.totalScreens;
+
+            switch(state.screen) {
+                case 1: renderScreen1(sidebar, main); break;
+                case 2: renderScreen2(sidebar, main); break;
+                case 3: renderScreen3(sidebar, main); break;
+                case 4: renderScreen4(sidebar, main); break;
+                case 5: renderScreen5(sidebar, main); break;
+                case 6: renderScreenTerminal(sidebar, main, "Interface Management", "Inspect interfaces using <code>ip addr</code>."); break;
+                case 7: renderScreenTerminal(sidebar, main, "Routing & Resolvers", "Check <code>/etc/resolv.conf</code> and <code>ip route</code>."); break;
+                case 8: renderScreenTerminal(sidebar, main, "Methodology", "Start at Layer 1 and work up to Layer 7."); break;
+                case 9: renderScreenCapstone(sidebar, main); break;
+            }
+            lucide.createIcons();
+        }
+
+        function renderScreen1(sidebar, main) {
+            sidebar.innerHTML = `
+                <h2 class="text-2xl font-black text-slate-800 leading-tight">System Initialization</h2>
+                <p class="text-sm text-slate-600">Welcome to the Linux Networking Lab. Configure and troubleshooting connectivity in this standardized interactive environment.</p>
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg my-6 text-xs">
+                    <h4 class="font-bold text-blue-900 uppercase mb-2 tracking-widest text-[10px]">Diagnostic Goals</h4>
+                    <ul class="space-y-1 text-blue-800 list-disc pl-4">
+                        <li>Understand the OSI and TCP/IP models</li>
+                        <li>Practice binary IPv4 address construction</li>
+                        <li>Troubleshoot real-world routing and DNS failures</li>
+                    </ul>
+                </div>
+            `;
+            main.innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 font-mono italic">Select 'Next Module' to begin.</div>`;
+        }
+
+        function renderScreen2(sidebar, main) {
+            sidebar.innerHTML = `<h2 class="text-2xl font-black text-slate-800 leading-tight">Key Networking Terms</h2><div class="space-y-2 mt-4" id="terms-list"></div>`;
+            const list = sidebar.querySelector('#terms-list');
+            KEY_TERMS.forEach((item, i) => {
+                const active = state.activeTermIndex === i;
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-lg border cursor-pointer transition-all ${active ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100 hover:border-blue-200'}`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-xs text-slate-800">
+                        <span>${item.term}</span>
+                        <i data-lucide="chevron-right" class="w-3 h-3 transition-transform ${active ? 'rotate-90 text-blue-500' : 'text-slate-300'}"></i>
+                    </div>
+                    ${active ? `<p class="mt-2 text-[11px] text-blue-700 animate-in">${item.definition}</p>` : ''}
+                `;
+                div.onclick = () => { state.activeTermIndex = active ? null : i; renderApp(); };
+                list.appendChild(div);
+            });
+        }
+
+        function renderScreen3(sidebar, main) {
+            sidebar.innerHTML = `<h2 class="text-2xl font-black text-slate-800 leading-tight">Networking Stack</h2><div class="space-y-1 mt-6" id="stack-list"></div>`;
+            const list = sidebar.querySelector('#stack-list');
+            OSI_LAYERS.forEach((l, i) => {
+                const active = state.selectedLayerIndex === i;
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-3 p-2 rounded cursor-pointer transition-all ${active ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`;
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded flex items-center justify-center text-[10px] font-black ${active ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}">L${l.layer}</div>
+                    <div class="text-xs font-bold">${l.name}</div>
+                `;
+                div.onclick = () => { state.selectedLayerIndex = i; renderApp(); };
+                list.appendChild(div);
+            });
+
+            if (state.selectedLayerIndex !== null) {
+                const layer = OSI_LAYERS[state.selectedLayerIndex];
+                main.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-xl space-y-4 animate-in max-w-xl mx-auto mt-10">
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-blue-600 text-white rounded-xl shadow-lg"><i data-lucide="${layer.icon}"></i></div>
+                            <div>
+                                <div class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Layer ${layer.layer}</div>
+                                <h3 class="text-2xl font-black text-slate-800">${layer.name}</h3>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 italic border-l-4 border-slate-100 pl-4">"${layer.desc}"</p>
+                        <div class="grid grid-cols-2 gap-4 mt-4 text-[10px] uppercase font-bold text-slate-400">
+                            <div class="bg-slate-50 p-3 rounded">Protocols: ${layer.layer === 7 ? 'HTTP, SSH' : layer.layer === 4 ? 'TCP, UDP' : layer.layer === 3 ? 'IP, ICMP' : 'Varies'}</div>
+                            <div class="bg-slate-50 p-3 rounded">Data Unit: ${layer.layer >= 4 ? 'Segment' : layer.layer === 3 ? 'Packet' : layer.layer === 2 ? 'Frame' : 'Bits'}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                main.innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 italic">Select a layer to explore.</div>`;
+            }
+        }
+
+        function renderScreen4(sidebar, main) {
+            sidebar.innerHTML = `
+                <h2 class="text-2xl font-black text-slate-800 leading-tight">IPv4 & Binary Logic</h2>
+                <p class="text-sm text-slate-600">Construct the decimal value <strong>179</strong> in the converter tool.</p>
+            `;
+            const decVal = state.binaryBits.reduce((acc, bit, idx) => acc + (bit ? Math.pow(2, 7 - idx) : 0), 0);
+            main.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in max-w-xl mx-auto mt-10">
+                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-widest uppercase text-sm"><i data-lucide="cpu" class="w-4 h-4 text-blue-500"></i> Binary Diagnostic</h3>
+                    <div class="flex justify-between gap-2" id="binary-bits"></div>
+                    <div class="mt-8 pt-8 border-t border-slate-100 flex items-center justify-between">
+                        <div class="text-center flex-1 border-r"><div class="text-[10px] text-slate-400 uppercase">Current</div><div class="text-3xl font-black text-slate-800">${decVal}</div></div>
+                        <div class="text-center flex-1"><div class="text-[10px] text-slate-400 uppercase">Target</div><div class="text-3xl font-black text-blue-600">179</div></div>
+                    </div>
+                    ${decVal === 179 ? '<div class="mt-6 p-3 bg-emerald-50 text-emerald-700 text-center rounded-lg font-bold text-[10px] animate-bounce uppercase tracking-widest">✓ Mission Objective Complete</div>' : ''}
+                </div>
+            `;
+            const bitsContainer = main.querySelector('#binary-bits');
+            state.binaryBits.forEach((bit, i) => {
+                const btn = document.createElement('button');
+                btn.className = `w-10 h-14 rounded-lg font-black text-xl transition-all shadow-sm ${bit ? 'bg-blue-600 text-white scale-105 shadow-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`;
+                btn.innerHTML = `<span class="block text-[8px] absolute top-1 font-mono">${Math.pow(2, 7-i)}</span>${bit}`;
+                btn.onclick = () => { state.binaryBits[i] = state.binaryBits[i] === 0 ? 1 : 0; renderApp(); };
+                bitsContainer.appendChild(btn);
+            });
+        }
+
+        function renderScreen5(sidebar, main) {
+            sidebar.innerHTML = `
+                <h2 class="text-2xl font-black text-slate-800 leading-tight">Subnetting & CIDR</h2>
+                <p class="text-sm text-slate-600">Adjust the slider in the tool to see how prefix mask bits change host capacity.</p>
+            `;
+            const hosts = Math.pow(2, 32 - state.cidr) - 2;
+            main.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in max-w-xl mx-auto mt-10">
+                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-widest uppercase text-sm"><i data-lucide="database" class="w-4 h-4 text-blue-500"></i> Capacity Analyzer</h3>
+                    <div class="space-y-12">
+                        <div>
+                            <input type="range" min="16" max="30" value="${state.cidr}" id="cidr-slider" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-[10px] font-bold text-slate-400 mt-3 px-1 uppercase tracking-widest"><span>/16</span><span>/24</span><span>/30</span></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-6">
+                            <div class="bg-slate-50 p-4 rounded-xl text-center"><div class="text-[10px] text-slate-400 uppercase">Prefix</div><div class="text-2xl font-black text-blue-600">/${state.cidr}</div></div>
+                            <div class="bg-slate-50 p-4 rounded-xl text-center"><div class="text-[10px] text-slate-400 uppercase">Mask</div><div class="text-2xl font-black text-slate-800">${state.cidr} bits</div></div>
+                            <div class="bg-slate-50 p-4 rounded-xl text-center"><div class="text-[10px] text-slate-400 uppercase">Hosts</div><div class="text-2xl font-black text-emerald-600">${hosts.toLocaleString()}</div></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            main.querySelector('#cidr-slider').oninput = (e) => { state.cidr = parseInt(e.target.value); renderApp(); };
+        }
+
+        function renderScreenTerminal(sidebar, main, title, instr) {
+            sidebar.innerHTML = `<h2 class="text-2xl font-black text-slate-800 leading-tight">${title}</h2><p class="text-sm text-slate-600">${instr}</p><div class="p-3 bg-slate-50 border rounded-lg mt-4"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Try Typing:</p><code class="text-blue-600 font-mono text-[11px] block">ip addr show</code></div>`;
+            renderTerminal(main);
+        }
+
+        function renderScreenCapstone(sidebar, main) {
+            sidebar.innerHTML = `
+                <h2 class="text-2xl font-black text-slate-800 leading-tight">Capstone Mission</h2>
+                <p class="text-sm text-slate-600">Server-one is isolated. Fix the <strong>Routing</strong> and <strong>DNS</strong> faults using the terminal.</p>
+                <div class="space-y-2 mt-4" id="hints-container"></div>
+                <div class="p-4 bg-rose-50 border border-rose-100 rounded-lg mt-4">
+                    <h4 class="font-bold text-rose-800 text-[10px] uppercase mb-2">Target Objectives</h4>
+                    <ul class="text-[11px] space-y-2">
+                        <li class="flex items-center gap-2 ${state.capstoneFaults.gateway ? 'text-emerald-600 line-through' : 'text-rose-700'}"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Add Default Gateway</li>
+                        <li class="flex items-center gap-2 ${state.capstoneFaults.dns ? 'text-emerald-600 line-through' : 'text-rose-700'}"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Restore DNS Resolver</li>
+                    </ul>
+                </div>
+            `;
+            const hintCont = sidebar.querySelector('#hints-container');
+            if (state.hintLevel >= 0) {
+                const hint = CAPSTONE_HINTS[state.hintLevel];
+                hintCont.innerHTML = `
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg animate-in">
+                        <div class="flex items-center gap-2 mb-2 text-amber-800 font-bold text-[10px] uppercase"><i data-lucide="lightbulb" class="w-3 h-3"></i> ${hint.level}</div>
+                        <p class="text-[11px] text-amber-900 leading-normal whitespace-pre-wrap">${hint.text}</p>
+                    </div>
+                `;
+            }
+            const hintBtn = document.createElement('button');
+            hintBtn.className = "w-full py-2 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 text-[10px] font-bold uppercase rounded-lg border border-slate-200 transition-colors mt-2";
+            hintBtn.innerText = state.hintLevel === -1 ? "View Diagnostic Hint" : "Get Next Level Hint";
+            hintBtn.onclick = () => { state.hintLevel = (state.hintLevel + 1) % 3; renderApp(); };
+            hintCont.appendChild(hintBtn);
+
+            renderTerminal(main);
+
+            if (state.missionComplete) {
+                const successDiv = document.createElement('div');
+                successDiv.className = "p-8 bg-emerald-600 rounded-2xl text-white text-center shadow-xl animate-in mt-6";
+                successDiv.innerHTML = `<i data-lucide="check-circle-2" class="w-12 h-12 mx-auto mb-4"></i><h4 class="text-2xl font-black mb-2 uppercase tracking-tighter">System Operational</h4><p class="text-sm opacity-90">Connectivity restored. Lab complete.</p>`;
+                main.appendChild(successDiv);
+            }
+        }
+
+        function renderTerminal(main) {
+            main.innerHTML = `
+                <div class="flex flex-col h-[400px] bg-slate-950 rounded-xl border border-slate-800 shadow-2xl overflow-hidden font-mono text-sm cursor-text" id="terminal-box">
+                    <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between shrink-0">
+                        <div class="flex items-center gap-2"><i data-lucide="terminal" class="w-3 h-3 text-slate-500"></i><span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Linux Terminal Emulator</span></div>
+                    </div>
+                    <div id="terminal-output" class="flex-1 p-6 overflow-y-auto space-y-4 scroll-smooth scrollbar-thin"></div>
+                    <form id="terminal-form" class="flex gap-2 text-emerald-500 font-bold p-6 pt-0">
+                        <span class="opacity-50 shrink-0">root@linux-lab:~#</span>
+                        <input id="terminal-input" class="bg-transparent border-none outline-none text-white w-full p-0 m-0 focus:ring-0" autocomplete="off" spellcheck="false" autofocus>
+                    </form>
+                </div>
+            `;
+            const output = main.querySelector('#terminal-output');
+            const input = main.querySelector('#terminal-input');
+            const box = main.querySelector('#terminal-box');
+
+            state.terminalHistory.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = "animate-in";
+                div.innerHTML = `<div class="flex gap-2 text-emerald-500 font-bold"><span class="opacity-50 shrink-0">root@linux-lab:~#</span><span class="text-white">${entry.input}</span></div><div class="mt-1 text-slate-300 whitespace-pre-wrap">${entry.output}</div>`;
+                output.appendChild(div);
+            });
+
+            box.onclick = () => input.focus();
+            main.querySelector('#terminal-form').onsubmit = (e) => {
+                e.preventDefault();
+                const val = input.value.trim();
+                if (val) {
+                    processCommand(val);
+                    input.value = '';
+                    renderApp();
+                }
+            };
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function processCommand(cmd) {
+            const parts = cmd.toLowerCase().split(/\s+/);
+            const base = parts[0];
+            let out = "";
+
+            if (base === 'help') out = "Available: ip, ping, cat, echo, clear, hostname, ifconfig";
+            else if (base === 'clear') { state.terminalHistory = []; return; }
+            else if (base === 'hostname') out = "server-one";
+            else if (base === 'ip') {
+                const sub = parts[1];
+                if (sub === 'addr') out = "1: lo: <LOOPBACK,UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n2: ens32: <BROADCAST,MULTICAST,UP> mtu 1500\n    inet 10.0.0.84/24 brd 10.0.0.255 scope global ens32";
+                else if (sub === 'route') {
+                    if (parts[2] === 'add' && parts[3] === 'default' && parts[5] === '10.0.0.1') {
+                        if (state.screen === 9) state.capstoneFaults.gateway = true;
+                        out = "Default gateway 10.0.0.1 added to ens32.";
+                    } else {
+                        if (state.screen === 9 && !state.capstoneFaults.gateway) out = "10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
+                        else out = "default via 10.0.0.1 dev ens32\n10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
+                    }
+                }
+            }
+            else if (base === 'cat') {
+                if (parts[1]?.includes('resolv.conf')) out = "search mydom.com" + (state.capstoneFaults.dns ? "\nnameserver 8.8.8.8" : "");
+                else if (parts[1]?.includes('hosts')) out = "127.0.0.1 localhost\n10.0.0.84 server-one";
+                else out = `cat: ${parts[1] || ''}: No such file or directory`;
+            }
+            else if (base === 'echo') {
+                if (cmd.includes('nameserver') && cmd.includes('resolv.conf')) {
+                    if (state.screen === 9) state.capstoneFaults.dns = true;
+                    out = "Configuration updated successfully.";
+                } else out = cmd.replace(/echo\s+['"]?|['"]?\s+>>.*$/g, '');
+            }
+            else if (base === 'ping') {
+                const target = parts[1];
+                if (target === '8.8.8.8') {
+                    if (state.screen === 9 && !state.capstoneFaults.gateway) out = "connect: Network is unreachable";
+                    else out = "64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=24ms";
+                } else if (target === 'google.com') {
+                    if (state.screen === 9) {
+                        if (!state.capstoneFaults.gateway) out = "connect: Network is unreachable";
+                        else if (!state.capstoneFaults.dns) out = "ping: google.com: Temporary failure in name resolution";
+                        else { out = "64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15ms\nMISSION COMPLETE!"; state.missionComplete = true; }
+                    } else out = "64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15ms";
+                } else out = `ping: ${target || ''}: Name or service not known`;
+            }
+            else out = `-bash: ${base}: command not found`;
+
+            state.terminalHistory.push({ input: cmd, output: out });
+        }
+
+        // --- Init ---
+        document.getElementById('prev-btn').onclick = () => { if(state.screen > 1) { state.screen--; renderApp(); } };
+        document.getElementById('next-btn').onclick = () => { if(state.screen < state.totalScreens) { state.screen++; renderApp(); } };
+
+        renderApp();
+    </script>
+</body>
+</html>
