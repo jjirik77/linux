@@ -852,22 +852,32 @@ port: 80
             const container = document.getElementById(containerId);
             let html = '';
             data.forEach((qObj, idx) => {
-                html += `<div class="mb-2"><p class="font-semibold text-slate-800 mb-2">${qObj.q}</p><div class="flex flex-col space-y-2">`;
+                html += `<div class="mb-4 pb-4 border-b border-blue-100"><p class="font-semibold text-slate-800 mb-2">${qObj.q}</p><div class="flex flex-col space-y-2">`;
                 qObj.options.forEach((opt, optIdx) => {
                     html += `<label class="inline-flex items-center p-2 rounded hover:bg-blue-100 cursor-pointer transition">
-                                <input type="radio" name="${containerId}-q${idx}" value="${optIdx}" class="form-radio text-blue-600" onchange="gradeMicro('${containerId}', ${idx}, ${optIdx}, ${qObj.answer}, '${qObj.hint}')">
+                                <input type="radio" name="${containerId}-q${idx}" value="${optIdx}" class="form-radio text-blue-600">
                                 <span class="ml-2 text-sm">${opt}</span>
                              </label>`;
                 });
-                html += `</div><div id="${containerId}-fb${idx}" class="mt-2 text-sm font-semibold hidden"></div></div>`;
+                html += `</div>
+                         <button onclick="checkMicroAnswer('${containerId}', ${idx}, ${qObj.answer}, '${qObj.hint}')" class="mt-3 bg-blue-600 text-white text-xs px-4 py-2 rounded font-semibold hover:bg-blue-700 transition">Submit Answer</button>
+                         <div id="${containerId}-fb${idx}" class="mt-2 text-sm font-semibold hidden"></div></div>`;
             });
             container.innerHTML = html;
         }
 
-        window.gradeMicro = function(cId, qIdx, selected, correct, hint) {
+        window.checkMicroAnswer = function(cId, qIdx, correct, hint) {
+            const selected = document.querySelector(`input[name="${cId}-q${qIdx}"]:checked`);
             const fb = document.getElementById(`${cId}-fb${qIdx}`);
+            
+            if (!selected) {
+                fb.classList.remove('hidden');
+                fb.innerHTML = `<span class="text-amber-600">Please select an answer first.</span>`;
+                return;
+            }
+
             fb.classList.remove('hidden');
-            if (selected === correct) {
+            if (parseInt(selected.value) === correct) {
                 fb.innerHTML = `<span class="text-emerald-600">✓ Correct!</span>`;
             } else {
                 fb.innerHTML = `<span class="text-red-500">✗ Incorrect. ${hint}</span>`;
