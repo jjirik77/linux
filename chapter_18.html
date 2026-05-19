@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CompTIA Linux+ (XK0-005): Virtualization & Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .hide-section { display: none; }
+        .active-nav { background-color: #334155; border-left: 4px solid #3b82f6; }
+        
+        /* Animation classes */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Diagram Styles */
+        .diag-box { transition: all 0.2s; cursor: pointer; }
+        .diag-box:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        
+        /* Terminal Typing Cursor */
+        .cursor-blink::after { content: '█'; animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Matching Game Styles */
+        .match-term.selected { ring: 2px; ring-color: #3b82f6; background-color: #eff6ff; }
+        .match-target { border: 2px dashed #cbd5e1; min-height: 3rem; }
+        .match-target.filled { border-style: solid; border-color: #10b981; background-color: #ecfdf5; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <nav class="w-64 bg-slate-900 text-slate-300 flex flex-col h-full shrink-0 shadow-xl z-20">
+        <div class="p-6 bg-slate-950 border-b border-slate-800">
+            <h1 class="text-xl font-bold text-white leading-tight">Linux+ XK0-005</h1>
+            <p class="text-sm text-blue-400 mt-1">Ch 18: Virtualization & Cloud</p>
+        </div>
+        
+        <div class="px-4 py-2 mt-4">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Progress</div>
+            <div class="w-full bg-slate-700 rounded-full h-2">
+                <div id="nav-progress" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="progress-text" class="text-xs text-right mt-1">0% Completed</div>
+        </div>
+
+        <ul class="flex-1 overflow-y-auto py-4 space-y-1" id="nav-links">
+            <li><button data-target="sec-overview" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 active-nav transition-colors">Overview</button></li>
+            <li><button data-target="sec-virt" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors">Virtualization Basics</button></li>
+            <li><button data-target="sec-network" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors">Networking & Storage</button></li>
+            <li><button data-target="sec-blob" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors">BLOB Storage</button></li>
+            <li><button data-target="sec-containers" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors">Containers & K8s</button></li>
+            <li><button data-target="sec-docker" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors">Docker & Podman</button></li>
+            <li><button data-target="sec-auto" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors">Automation</button></li>
+            <li><button data-target="sec-quiz" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition-colors font-semibold text-blue-300">Review & Final Quiz</button></li>
+        </ul>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative" id="main-content">
+        
+        <!-- Section: Overview -->
+        <section id="sec-overview" class="content-section p-8 max-w-5xl mx-auto fade-in">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Understanding Virtualization and the Cloud</h2>
+                <p class="text-lg text-slate-600 mt-2">Welcome! As a Linux systems administrator, you rarely manage isolated physical servers anymore. The modern enterprise runs on virtual machines, containers, and cloud infrastructure.</p>
+            </header>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+                <h3 class="text-xl font-semibold mb-4">Lesson Objectives</h3>
+                <ul class="list-disc list-inside space-y-2 text-slate-700">
+                    <li>Distinguish between Type 1 and Type 2 hypervisors.</li>
+                    <li>Understand VM storage provisioning and file formats.</li>
+                    <li>Configure virtual networking (NAT, Bridge, Overlay, Bonding).</li>
+                    <li>Differentiate between Block, Append, and Page BLOB storage.</li>
+                    <li>Compare virtual machines to containers.</li>
+                    <li>Manage containers using <code class="bg-slate-100 px-1 rounded">docker</code> and <code class="bg-slate-100 px-1 rounded">podman</code>.</li>
+                    <li>Grasp Kubernetes architecture basics and system automation (Kickstart).</li>
+                </ul>
+            </div>
+
+            <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md next-sec-btn" data-next="sec-virt">Start Lesson &rarr;</button>
+        </section>
+
+        <!-- Section: Virtualization Basics -->
+        <section id="sec-virt" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">Virtualization Fundamentals</h2>
+            
+            <div class="prose max-w-none text-slate-700 mb-8">
+                <p>Virtualization abstracts physical hardware to create virtual representations of servers, storage, and networks. The core component is the <strong>Hypervisor</strong> (or Virtual Machine Monitor - VMM), a concept originally developed by IBM.</p>
+            </div>
+
+            <!-- Exam Focus Sidebar -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 rounded-r-lg">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <h4 class="font-bold text-yellow-800">Linux+ Exam Focus</h4>
+                </div>
+                <p class="text-yellow-700 mt-2 text-sm">Be able to clearly distinguish between Type 1 and Type 2 hypervisors, and recognize common VM file formats (OVF, OVA, VMDK, VDI).</p>
+            </div>
+
+            <!-- Interactive Diagram: Type 1 vs Type 2 -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+                <h3 class="text-xl font-semibold mb-4 flex items-center justify-between">
+                    Hypervisor Architectures
+                    <span class="text-sm font-normal text-blue-500 bg-blue-50 px-2 py-1 rounded">Interactive: Click boxes for info</span>
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Type 1 -->
+                    <div class="flex flex-col items-center">
+                        <h4 class="font-bold mb-2">Type 1 (Bare-Metal)</h4>
+                        <div class="w-full max-w-xs space-y-2">
+                            <div class="flex space-x-2">
+                                <div class="bg-indigo-100 border-2 border-indigo-300 rounded p-2 flex-1 text-center diag-box text-sm font-semibold" onclick="showDiagInfo('virt-info', 'Guest OS / Apps', 'The virtual machines running their own operating systems on top of the hypervisor.')">VM 1</div>
+                                <div class="bg-indigo-100 border-2 border-indigo-300 rounded p-2 flex-1 text-center diag-box text-sm font-semibold" onclick="showDiagInfo('virt-info', 'Guest OS / Apps', 'The virtual machines running their own operating systems on top of the hypervisor.')">VM 2</div>
+                            </div>
+                            <div class="bg-blue-500 text-white rounded p-3 text-center diag-box font-bold shadow" onclick="showDiagInfo('virt-info', 'Type 1 Hypervisor', 'Runs directly on hardware. Direct hardware access makes it highly performant. Examples: KVM, VMware ESXi, MS Hyper-V, Xen.')">Hypervisor (Type 1)</div>
+                            <div class="bg-slate-700 text-white rounded p-3 text-center diag-box font-bold" onclick="showDiagInfo('virt-info', 'Physical Hardware', 'CPU, RAM, Disk, Network interfaces.')">Hardware</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Type 2 -->
+                    <div class="flex flex-col items-center">
+                        <h4 class="font-bold mb-2">Type 2 (Hosted)</h4>
+                        <div class="w-full max-w-xs space-y-2">
+                            <div class="flex space-x-2">
+                                <div class="bg-indigo-100 border-2 border-indigo-300 rounded p-2 flex-1 text-center diag-box text-sm font-semibold" onclick="showDiagInfo('virt-info', 'Guest OS / Apps', 'Virtual machines.')">VM 1</div>
+                                <div class="bg-indigo-100 border-2 border-indigo-300 rounded p-2 flex-1 text-center diag-box text-sm font-semibold" onclick="showDiagInfo('virt-info', 'Guest OS / Apps', 'Virtual machines.')">VM 2</div>
+                            </div>
+                            <div class="bg-emerald-500 text-white rounded p-3 text-center diag-box font-bold shadow" onclick="showDiagInfo('virt-info', 'Type 2 Hypervisor', 'Runs as an application inside a host OS. Slower due to overhead. Examples: VirtualBox, VMware Workstation.')">Hypervisor (App)</div>
+                            <div class="bg-slate-500 text-white rounded p-3 text-center diag-box font-bold shadow" onclick="showDiagInfo('virt-info', 'Host OS', 'The underlying operating system (e.g., Windows, macOS, Linux desktop) that hosts the hypervisor application.')">Host OS</div>
+                            <div class="bg-slate-700 text-white rounded p-3 text-center diag-box font-bold" onclick="showDiagInfo('virt-info', 'Physical Hardware', 'CPU, RAM, Disk, Network interfaces.')">Hardware</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Info Display Box -->
+                <div id="virt-info" class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded text-center min-h-[5rem] flex flex-col justify-center">
+                    <p class="text-slate-500 italic">Click a component in the diagram above to see details.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold mb-3 border-b pb-2">Storage Provisioning</h3>
+                    <ul class="space-y-3">
+                        <li><strong class="text-blue-600">Thick Provisioning:</strong> Allocates all required disk space upfront. Faster performance, but wastes space if unused.</li>
+                        <li><strong class="text-emerald-600">Thin Provisioning:</strong> Allocates space dynamically as the VM writes data. Saves storage space but incurs slight overhead as it expands.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold mb-3 border-b pb-2">File Formats</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><strong>OVF:</strong> Open Virtualization Format. A directory with multiple config/disk files.</li>
+                        <li><strong>OVA:</strong> An archive (tar) of an OVF directory (single file).</li>
+                        <li><strong>VMDK:</strong> Disk format developed by VMware (used by QEMU/VirtualBox).</li>
+                        <li><strong>VDI:</strong> Native VirtualBox disk image format.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Micro Quiz -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="font-bold text-blue-900 mb-4">Concept Check</h3>
+                <div id="qc-virt" class="space-y-4"></div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2" onclick="document.querySelector('[data-target=sec-overview]').click()">Prev</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow next-sec-btn" data-next="sec-network">Next Section</button>
+            </div>
+        </section>
+
+        <!-- Section: Networking & Storage -->
+        <section id="sec-network" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">VM Networking & Management</h2>
+            
+            <p class="mb-6">Linux systems often use <strong>libvirt</strong> as an abstraction layer to interact with hypervisors (like KVM). The primary command-line tool is <code class="bg-slate-200 px-1 rounded font-mono text-sm">virsh</code> (e.g., <code class="text-sm font-mono">virsh list --all</code>, <code class="text-sm font-mono">virsh start vm1</code>).</p>
+
+            <div class="bg-slate-900 rounded-xl shadow-md overflow-hidden mb-8 border border-slate-700">
+                <div class="bg-slate-800 px-4 py-2 border-b border-slate-700 flex items-center">
+                    <h3 class="font-bold text-slate-200 text-sm">Essential virsh Commands (Exam Scope)</h3>
+                </div>
+                <div class="p-4 font-mono text-sm space-y-3 text-slate-300">
+                    <div><span class="text-emerald-400">virsh list --all</span> <span class="text-slate-500 italic block mt-1"># Lists all VMs (running and stopped) on the host.</span></div>
+                    <div><span class="text-emerald-400">virsh start vm1</span> <span class="text-slate-500 italic block mt-1"># Boots up a stopped virtual machine named 'vm1'.</span></div>
+                    <div><span class="text-emerald-400">virsh suspend vm1</span> <span class="text-slate-500 italic block mt-1"># Pauses a running VM, keeping its state in memory.</span></div>
+                    <div><span class="text-emerald-400">virsh migrate --live vm1 qemu+ssh://host2/system</span> <span class="text-slate-500 italic block mt-1"># Moves a running VM to another hypervisor ('host2') without downtime.</span></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                <div class="bg-slate-100 p-4 border-b border-slate-200">
+                    <h3 class="font-bold text-lg">Virtual Network Modes</h3>
+                </div>
+                <!-- Interactive Accordion -->
+                <div class="divide-y divide-slate-200" id="network-accordion">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+                <h3 class="text-lg font-bold mb-4">Advanced Concepts</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 border border-blue-200 bg-blue-50 rounded">
+                        <h4 class="font-bold text-blue-800">Dual-Homed & Bonding</h4>
+                        <p class="text-sm mt-2">A VM with two NICs is <strong>dual-homed</strong>. <strong>Bonding</strong> combines multiple physical/virtual NICs (e.g., <code class="text-xs">enp0s1</code>, <code class="text-xs">enp0s2</code>) into a single logical interface (<code class="text-xs">bond0</code>) for redundancy or increased throughput.</p>
+                    </div>
+                    <div class="p-4 border border-purple-200 bg-purple-50 rounded">
+                        <h4 class="font-bold text-purple-800">Virtual Switch (vSwitch)</h4>
+                        <p class="text-sm mt-2">A software construct within the hypervisor that connects virtual NICs (vNICs) of VMs together, functioning exactly like a physical layer-2 switch.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Match Game -->
+            <div class="bg-slate-100 p-6 rounded-xl border border-slate-300">
+                <h3 class="font-bold text-slate-800 mb-2">Interactive Match: Networking Concepts</h3>
+                <p class="text-sm text-slate-500 mb-4">Click a term on the left, then click its definition on the right.</p>
+                
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Terms -->
+                    <div class="w-full md:w-1/3 flex flex-col gap-2" id="match-terms">
+                        <button class="match-term bg-white border border-slate-300 p-3 rounded shadow-sm text-left hover:bg-slate-50 transition" data-id="nat">NAT / Masquerading</button>
+                        <button class="match-term bg-white border border-slate-300 p-3 rounded shadow-sm text-left hover:bg-slate-50 transition" data-id="bridge">Bridge</button>
+                        <button class="match-term bg-white border border-slate-300 p-3 rounded shadow-sm text-left hover:bg-slate-50 transition" data-id="overlay">Overlay</button>
+                        <button class="match-term bg-white border border-slate-300 p-3 rounded shadow-sm text-left hover:bg-slate-50 transition" data-id="bond">Bonding</button>
+                    </div>
+                    <!-- Targets -->
+                    <div class="w-full md:w-2/3 flex flex-col gap-2" id="match-targets">
+                        <div class="match-target bg-white p-3 rounded flex items-center cursor-pointer hover:bg-slate-50 transition text-sm" data-match="bridge">Connects VM directly to physical network segment; gets IP from physical DHCP.</div>
+                        <div class="match-target bg-white p-3 rounded flex items-center cursor-pointer hover:bg-slate-50 transition text-sm" data-match="bond">Combines enp0s1 and enp0s2 into bond0 for redundancy.</div>
+                        <div class="match-target bg-white p-3 rounded flex items-center cursor-pointer hover:bg-slate-50 transition text-sm" data-match="nat">VMs share host's IP via translation to access internet; hides private IPs.</div>
+                        <div class="match-target bg-white p-3 rounded flex items-center cursor-pointer hover:bg-slate-50 transition text-sm" data-match="overlay">Logical network built on top of physical net (e.g., connecting container pods across hosts).</div>
+                    </div>
+                </div>
+                <div id="match-feedback" class="mt-4 font-bold text-center h-6"></div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2" onclick="document.querySelector('[data-target=sec-virt]').click()">Prev</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow next-sec-btn" data-next="sec-blob">Next Section</button>
+            </div>
+        </section>
+
+        <!-- Section: BLOB Storage -->
+        <section id="sec-blob" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">BLOB Storage Concepts</h2>
+            
+            <p class="mb-6">Cloud providers use BLOB (Binary Large Object) storage for unstructured data accessible via HTTP(S). Understanding the types is crucial for selecting the right architecture.</p>
+
+            <!-- Compare Table Widget -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 border-b border-slate-200">
+                            <th class="p-4 font-semibold text-slate-700">BLOB Type</th>
+                            <th class="p-4 font-semibold text-slate-700">Characteristics</th>
+                            <th class="p-4 font-semibold text-slate-700">Ideal Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors" onclick="showBlobCase('block')">
+                            <td class="p-4 font-bold text-blue-700">Block BLOB</td>
+                            <td class="p-4 text-sm">Max 100MB/block, up to 50k blocks. Requires a 'commit'. Uncommitted data expires (~1 week).</td>
+                            <td class="p-4 text-sm text-slate-600">Streaming media, document storage.</td>
+                        </tr>
+                        <tr class="border-b border-slate-100 hover:bg-emerald-50 cursor-pointer transition-colors" onclick="showBlobCase('append')">
+                            <td class="p-4 font-bold text-emerald-700">Append BLOB</td>
+                            <td class="p-4 text-sm">Data added to the end only. Existing blocks cannot be modified or deleted.</td>
+                            <td class="p-4 text-sm text-slate-600">Log files, auditing trails.</td>
+                        </tr>
+                        <tr class="hover:bg-purple-50 cursor-pointer transition-colors" onclick="showBlobCase('page')">
+                            <td class="p-4 font-bold text-purple-700">Page BLOB</td>
+                            <td class="p-4 text-sm">512-byte pages. Optimized for random read/write operations. Up to ~8TB.</td>
+                            <td class="p-4 text-sm text-slate-600">Virtual Machine disks (VHDs), databases.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="blob-case-display" class="bg-slate-800 text-white p-4 text-sm hidden">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Micro Quiz -->
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 class="font-bold text-blue-900 mb-4">Concept Check</h3>
+                <div id="qc-blob" class="space-y-4"></div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2" onclick="document.querySelector('[data-target=sec-network]').click()">Prev</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow next-sec-btn" data-next="sec-containers">Next Section</button>
+            </div>
+        </section>
+
+        <!-- Section: Containers & K8s -->
+        <section id="sec-containers" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">Containers & Kubernetes Architecture</h2>
+            
+            <!-- VM vs Container Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+                <div class="flex border-b border-slate-200 bg-slate-50">
+                    <button class="flex-1 py-3 font-bold text-slate-600 hover:text-blue-600 tab-btn active border-b-2 border-blue-600" data-tab="tab-vm">Virtual Machine</button>
+                    <button class="flex-1 py-3 font-bold text-slate-600 hover:text-emerald-600 tab-btn border-b-2 border-transparent" data-tab="tab-cont">Container</button>
+                </div>
+                
+                <div class="p-8 flex justify-center items-center min-h-[350px]">
+                    <!-- VM Tab Content -->
+                    <div id="tab-vm" class="tab-content text-center w-full max-w-md animate-[fadeIn_0.5s_ease-in-out]">
+                        <h4 class="mb-4 font-semibold text-slate-500">Machine-Level Virtualization</h4>
+                        <div class="border-2 border-blue-400 bg-blue-50 rounded-t-lg p-2 mb-1 shadow text-sm">App A</div>
+                        <div class="border-2 border-blue-400 bg-blue-100 p-2 mb-2 shadow text-sm">Bins/Libs A</div>
+                        <div class="border-2 border-slate-600 bg-slate-200 rounded-b-lg p-3 mb-4 shadow font-bold text-slate-700">Guest OS (Heavy)</div>
+                        
+                        <div class="bg-indigo-600 text-white p-3 rounded mb-2 shadow font-bold w-full">Hypervisor</div>
+                        <div class="bg-slate-800 text-white p-3 rounded shadow font-bold w-full">Host OS / Hardware</div>
+                        <p class="mt-4 text-sm text-slate-600 text-left">VMs virtualize the hardware. Every VM runs a full, heavy operating system. Isolation is strong, but resource overhead is high.</p>
+                    </div>
+
+                    <!-- Container Tab Content -->
+                    <div id="tab-cont" class="tab-content text-center w-full max-w-md hidden animate-[fadeIn_0.5s_ease-in-out]">
+                        <h4 class="mb-4 font-semibold text-slate-500">Application-Level Virtualization</h4>
+                        <div class="flex space-x-4 mb-4">
+                            <div class="flex-1 border-2 border-emerald-500 bg-emerald-50 rounded-lg p-2 shadow">
+                                <div class="font-bold text-emerald-800 mb-1">App A</div>
+                                <div class="text-xs bg-emerald-100 p-1 rounded">Bins/Libs</div>
+                            </div>
+                            <div class="flex-1 border-2 border-emerald-500 bg-emerald-50 rounded-lg p-2 shadow">
+                                <div class="font-bold text-emerald-800 mb-1">App B</div>
+                                <div class="text-xs bg-emerald-100 p-1 rounded">Bins/Libs</div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-500 text-white p-3 rounded mb-2 shadow font-bold w-full">Container Engine (e.g., Docker/Podman)</div>
+                        <div class="bg-slate-800 text-white p-3 rounded shadow font-bold w-full">Shared Host OS & Kernel</div>
+                        <p class="mt-4 text-sm text-slate-600 text-left">Containers virtualize the OS. They share the host's kernel, making them lightweight, fast to start, and highly efficient. Ideally, one main process runs per container.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- K8s Vocabulary -->
+            <h3 class="text-2xl font-bold mb-4">Kubernetes (K8s) Vocabulary</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-blue-800">Pod</h4>
+                    <p class="text-sm mt-1">Smallest deployable unit. Contains one or more containers sharing network/storage. Ideally 1 primary container.</p>
+                </div>
+                <div class="bg-white border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-blue-800">Sidecar Container</h4>
+                    <p class="text-sm mt-1">A helper container attached to a pod to assist the primary container (e.g., logging, syncing files).</p>
+                </div>
+                <div class="bg-white border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-blue-800">Ambassador</h4>
+                    <p class="text-sm mt-1">A container providing helper services <em>external</em> to the container (e.g., proxying database connections).</p>
+                </div>
+                <div class="bg-white border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-blue-800">Deployment</h4>
+                    <p class="text-sm mt-1">Manages replicas of pods. Starts, stops, monitors, and restarts them to maintain desired state.</p>
+                </div>
+                <div class="bg-white border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition">
+                    <h4 class="font-bold text-blue-800">Cluster & Node</h4>
+                    <p class="text-sm mt-1">A pool of resources. Nodes are individual machines (VM or bare-metal) running deployments.</p>
+                </div>
+                <div class="bg-white border border-emerald-300 bg-emerald-50 p-4 rounded shadow-sm">
+                    <h4 class="font-bold text-emerald-800">Persistent Volume</h4>
+                    <p class="text-sm mt-1 text-emerald-900">Storage that survives container deletion. Like attaching an external drive to a cluster for stateful data.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl shadow-md overflow-hidden mb-8 border border-slate-700">
+                <div class="bg-slate-800 px-4 py-2 border-b border-slate-700 flex items-center">
+                    <h3 class="font-bold text-slate-200 text-sm">Essential kubectl Commands (Exam Scope)</h3>
+                </div>
+                <div class="p-4 font-mono text-sm space-y-3 text-slate-300">
+                    <div><span class="text-emerald-400">kubectl get nodes</span> <span class="text-slate-500 italic block mt-1"># Lists all worker nodes in your Kubernetes cluster.</span></div>
+                    <div><span class="text-emerald-400">kubectl get pods</span> <span class="text-slate-500 italic block mt-1"># Displays all running pods in the current namespace.</span></div>
+                    <div><span class="text-emerald-400">kubectl describe pod &lt;pod-name&gt;</span> <span class="text-slate-500 italic block mt-1"># Shows detailed configuration and event history for a specific pod (great for troubleshooting).</span></div>
+                    <div><span class="text-emerald-400">kubectl apply -f config.yaml</span> <span class="text-slate-500 italic block mt-1"># Deploys or updates resources defined in a YAML configuration file.</span></div>
+                </div>
+            </div>
+
+            <!-- Configuration Formats -->
+            <div class="flex flex-col md:flex-row gap-6 mb-8">
+                <div class="flex-1 bg-slate-900 text-slate-300 p-5 rounded-xl font-mono text-sm shadow-inner relative">
+                    <span class="absolute top-2 right-2 bg-slate-700 text-xs px-2 py-1 rounded">JSON</span>
+                    <pre><code>{
+  "name": "nginx-pod",
+  "image": "nginx:latest",
+  "port": 80
+}</code></pre>
+                    <p class="mt-3 text-xs font-sans">Used by Docker. Braces/Quotes required. No comments allowed.</p>
+                </div>
+                <div class="flex-1 bg-slate-900 text-slate-300 p-5 rounded-xl font-mono text-sm shadow-inner relative">
+                    <span class="absolute top-2 right-2 bg-slate-700 text-xs px-2 py-1 rounded">YAML</span>
+                    <pre><code>name: nginx-pod
+image: nginx:latest
+port: 80
+# Comments are allowed here</code></pre>
+                    <p class="mt-3 text-xs font-sans text-emerald-400">Used heavily by K8s. Indentation matters. Superset of JSON (human-readable).</p>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2" onclick="document.querySelector('[data-target=sec-blob]').click()">Prev</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow next-sec-btn" data-next="sec-docker">Next Section</button>
+            </div>
+        </section>
+
+        <!-- Section: Docker & Podman -->
+        <section id="sec-docker" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">Managing Containers: Docker & Podman</h2>
+            
+            <p class="mb-6">For the Linux+ exam, <code class="bg-slate-200 px-1 rounded">docker</code> and <code class="bg-slate-200 px-1 rounded">podman</code> commands are essentially interchangeable. Podman is daemonless and rootless by default, preferred in modern Red Hat environments.</p>
+
+            <div class="bg-indigo-50 border border-indigo-200 p-6 rounded-xl mb-8 shadow-sm">
+                <h3 class="font-bold text-indigo-900 text-lg mb-3">Container Execution & Networking Syntax</h3>
+                <p class="text-sm text-indigo-800 mb-4">Before running our first container, let's break down three critical flags you will see repeatedly on the exam:</p>
+                
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded shadow-sm border border-indigo-100">
+                        <h4 class="font-bold text-blue-700 font-mono">-p (Port Mapping)</h4>
+                        <p class="text-sm text-slate-700 mt-1">Syntax: <code class="bg-slate-100 px-1 rounded font-mono">-p HostPort:ContainerPort</code> (e.g., <code class="bg-slate-100 px-1 rounded font-mono">-p 8080:80</code>).<br>
+                        <strong>Analogy:</strong> Think of the host machine as a hotel and the container as a guest's room. The <code class="font-mono">-p 8080:80</code> flag tells the hotel receptionist (the host on port 8080) to forward all calls directly to the guest's room extension (the container on port 80).</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-4 rounded shadow-sm border border-indigo-100">
+                            <h4 class="font-bold text-blue-700 font-mono">-i (Interactive)</h4>
+                            <p class="text-sm text-slate-700 mt-1">Keeps STDIN (standard input) open even if not attached. It allows you to actually send commands into the container.</p>
+                        </div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-indigo-100">
+                            <h4 class="font-bold text-blue-700 font-mono">-t (Pseudo-TTY)</h4>
+                            <p class="text-sm text-slate-700 mt-1">Allocates a terminal interface. Often combined with <code class="font-mono">-i</code> as <code class="font-bold text-blue-600">-it</code> to give you a fully interactive command-line shell inside the container.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Simulator -->
+            <div class="bg-slate-900 rounded-xl shadow-2xl overflow-hidden mb-8 border border-slate-700">
+                <div class="bg-slate-800 px-4 py-2 flex items-center border-b border-slate-700">
+                    <div class="flex space-x-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div class="mx-auto text-slate-400 text-xs font-mono">user@linux: ~</div>
+                </div>
+                
+                <div class="p-4 font-mono text-sm min-h-[300px] text-slate-300 relative" id="terminal-screen">
+                    <div class="text-emerald-400 mb-4"># Welcome to the Container Command Simulator</div>
+                    <div id="term-output-area" class="space-y-2"></div>
+                    <div id="term-input-line" class="flex mt-2 hidden">
+                        <span class="text-blue-400 mr-2">[user@linux ~]$</span>
+                        <span id="term-typing" class="text-white cursor-blink"></span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 p-4 flex flex-col sm:flex-row justify-between items-center border-t border-slate-300">
+                    <div id="term-explanation" class="text-sm text-slate-700 mb-4 sm:mb-0 max-w-md font-sans">
+                        Click "Run Next Step" to walk through a standard container lifecycle.
+                    </div>
+                    <button id="btn-term-next" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold text-sm shadow transition">Run Next Step</button>
+                    <button id="btn-term-reset" class="hidden text-slate-500 hover:text-slate-800 font-semibold text-sm transition">Reset Simulator</button>
+                </div>
+            </div>
+
+            <!-- Persistent Storage Focus -->
+            <div class="bg-emerald-50 border-l-4 border-emerald-500 p-6 mb-8 rounded-r-xl shadow-sm">
+                <h3 class="font-bold text-emerald-900 text-lg mb-2">Crucial Exam Concept: Persistent Volumes</h3>
+                <p class="text-emerald-800 text-sm mb-3">By default, data written inside a container is lost when the container is removed. To save data, you must map a host directory to a container directory.</p>
+                <code class="block bg-emerald-900 text-emerald-100 p-3 rounded text-sm font-mono shadow-inner">
+                    docker run -d -v /media/mydata:/mnt/data nginx
+                </code>
+                <p class="text-emerald-800 text-sm mt-2">Data written to <code class="bg-emerald-200 px-1">/mnt/data</code> inside the container actually lives in <code class="bg-emerald-200 px-1">/media/mydata</code> on the host system.</p>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2" onclick="document.querySelector('[data-target=sec-containers]').click()">Prev</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow next-sec-btn" data-next="sec-auto">Next Section</button>
+            </div>
+        </section>
+
+        <!-- Section: Automation -->
+        <section id="sec-auto" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">Automation: Kickstart & Cloud-init</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Kickstart -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-red-100 p-2 rounded mr-3">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold">Kickstart (Anaconda)</h3>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-4">Automates Red Hat-class OS installations. The installer is called <strong>Anaconda</strong>.</p>
+                    <ul class="text-sm space-y-2 text-slate-700">
+                        <li><span class="font-mono bg-slate-100 px-1 rounded">/root/anaconda-ks.cfg</span>: Created automatically after a manual install.</li>
+                        <li>To reuse: copy to <span class="font-mono bg-slate-100 px-1 rounded">/root/ks.cfg</span>, modify, and point installer to it using boot parameter <span class="font-mono text-blue-600 font-bold">inst.ks=</span></li>
+                        <li><span class="font-mono bg-slate-100 px-1 rounded">system-config-kickstart</span>: GUI tool to edit configs.</li>
+                        <li><span class="font-mono bg-slate-100 px-1 rounded">ksvalidator</span>: Checks syntax before deploying.</li>
+                    </ul>
+                    
+                    <div class="mt-4 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r shadow-sm">
+                        <h4 class="font-bold text-amber-900 mb-1">Exam Focus: Network Boot Parameters</h4>
+                        <p class="text-amber-800 text-sm">For automated network installations (PXE), you must pass specific parameters to the kernel at boot so it can reach the network to download the kickstart file:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1 text-amber-900 font-mono text-sm">
+                            <li><span class="font-bold">ip=</span> (e.g., ip=dhcp) Configures the network interface.</li>
+                            <li><span class="font-bold">inst.repo=</span> Points to the installation source packages (HTTP/FTP).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- cloud-init -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-100 p-2 rounded mr-3">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                        </div>
+                        <h3 class="text-xl font-bold">cloud-init</h3>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-4">The industry standard method for cross-platform cloud instance initialization.</p>
+                    <ul class="text-sm space-y-2 text-slate-700">
+                        <li>Handles tasks on first boot: adding SSH keys, setting hostname, creating users, updating packages.</li>
+                        <li>Main configuration file (<strong>Memorize this path</strong>):</li>
+                    </ul>
+                    <div class="bg-slate-900 text-emerald-400 font-mono text-center p-3 rounded mt-3 shadow-inner">
+                        /etc/cloud/cloud.cfg
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2" onclick="document.querySelector('[data-target=sec-docker]').click()">Prev</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow next-sec-btn" data-next="sec-quiz">Proceed to Final Quiz</button>
+            </div>
+        </section>
+
+        <!-- Section: Final Quiz -->
+        <section id="sec-quiz" class="content-section hide-section p-8 max-w-5xl mx-auto fade-in mb-12">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2">Chapter 18 Final Review & Quiz</h2>
+            <p class="text-slate-600 mb-8">Test your knowledge. These questions reflect the style and difficulty of the Linux+ exam.</p>
+
+            <!-- Self-Explanation Prompts -->
+            <div class="bg-indigo-50 border border-indigo-200 p-6 rounded-xl mb-8">
+                <h3 class="font-bold text-indigo-900 mb-3">"Can you explain..." Checklist</h3>
+                <p class="text-sm text-indigo-700 mb-4">Before taking the quiz, see if you can answer these out loud:</p>
+                <ul class="list-none space-y-2">
+                    <li class="flex items-start">
+                        <input type="checkbox" class="mt-1 mr-3 w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-sm text-slate-700">Explain to a manager why containers are more efficient than VMs for microservices.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <input type="checkbox" class="mt-1 mr-3 w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-sm text-slate-700">Explain when you would pick Block vs Append vs Page BLOBs.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <input type="checkbox" class="mt-1 mr-3 w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-sm text-slate-700">Explain why persistent volumes are critical for stateful apps in containers.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Quiz Container -->
+            <div id="final-quiz-container" class="space-y-6">
+                <!-- Generated by JS -->
+            </div>
+            
+            <button id="submit-quiz" class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg w-full md:w-auto hidden transition-transform active:scale-95">Submit Answers</button>
+            
+            <div id="quiz-results" class="mt-6 hidden p-6 rounded-xl text-center"></div>
+
+        </section>
+    </main>
+
+    <script>
+        // Data Structures
+        const contentSections = ['sec-overview', 'sec-virt', 'sec-network', 'sec-blob', 'sec-containers', 'sec-docker', 'sec-auto', 'sec-quiz'];
+        let completedSections = new Set(['sec-overview']);
+
+        // Network Accordion Data
+        const networkData = [
+            { title: "NAT / Masquerading (Default)", content: "VMs share the host's IP address to access external networks. The host acts as a router doing Network Address Translation. External devices cannot initiate connections directly to the VM without port forwarding." },
+            { title: "Bridged Networking", content: "The VM connects directly to the physical network segment the host is on. It typically gets its own IP address from the physical router's DHCP. It appears as a physical peer on the network." },
+            { title: "Overlay Network", content: "A logical network built on top of a physical network. Often used in Kubernetes/containers to allow Pods on different physical nodes to communicate as if they were on the same local subnet (e.g., Flannel, Calico)." }
+        ];
+
+        // Quiz Data Arrays
+        const microQuizVirt = [
+            { q: "Which hypervisor runs directly on system hardware?", options: ["Type 1", "Type 2", "Hosted", "Overlay"], answer: 0, hint: "Review 'Virtualization Fundamentals'" }
+        ];
+        
+        const microQuizBlob = [
+            { q: "Which BLOB type is best suited for streaming video files?", options: ["Page BLOB", "Append BLOB", "Block BLOB", "Binary BLOB"], answer: 2, hint: "Review 'BLOB Storage Concepts'" }
+        ];
+
+        const finalQuiz = [
+            { q: "Which command specifically lists the container images stored locally on a host?", options: ["docker ps", "docker ls", "docker images", "docker inspect"], answer: 2, hint: "Review: 'Managing Containers: Docker & Podman'" },
+            { q: "An administrator needs to allocate storage for a new VM but wants to conserve physical disk space, only growing the file as data is written. Which provisioning method should be used?", options: ["Thick provisioning", "Dynamic formatting", "Thin provisioning", "Block BLOB allocation"], answer: 2, hint: "Review: Virtualization Basics (Storage Provisioning)" },
+            { q: "Which virtualization file format is essentially a tar archive containing an OVF directory?", options: ["VMDK", "OVA", "VDI", "JSON"], answer: 1, hint: "Review: Virtualization Basics (File Formats)" },
+            { q: "In a Kubernetes environment, what is the smallest deployable compute unit that contains one or more containers?", options: ["Deployment", "Cluster", "Node", "Pod"], answer: 3, hint: "Review: Containers & K8s Architecture" },
+            { q: "Which data serialization format is heavily preferred in Kubernetes for configuration files because it supports comments and is highly human-readable?", options: ["XML", "JSON", "YAML", "INI"], answer: 2, hint: "Review: Containers & K8s Architecture (Config Formats)" },
+            { q: "What is the absolute path to the main configuration file used by cloud-init?", options: ["/etc/cloud/cloud.cfg", "/etc/sysconfig/cloud", "/root/anaconda-ks.cfg", "/var/lib/cloud/config"], answer: 0, hint: "Review: Automation (cloud-init)" },
+            { q: "A Linux admin configures 'enp0s1' and 'enp0s2' to act as a single logical interface for failover. What is this concept called?", options: ["Bridging", "Bonding", "Overlaying", "Masquerading"], answer: 1, hint: "Review: VM Networking (Advanced Concepts)" }
+        ];
+
+        // Terminal Simulator Steps
+        const termSteps = [
+            { cmd: "docker search nginx", out: "NAME    DESCRIPTION               STARS\nnginx   Official build of Nginx   18000\n...", desc: "First, we search the registry (Docker Hub) for an image." },
+            { cmd: "docker pull nginx", out: "Using default tag: latest\nlatest: Pulling from library/nginx\nDigest: sha256:4c0f33...\nStatus: Downloaded newer image for nginx:latest", desc: "Next, we download (pull) the image to our local host." },
+            { cmd: "docker images", out: "REPOSITORY   TAG       IMAGE ID       CREATED        SIZE\nnginx        latest    605c77e624dd   2 weeks ago    141MB", desc: "We verify the image is stored locally." },
+            { cmd: "docker run -d -p 8080:80 --name myweb nginx", out: "a1b2c3d4e5f6g7h8i9j0...", desc: "We run the container detached (-d), map host port 8080 to container port 80 (-p), and name it 'myweb'." },
+            { cmd: "docker ps", out: "CONTAINER ID   IMAGE   COMMAND                  STATUS          PORTS                  NAMES\na1b2c3d4e5f6   nginx   \"/docker-entrypoint.…\"   Up 10 seconds   0.0.0.0:8080->80/tcp   myweb", desc: "List running containers to see it's active." },
+            { cmd: "docker stop myweb", out: "myweb", desc: "Gracefully stop the container process." },
+            { cmd: "docker rm myweb", out: "myweb", desc: "Remove the container instance (the image remains)." }
+        ];
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            setupNavigation();
+            buildAccordion();
+            setupTabs();
+            buildMicroQuiz('qc-virt', microQuizVirt);
+            buildMicroQuiz('qc-blob', microQuizBlob);
+            buildFinalQuiz();
+            setupMatchGame();
+            setupTerminal();
+            updateProgress();
+        });
+
+        function setupNavigation() {
+            const navBtns = document.querySelectorAll('.nav-btn');
+            const nextBtns = document.querySelectorAll('.next-sec-btn');
+
+            navBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.target.getAttribute('data-target');
+                    switchSection(targetId);
+                });
+            });
+
+            nextBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.target.getAttribute('data-next');
+                    switchSection(targetId);
+                });
+            });
+        }
+
+        function switchSection(targetId) {
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('hide-section'));
+            document.getElementById(targetId).classList.remove('hide-section');
+            
+            // Scroll top
+            document.getElementById('main-content').scrollTop = 0;
+
+            // Update Nav styling
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
+            document.querySelector(`[data-target="${targetId}"]`).classList.add('active-nav');
+
+            // Track progress
+            completedSections.add(targetId);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = contentSections.length;
+            const completed = completedSections.size;
+            const percent = Math.round((completed / total) * 100);
+            
+            document.getElementById('nav-progress').style.width = `${percent}%`;
+            document.getElementById('progress-text').innerText = `${percent}% Completed`;
+        }
+
+        // Diagram Info Function
+        window.showDiagInfo = function(targetId, title, desc) {
+            const container = document.getElementById(targetId);
+            container.innerHTML = `<h5 class="font-bold text-slate-800">${title}</h5><p class="text-sm text-slate-600 mt-1">${desc}</p>`;
+        };
+
+        function buildAccordion() {
+            const container = document.getElementById('network-accordion');
+            networkData.forEach((item, index) => {
+                container.innerHTML += `
+                    <div class="border-t border-slate-200">
+                        <button class="w-full text-left p-4 font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none flex justify-between items-center" onclick="toggleAccordion('acc-${index}')">
+                            ${item.title}
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="acc-${index}" class="hidden p-4 bg-white text-sm text-slate-600 border-t border-slate-100">
+                            ${item.content}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.toggleAccordion = function(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        };
+
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    // Reset all
+                    tabs.forEach(t => {
+                        t.classList.remove('active', 'border-blue-600', 'border-emerald-600');
+                        t.classList.add('border-transparent');
+                    });
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                    
+                    // Activate clicked
+                    const target = e.target.getAttribute('data-tab');
+                    const colorClass = target === 'tab-vm' ? 'border-blue-600' : 'border-emerald-600';
+                    e.target.classList.add('active', colorClass);
+                    e.target.classList.remove('border-transparent');
+                    document.getElementById(target).classList.remove('hidden');
+                });
+            });
+        }
+
+        window.showBlobCase = function(type) {
+            const display = document.getElementById('blob-case-display');
+            display.classList.remove('hidden');
+            if(type === 'block') display.innerHTML = "<strong>Block BLOB Use Case:</strong> Storing thousands of PDF manuals for a web application.";
+            if(type === 'append') display.innerHTML = "<strong>Append BLOB Use Case:</strong> Continuously writing security audit logs from multiple VMs to a single file.";
+            if(type === 'page') display.innerHTML = "<strong>Page BLOB Use Case:</strong> Serving as the underlying virtual hard drive (.vhd) for an Azure Virtual Machine.";
+        };
+
+        function setupMatchGame() {
+            let selectedTerm = null;
+            const terms = document.querySelectorAll('.match-term');
+            const targets = document.querySelectorAll('.match-target');
+            let matchesMade = 0;
+
+            terms.forEach(term => {
+                term.addEventListener('click', () => {
+                    if (term.disabled) return;
+                    terms.forEach(t => t.classList.remove('selected', 'ring-2', 'ring-blue-500', 'bg-blue-50'));
+                    term.classList.add('selected', 'ring-2', 'ring-blue-500', 'bg-blue-50');
+                    selectedTerm = term.getAttribute('data-id');
+                    document.getElementById('match-feedback').innerText = `Selected: ${term.innerText} - Now click its definition.`;
+                    document.getElementById('match-feedback').className = 'mt-4 font-semibold text-center h-6 text-blue-600';
+                });
+            });
+
+            targets.forEach(target => {
+                target.addEventListener('click', () => {
+                    if (!selectedTerm || target.classList.contains('filled')) return;
+                    
+                    if (target.getAttribute('data-match') === selectedTerm) {
+                        // Correct match
+                        const termEl = document.querySelector(`.match-term[data-id="${selectedTerm}"]`);
+                        target.innerHTML = `<span class="font-bold text-emerald-800 mr-2">${termEl.innerText}:</span> ${target.innerHTML}`;
+                        target.classList.add('filled', 'border-emerald-500', 'bg-emerald-50');
+                        termEl.disabled = true;
+                        termEl.classList.add('opacity-50', 'cursor-not-allowed');
+                        termEl.classList.remove('selected', 'ring-2');
+                        selectedTerm = null;
+                        matchesMade++;
+                        
+                        document.getElementById('match-feedback').innerText = "Correct match!";
+                        document.getElementById('match-feedback').className = 'mt-4 font-bold text-center h-6 text-emerald-600';
+
+                        if(matchesMade === 4) {
+                            document.getElementById('match-feedback').innerText = "Excellent! You matched all networking concepts.";
+                        }
+                    } else {
+                        // Incorrect
+                        document.getElementById('match-feedback').innerText = "Incorrect match. Try again.";
+                        document.getElementById('match-feedback').className = 'mt-4 font-bold text-center h-6 text-red-500';
+                    }
+                });
+            });
+        }
+
+        function setupTerminal() {
+            let currentStep = 0;
+            const btnNext = document.getElementById('btn-term-next');
+            const btnReset = document.getElementById('btn-term-reset');
+            const outputArea = document.getElementById('term-output-area');
+            const inputLine = document.getElementById('term-input-line');
+            const typingArea = document.getElementById('term-typing');
+            const explanation = document.getElementById('term-explanation');
+
+            btnNext.addEventListener('click', () => {
+                if (currentStep >= termSteps.length) return;
+                
+                btnNext.disabled = true;
+                const step = termSteps[currentStep];
+                explanation.innerHTML = `<span class="font-semibold text-blue-800">Executing:</span> ${step.desc}`;
+                
+                inputLine.classList.remove('hidden');
+                typingArea.innerText = '';
+                
+                // Simulate typing
+                let i = 0;
+                const typeInterval = setInterval(() => {
+                    typingArea.innerText += step.cmd.charAt(i);
+                    i++;
+                    if (i >= step.cmd.length) {
+                        clearInterval(typeInterval);
+                        setTimeout(() => {
+                            // Print output
+                            typingArea.innerText = '';
+                            inputLine.classList.add('hidden');
+                            
+                            const outBlock = document.createElement('div');
+                            outBlock.className = 'mb-4';
+                            outBlock.innerHTML = `<div class="text-white"><span class="text-blue-400">[user@linux ~]$</span> ${step.cmd}</div><div class="text-slate-400 whitespace-pre-wrap">${step.out}</div>`;
+                            outputArea.appendChild(outBlock);
+                            
+                            // Scroll terminal to bottom
+                            const screen = document.getElementById('terminal-screen');
+                            screen.scrollTop = screen.scrollHeight;
+
+                            currentStep++;
+                            btnNext.disabled = false;
+                            
+                            if (currentStep >= termSteps.length) {
+                                btnNext.classList.add('hidden');
+                                btnReset.classList.remove('hidden');
+                                explanation.innerHTML = `<span class="font-bold text-emerald-600">Workflow Complete!</span>`;
+                            }
+                        }, 500); // pause before output
+                    }
+                }, 50); // typing speed
+            });
+
+            btnReset.addEventListener('click', () => {
+                currentStep = 0;
+                outputArea.innerHTML = '';
+                btnNext.classList.remove('hidden');
+                btnReset.classList.add('hidden');
+                explanation.innerText = 'Click "Run Next Step" to walk through a standard container lifecycle.';
+            });
+        }
+
+        function buildMicroQuiz(containerId, data) {
+            const container = document.getElementById(containerId);
+            let html = '';
+            data.forEach((qObj, idx) => {
+                html += `<div class="mb-2"><p class="font-semibold text-slate-800 mb-2">${qObj.q}</p><div class="flex flex-col space-y-2">`;
+                qObj.options.forEach((opt, optIdx) => {
+                    html += `<label class="inline-flex items-center p-2 rounded hover:bg-blue-100 cursor-pointer transition">
+                                <input type="radio" name="${containerId}-q${idx}" value="${optIdx}" class="form-radio text-blue-600" onchange="gradeMicro('${containerId}', ${idx}, ${optIdx}, ${qObj.answer}, '${qObj.hint}')">
+                                <span class="ml-2 text-sm">${opt}</span>
+                             </label>`;
+                });
+                html += `</div><div id="${containerId}-fb${idx}" class="mt-2 text-sm font-semibold hidden"></div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        window.gradeMicro = function(cId, qIdx, selected, correct, hint) {
+            const fb = document.getElementById(`${cId}-fb${qIdx}`);
+            fb.classList.remove('hidden');
+            if (selected === correct) {
+                fb.innerHTML = `<span class="text-emerald-600">✓ Correct!</span>`;
+            } else {
+                fb.innerHTML = `<span class="text-red-500">✗ Incorrect. ${hint}</span>`;
+            }
+        };
+
+        function buildFinalQuiz() {
+            const container = document.getElementById('final-quiz-container');
+            let html = '';
+            finalQuiz.forEach((qObj, idx) => {
+                html += `
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm quiz-question" id="final-q-block-${idx}">
+                    <p class="font-bold text-slate-800 text-lg mb-4"><span class="text-blue-500 mr-2">${idx + 1}.</span>${qObj.q}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                `;
+                qObj.options.forEach((opt, optIdx) => {
+                    html += `
+                        <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                            <input type="radio" name="final-q${idx}" value="${optIdx}" class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 focus:ring-blue-500">
+                            <span class="ml-3 text-slate-700">${opt}</span>
+                        </label>
+                    `;
+                });
+                html += `</div>
+                    <div id="final-fb-${idx}" class="mt-4 p-3 rounded bg-slate-100 hidden text-sm"></div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            document.getElementById('submit-quiz').classList.remove('hidden');
+            
+            document.getElementById('submit-quiz').addEventListener('click', gradeFinalQuiz);
+        }
+
+        function gradeFinalQuiz() {
+            let score = 0;
+            let total = finalQuiz.length;
+
+            finalQuiz.forEach((qObj, idx) => {
+                const radios = document.getElementsByName(`final-q${idx}`);
+                let selectedValue = null;
+                radios.forEach(r => { if(r.checked) selectedValue = parseInt(r.value); });
+                
+                const fbDiv = document.getElementById(`final-fb-${idx}`);
+                const qBlock = document.getElementById(`final-q-block-${idx}`);
+                fbDiv.classList.remove('hidden');
+
+                if (selectedValue === null) {
+                    fbDiv.innerHTML = `<span class="text-amber-600 font-bold">Please select an answer.</span>`;
+                    qBlock.classList.add('border-amber-300');
+                } else if (selectedValue === qObj.answer) {
+                    score++;
+                    fbDiv.innerHTML = `<span class="text-emerald-700 font-bold flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Correct!</span>`;
+                    qBlock.classList.replace('border-slate-200', 'border-emerald-300');
+                    qBlock.classList.add('bg-emerald-50');
+                } else {
+                    fbDiv.innerHTML = `<span class="text-red-700 font-bold flex flex-col"><span class="flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Incorrect.</span> <span class="text-slate-600 font-normal mt-1 text-xs">Hint: ${qObj.hint}</span></span>`;
+                    qBlock.classList.replace('border-slate-200', 'border-red-300');
+                    qBlock.classList.add('bg-red-50');
+                }
+            });
+
+            const resultsDiv = document.getElementById('quiz-results');
+            resultsDiv.classList.remove('hidden');
+            
+            const pct = Math.round((score/total)*100);
+            if(pct >= 80) {
+                resultsDiv.className = 'mt-6 p-6 rounded-xl text-center bg-emerald-100 border border-emerald-300 text-emerald-900 fade-in';
+                resultsDiv.innerHTML = `<h3 class="text-2xl font-bold mb-2">Score: ${score}/${total} (${pct}%)</h3><p>Excellent work! You have a solid grasp of Chapter 18 concepts.</p>`;
+            } else {
+                resultsDiv.className = 'mt-6 p-6 rounded-xl text-center bg-amber-100 border border-amber-300 text-amber-900 fade-in';
+                resultsDiv.innerHTML = `<h3 class="text-2xl font-bold mb-2">Score: ${score}/${total} (${pct}%)</h3><p>Review the highlighted questions above using the provided hints before moving on.</p>`;
+            }
+            
+            // Scroll to results
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+    </script>
+</body>
+</html>
