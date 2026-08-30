@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managing Linux Users & Groups</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .terminal-input::placeholder {
+            color: #475569;
+        }
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card:hover .flip-card-inner, .flip-card:focus .flip-card-inner, .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-20">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Managing Linux Users & Groups</h1>
+            <p class="text-sm sm:text-base text-slate-500 mt-1">Foundations of System Security and Access Control</p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+        
+        <section class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-slate-100">
+            <h2 class="text-xl font-semibold text-brand-900 mb-4">The Core Files</h2>
+            <p class="text-slate-600 mb-6 leading-relaxed">
+                User and group management is the foundation of system security in Linux. It forms a critical component of the AAA (Authentication, Authorization, Accounting) framework, enforcing the <strong>Principle of Least Privilege</strong>. 
+                At a technical level, all user and group data is stored in plain text files within the <code class="bg-slate-100 text-brand-600 px-1.5 py-0.5 rounded font-mono text-sm">/etc</code> directory. Hover over (or tap) the cards below to explore them.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <!-- File Card 1 -->
+                <div class="flip-card h-48 cursor-pointer group" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner relative w-full h-full text-center">
+                        <div class="flip-card-front absolute w-full h-full bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center p-4">
+                            <svg class="w-10 h-10 text-brand-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <h3 class="font-mono font-semibold text-lg text-slate-800">/etc/passwd</h3>
+                            <p class="text-xs text-slate-500 mt-2 font-medium uppercase tracking-wider">Tap to reveal</p>
+                        </div>
+                        <div class="flip-card-back absolute w-full h-full bg-brand-600 text-white rounded-xl flex flex-col items-center justify-center p-5">
+                            <h3 class="font-mono font-semibold mb-2">Metadata</h3>
+                            <p class="text-sm text-brand-50 leading-tight">Stores account name, UID (User ID), GID (Group ID), home directory, and default shell. It is readable by all users.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Card 2 -->
+                <div class="flip-card h-48 cursor-pointer group" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner relative w-full h-full text-center">
+                        <div class="flip-card-front absolute w-full h-full bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center p-4">
+                            <svg class="w-10 h-10 text-emerald-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <h3 class="font-mono font-semibold text-lg text-slate-800">/etc/shadow</h3>
+                            <p class="text-xs text-slate-500 mt-2 font-medium uppercase tracking-wider">Tap to reveal</p>
+                        </div>
+                        <div class="flip-card-back absolute w-full h-full bg-emerald-600 text-white rounded-xl flex flex-col items-center justify-center p-5">
+                            <h3 class="font-mono font-semibold mb-2">Secure Hashes</h3>
+                            <p class="text-sm text-emerald-50 leading-tight">Contains encrypted password hashes and aging information. Readable <strong>only</strong> by the root user.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Card 3 -->
+                <div class="flip-card h-48 cursor-pointer group" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner relative w-full h-full text-center">
+                        <div class="flip-card-front absolute w-full h-full bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center p-4">
+                            <svg class="w-10 h-10 text-purple-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            <h3 class="font-mono font-semibold text-lg text-slate-800">/etc/group</h3>
+                            <p class="text-xs text-slate-500 mt-2 font-medium uppercase tracking-wider">Tap to reveal</p>
+                        </div>
+                        <div class="flip-card-back absolute w-full h-full bg-purple-600 text-white rounded-xl flex flex-col items-center justify-center p-5">
+                            <h3 class="font-mono font-semibold mb-2">Group Definitions</h3>
+                            <p class="text-sm text-purple-50 leading-tight">Maps Group IDs (GIDs) to group names and lists which users are secondary members of those groups.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-6">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                    <h3 class="font-semibold text-slate-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 text-brand-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Anatomy of /etc/passwd
+                    </h3>
+                    <p class="text-sm text-slate-600 mb-3">Each line in <code class="font-mono text-xs bg-slate-200 px-1 rounded">/etc/passwd</code> represents a single user, separated into seven fields by colons (<code class="font-mono text-xs bg-slate-200 px-1 rounded">:</code>).</p>
+                    <div class="bg-slate-900 rounded-lg p-4 font-mono text-xs sm:text-sm text-slate-300 overflow-x-auto whitespace-nowrap">
+                        <span class="text-blue-400" title="Username">root</span>:<span class="text-red-400" title="Password Placeholder (x indicates password in /etc/shadow)">x</span>:<span class="text-green-400" title="User ID (UID)">0</span>:<span class="text-yellow-400" title="Group ID (GID)">0</span>:<span class="text-purple-400" title="GECOS / Comment (Full Name)">root</span>:<span class="text-teal-400" title="Home Directory">/root</span>:<span class="text-pink-400" title="Default Shell">/bin/bash</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2 italic">Hover over the parts of the code block above to see what each field means.</p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                    <h3 class="font-semibold text-slate-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 text-emerald-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Anatomy of /etc/shadow
+                    </h3>
+                    <p class="text-sm text-slate-600 mb-3">The <code class="font-mono text-xs bg-slate-200 px-1 rounded">/etc/shadow</code> file contains nine colon-separated fields related to passwords and aging.</p>
+                    <div class="bg-slate-900 rounded-lg p-4 font-mono text-xs sm:text-sm text-slate-300 overflow-x-auto whitespace-nowrap">
+                        <span class="text-blue-400" title="Username">root</span>:<span class="text-red-400" title="Encrypted Password Hash (e.g., $6$... means SHA-512)">$6$a1b2c3d4$encrypted_hash_here...</span>:<span class="text-green-400" title="Last password change (days since Jan 1, 1970)">18500</span>:<span class="text-yellow-400" title="Minimum days before password can be changed">0</span>:<span class="text-purple-400" title="Maximum days password is valid">99999</span>:<span class="text-teal-400" title="Days before expiration to warn user">7</span>:<span class="text-pink-400" title="Days after expiration until account is disabled (inactive)"></span>:<span class="text-orange-400" title="Account expiration date (days since Jan 1, 1970)"></span>:<span class="text-slate-500" title="Reserved for future use"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 bg-brand-50 rounded-xl p-5 border border-brand-100">
+                <p class="font-medium text-brand-900 mb-3">Knowledge Check</p>
+                <p class="text-sm text-brand-800 mb-4">Why are password hashes no longer stored in <code class="font-mono bg-white px-1 rounded">/etc/passwd</code>?</p>
+                
+                <div class="space-y-2" id="quiz-1-options">
+                    <button onclick="handleQuiz(1, this, false)" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-brand-200 text-sm text-slate-700 hover:bg-brand-100 transition-colors">A. It takes up too much storage space.</button>
+                    <button onclick="handleQuiz(1, this, true)" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-brand-200 text-sm text-slate-700 hover:bg-brand-100 transition-colors">B. The file is world-readable, posing a security risk.</button>
+                    <button onclick="handleQuiz(1, this, false)" class="w-full text-left px-4 py-3 rounded-lg bg-white border border-brand-200 text-sm text-slate-700 hover:bg-brand-100 transition-colors">C. Passwords cannot be encrypted in that file.</button>
+                </div>
+                <div id="quiz-1-feedback" class="mt-3 text-sm font-medium hidden"></div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-slate-100">
+            <h2 class="text-xl font-semibold text-brand-900 mb-4">Privilege Escalation: The <code class="font-mono bg-slate-100 px-2 py-1 rounded text-lg">sudo</code> Command</h2>
+            <p class="text-slate-600 mb-4 leading-relaxed">
+                Logging in as the <code class="font-mono text-sm bg-slate-100 px-1 rounded">root</code> user is generally discouraged due to security risks. Instead, administrators use <code class="font-mono text-sm bg-slate-100 px-1 rounded">sudo</code> (Superuser DO) to execute commands with elevated privileges on a temporary, per-command basis.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-amber-50 p-5 rounded-xl border border-amber-200">
+                    <h3 class="font-semibold text-amber-900 mb-2 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        How it works
+                    </h3>
+                    <p class="text-sm text-amber-800">When a user prefixes a command with <code class="font-mono text-xs bg-amber-100 px-1 rounded">sudo</code>, they are typically prompted for <em>their own</em> password, not the root password. The command is then logged, providing an audit trail of administrative actions.</p>
+                </div>
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    <h3 class="font-semibold text-slate-800 mb-2 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        The /etc/sudoers file
+                    </h3>
+                    <p class="text-sm text-slate-600">Permissions for who can use sudo are defined in the <code class="font-mono text-xs bg-slate-200 px-1 rounded">/etc/sudoers</code> file. <strong>Never edit this file directly with standard editors like nano or vim.</strong> Always use the <code class="font-mono text-xs bg-slate-200 px-1 rounded text-red-600 font-bold">visudo</code> command, which performs syntax checking before saving, preventing accidental lockouts.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl overflow-hidden shadow-md">
+                <div class="bg-slate-800 px-4 py-2 flex items-center space-x-2 border-b border-slate-700">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-slate-400 text-xs font-mono ml-2">terminal - visudo</span>
+                </div>
+                <div class="p-5 font-mono text-sm text-slate-300">
+                    <p class="mb-3 text-slate-400"># Common entries in /etc/sudoers</p>
+                    <p class="text-emerald-400">root    ALL=(ALL:ALL) ALL</p>
+                    <p class="text-slate-500 mb-2"># User privilege specification (allows root to run any command anywhere)</p>
+                    
+                    <p class="text-purple-400">%admin  ALL=(ALL) ALL</p>
+                    <p class="text-slate-500 mb-2"># Members of the admin group may gain root privileges</p>
+                    
+                    <p class="text-blue-400">%sudo   ALL=(ALL:ALL) ALL</p>
+                    <p class="text-slate-500 mb-2"># Allow members of group sudo to execute any command</p>
+
+                    <p class="text-yellow-400 mt-4">bob     ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart nginx</p>
+                    <p class="text-slate-500"># Allows user 'bob' to restart the nginx service without entering a password.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-slate-100">
+            <h2 class="text-xl font-semibold text-brand-900 mb-4">User Administration & Modification</h2>
+            <p class="text-slate-600 mb-4 leading-relaxed">
+                The primary commands for managing human users (UID 1000+) are <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">useradd</code>, <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">usermod</code>, <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">chage</code>, and <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">userdel</code>.
+            </p>
+            <ul class="space-y-4 text-slate-600 mb-8 ml-2">
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <div>
+                        <strong>Creation:</strong> <code class="font-mono text-sm bg-slate-100 px-1">useradd -m username</code> sets up the new account and creates the home directory (-m) by pulling default profile files from <code class="font-mono text-sm bg-slate-100 px-1">/etc/skel</code>.
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <div>
+                        <strong>Modification (<code class="font-mono text-sm bg-slate-100 px-1">usermod</code>):</strong> Modifies existing account properties.
+                        <ul class="list-disc ml-6 mt-2 space-y-1 text-sm">
+                            <li><code class="font-mono text-xs bg-slate-100 px-1">-l newname oldname</code>: Change login name.</li>
+                            <li><code class="font-mono text-xs bg-slate-100 px-1">-L</code> / <code class="font-mono text-xs bg-slate-100 px-1">-U</code>: Lock / Unlock a user account (places a '!' in the shadow file).</li>
+                            <li><code class="font-mono text-xs bg-slate-100 px-1">-s /path/to/shell</code>: Change default login shell.</li>
+                            <li><em>Critical rule for groups:</em> When adding a user to a secondary group, you <strong>must</strong> use the append flag (<code class="font-mono text-sm bg-slate-100 px-1">-a</code>) alongside the group flag (<code class="font-mono text-sm bg-slate-100 px-1">-G</code>). If you run <code class="font-mono text-sm bg-slate-100 px-1">usermod -G developers bob</code>, Bob is removed from all other secondary groups! Always use <code class="font-mono text-sm font-bold text-red-600 bg-slate-100 px-1">usermod -aG</code>.</li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <div>
+                        <strong>Password Aging (<code class="font-mono text-sm bg-slate-100 px-1">chage</code>):</strong> Modifies password expiry information stored in <code class="font-mono text-xs bg-slate-100 px-1">/etc/shadow</code>.
+                        <p class="text-sm mt-1">Example: <code class="font-mono text-xs bg-slate-100 px-1">chage -d 0 username</code> forces the user to change their password on the next login.</p>
+                    </div>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <div>
+                        <strong>Deletion:</strong> <code class="font-mono text-sm bg-slate-100 px-1">userdel username</code> deletes the user entry. To securely clean up, use <code class="font-mono text-sm bg-slate-100 px-1">userdel -r username</code> to also remove their home directory and mail spool.
+                    </div>
+                </li>
+            </ul>
+
+            <div class="bg-slate-900 rounded-xl overflow-hidden shadow-md mb-6">
+                <div class="bg-slate-800 px-4 py-2 flex items-center space-x-2 border-b border-slate-700">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-slate-400 text-xs font-mono ml-2">terminal - bash</span>
+                </div>
+                <div class="p-5 font-mono text-sm text-slate-300">
+                    <p class="mb-3 text-slate-400"># Scenario: A new developer named 'jane' needs container access.</p>
+                    <p class="mb-4 text-brand-300">Task: Append the existing user 'jane' to the secondary group 'docker' without removing her from other groups.</p>
+                    
+                    <div class="flex items-center space-x-2" id="term-1-row">
+                        <span class="text-emerald-400 font-bold">root@server:~#</span>
+                        <input type="text" id="term-1-input" class="terminal-input flex-1 bg-transparent border-none outline-none text-emerald-100 font-mono" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" onkeydown="handleTerminalEnter(event, 1)">
+                    </div>
+                    <div id="term-1-feedback" class="mt-2 text-xs hidden"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl overflow-hidden shadow-md">
+                <div class="bg-slate-800 px-4 py-2 flex items-center space-x-2 border-b border-slate-700">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-slate-400 text-xs font-mono ml-2">terminal - bash</span>
+                </div>
+                <div class="p-5 font-mono text-sm text-slate-300">
+                    <p class="mb-3 text-slate-400"># Scenario: An account needs to be temporarily secured.</p>
+                    <p class="mb-4 text-brand-300">Task: Use usermod to Lock the account for the user 'charlie'.</p>
+                    
+                    <div class="flex items-center space-x-2" id="term-3-row">
+                        <span class="text-emerald-400 font-bold">root@server:~#</span>
+                        <input type="text" id="term-3-input" class="terminal-input flex-1 bg-transparent border-none outline-none text-emerald-100 font-mono" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" onkeydown="handleTerminalEnter(event, 3)">
+                    </div>
+                    <div id="term-3-feedback" class="mt-2 text-xs hidden"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-6 sm:p-10 shadow-sm border border-slate-100">
+            <h2 class="text-xl font-semibold text-brand-900 mb-4">Group Management & Modification</h2>
+            <p class="text-slate-600 mb-4 leading-relaxed">
+                Groups allow administrators to grant access to files and directories in a scalable way. Instead of applying permissions to fifty individual users, you assign permissions to one group, and add those fifty users to it.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h3 class="font-semibold text-slate-800 mb-2">Primary Group</h3>
+                    <p class="text-sm text-slate-600">Every user must have exactly one primary group. In most Linux distributions, a primary group is created automatically with the same name as the new user. Files created by the user default to this group's ownership.</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h3 class="font-semibold text-slate-800 mb-2">Secondary Groups</h3>
+                    <p class="text-sm text-slate-600">Users can belong to multiple secondary (supplementary) groups concurrently (e.g., <code class="font-mono text-xs">wheel</code> for sudo access, or <code class="font-mono text-xs">www-data</code> for web files). Verify memberships using the <code class="font-mono text-xs bg-slate-200 px-1 rounded">groups</code> or <code class="font-mono text-xs bg-slate-200 px-1 rounded">id</code> commands.</p>
+                </div>
+            </div>
+
+            <p class="text-slate-600 mb-4">
+                Creating, modifying, and deleting groups relies on <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">groupadd</code>, <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">groupmod</code>, and <code class="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded font-mono text-sm">groupdel</code>.
+            </p>
+
+            <ul class="space-y-2 text-slate-600 mb-8 ml-2">
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <span><strong>Creation:</strong> <code class="font-mono text-sm bg-slate-100 px-1">groupadd groupname</code> creates a new group. Use <code class="font-mono text-sm bg-slate-100 px-1">-g GID</code> to specify a custom Group ID.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <span><strong>Modification:</strong> <code class="font-mono text-sm bg-slate-100 px-1">groupmod -n new_name old_name</code> renames a group. You can also change a group's GID with <code class="font-mono text-sm bg-slate-100 px-1">-g</code>.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-brand-500 mr-2 mt-1">●</span>
+                    <span><strong>Deletion:</strong> <code class="font-mono text-sm bg-slate-100 px-1">groupdel groupname</code> deletes the group. <em>Note:</em> You cannot delete a group if it is currently assigned as the <em>primary</em> group for any user.</span>
+                </li>
+            </ul>
+
+            <div class="bg-slate-900 rounded-xl overflow-hidden shadow-md mb-6">
+                <div class="bg-slate-800 px-4 py-2 flex items-center space-x-2 border-b border-slate-700">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-slate-400 text-xs font-mono ml-2">terminal - bash</span>
+                </div>
+                <div class="p-5 font-mono text-sm text-slate-300">
+                    <p class="mb-3 text-slate-400"># Scenario: An employee is leaving the company.</p>
+                    <p class="mb-4 text-brand-300">Task: Delete the user account 'alice' and ensure her home directory and mail spool are completely removed from the disk.</p>
+                    
+                    <div class="flex items-center space-x-2" id="term-2-row">
+                        <span class="text-emerald-400 font-bold">root@server:~#</span>
+                        <input type="text" id="term-2-input" class="terminal-input flex-1 bg-transparent border-none outline-none text-emerald-100 font-mono" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" onkeydown="handleTerminalEnter(event, 2)">
+                    </div>
+                    <div id="term-2-feedback" class="mt-2 text-xs hidden"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-xl overflow-hidden shadow-md">
+                <div class="bg-slate-800 px-4 py-2 flex items-center space-x-2 border-b border-slate-700">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-slate-400 text-xs font-mono ml-2">terminal - bash</span>
+                </div>
+                <div class="p-5 font-mono text-sm text-slate-300">
+                    <p class="mb-3 text-slate-400"># Scenario: The 'qa_team' group needs to be renamed to 'testing'.</p>
+                    <p class="mb-4 text-brand-300">Task: Use groupmod to change the Name (-n) of 'qa_team' to 'testing'.</p>
+                    
+                    <div class="flex items-center space-x-2" id="term-4-row">
+                        <span class="text-emerald-400 font-bold">root@server:~#</span>
+                        <input type="text" id="term-4-input" class="terminal-input flex-1 bg-transparent border-none outline-none text-emerald-100 font-mono" placeholder="type command and press Enter" autocomplete="off" spellcheck="false" onkeydown="handleTerminalEnter(event, 4)">
+                    </div>
+                    <div id="term-4-feedback" class="mt-2 text-xs hidden"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        /**
+         * Handles the visual state and feedback of multiple choice quizzes.
+         * @param {number} quizId - ID of the quiz instance.
+         * @param {HTMLElement} btn - The button clicked.
+         * @param {boolean} isCorrect - Whether the selected option is correct.
+         */
+        function handleQuiz(quizId, btn, isCorrect) {
+            const container = document.getElementById(`quiz-${quizId}-options`);
+            const feedback = document.getElementById(`quiz-${quizId}-feedback`);
+            
+            // Disable all buttons in this quiz
+            const buttons = container.querySelectorAll('button');
+            buttons.forEach(b => {
+                b.disabled = true;
+                b.classList.remove('hover:bg-brand-100');
+                if(b !== btn) b.classList.add('opacity-50');
+            });
+
+            feedback.classList.remove('hidden');
+
+            if (isCorrect) {
+                btn.classList.add('bg-green-50', 'border-green-400', 'text-green-800');
+                btn.classList.remove('border-brand-200');
+                feedback.innerHTML = `<span class="text-green-600 flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Correct! The /etc/shadow file restricts read access to root.</span>`;
+            } else {
+                btn.classList.add('bg-red-50', 'border-red-400', 'text-red-800');
+                btn.classList.remove('border-brand-200');
+                feedback.innerHTML = `<span class="text-red-600 flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Incorrect. Consider visibility and access control requirements. Refresh to try again.</span>`;
+            }
+        }
+
+        // Terminal Challenge Definitions (Regex to match valid commands)
+        const terminalChallenges = {
+            1: {
+                // Must match: usermod -aG docker jane OR sudo usermod -aG docker jane (flags can be separate like -a -G)
+                pattern: /^(sudo\s+)?usermod\s+(-a\s*-G|-G\s*-a|-aG|-Ga)\s+docker\s+jane$/i,
+                success: "Success! User 'jane' has been safely appended to the 'docker' group.",
+                error: "Hint: Use the 'usermod' command. Remember to Append (-a) and specify the Group (-G)."
+            },
+            2: {
+                // Must match: userdel -r alice OR sudo userdel -r alice
+                pattern: /^(sudo\s+)?userdel\s+-r\s+alice$/i,
+                success: "Success! User 'alice' and her home directory (-r) were deleted.",
+                error: "Hint: Use 'userdel'. You must include the specific flag to remove the home directory."
+            },
+            3: {
+                // Must match: usermod -L charlie OR sudo usermod -L charlie
+                pattern: /^(sudo\s+)?usermod\s+-L\s+charlie$/i,
+                success: "Success! The account for 'charlie' is now locked.",
+                error: "Hint: Use 'usermod' with the flag for Locking an account."
+            },
+            4: {
+                // Must match: groupmod -n testing qa_team OR sudo groupmod -n testing qa_team
+                pattern: /^(sudo\s+)?groupmod\s+-n\s+testing\s+qa_team$/i,
+                success: "Success! The group 'qa_team' has been renamed to 'testing'.",
+                error: "Hint: Use 'groupmod' with the flag for changing the Name (-n), followed by the new name, then the old name."
+            }
+        };
+
+        /**
+         * Listens for the Enter key on terminal inputs.
+         * @param {Event} e - Keyboard event.
+         * @param {number} termId - Terminal challenge ID.
+         */
+        function handleTerminalEnter(e, termId) {
+            if (e.key === 'Enter') {
+                const inputEl = document.getElementById(`term-${termId}-input`);
+                const feedbackEl = document.getElementById(`term-${termId}-feedback`);
+                const rowEl = document.getElementById(`term-${termId}-row`);
+                
+                // Clean the input: trim edges and replace multiple spaces with single space
+                const command = inputEl.value.trim().replace(/\s+/g, ' ');
+                if (!command) return;
+
+                const challenge = terminalChallenges[termId];
+                
+                if (challenge.pattern.test(command)) {
+                    // Correct command
+                    inputEl.disabled = true;
+                    inputEl.classList.remove('text-emerald-100');
+                    inputEl.classList.add('text-green-400');
+                    
+                    feedbackEl.classList.remove('hidden', 'text-red-400');
+                    feedbackEl.classList.add('text-green-400');
+                    feedbackEl.innerHTML = `> ${challenge.success}`;
+                } else {
+                    // Incorrect command
+                    rowEl.classList.remove('shake');
+                    // Trigger reflow to restart animation
+                    void rowEl.offsetWidth;
+                    rowEl.classList.add('shake');
+
+                    feedbackEl.classList.remove('hidden', 'text-green-400');
+                    feedbackEl.classList.add('text-red-400');
+                    feedbackEl.innerHTML = `> Error: Command not quite right. ${challenge.error}`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
