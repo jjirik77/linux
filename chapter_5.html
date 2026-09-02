@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Managing Linux Files and Directories</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Light theme color palette */
+            --bg-page: #f8fafc;
+            --bg-panel: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --primary: #2563eb;
+            --accent-bg: #eff6ff;
+            
+            /* Terminal specific colors (Light style) */
+            --term-bg: #ffffff;
+            --term-header: #f1f5f9;
+            --term-text: #0f172a;
+            --term-prompt: #059669; /* Green */
+            --term-dir: #2563eb;    /* Blue */
+            --term-error: #dc2626;  /* Red */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Prevent body scroll, let panels scroll */
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1500px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 20px;
+        }
+
+        /* Desktop Layout */
+        @media (min-width: 992px) {
+            .app-container {
+                flex-direction: row;
+                height: calc(100vh - 30px);
+                padding: 20px;
+            }
+        }
+
+        .lesson-panel {
+            flex: 1;
+            background: var(--bg-panel);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            padding: 35px;
+            overflow-y: auto;
+            line-height: 1.7;
+        }
+
+        .lesson-panel h1 {
+            font-size: 2rem;
+            color: #0f172a;
+            margin-bottom: 15px;
+            letter-spacing: -0.02em;
+        }
+
+        .lesson-panel h2 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-top: 35px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid var(--accent-bg);
+            padding-bottom: 8px;
+        }
+
+        .lesson-panel p {
+            margin-bottom: 16px;
+        }
+
+        .lesson-panel ul {
+            margin-bottom: 20px;
+            padding-left: 24px;
+        }
+
+        .lesson-panel li {
+            margin-bottom: 8px;
+        }
+
+        code {
+            background-color: var(--accent-bg);
+            color: var(--primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .exercise-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 16px 20px;
+            border-radius: 6px;
+            margin: 25px 0;
+            color: #166534;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .exercise-box strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #14532d;
+            font-size: 1.05rem;
+        }
+
+        .terminal-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--term-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: var(--term-header);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mac-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
+
+        .terminal-title-bar {
+            margin-left: auto;
+            margin-right: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.95rem;
+            color: var(--term-text);
+            cursor: text;
+        }
+
+        .output-line {
+            margin-bottom: 6px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .output-error { color: var(--term-error); }
+        .output-dir { color: var(--term-dir); font-weight: 600; }
+        
+        .input-line {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 8px;
+        }
+
+        .prompt {
+            color: var(--term-prompt);
+            margin-right: 10px;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--term-text);
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Left Panel: Lesson Content -->
+        <div class="lesson-panel">
+            <h1>Managing Linux Files and Directories</h1>
+            <p>Welcome to your interactive Linux environment. Understanding how to navigate and manage files via the Command Line Interface (CLI) is a fundamental skill for any Linux administrator.</p>
+            <p>Read through the concepts below and immediately practice the commands in the terminal on the right. This simulates a real Linux server environment.</p>
+
+            <h2>📁 1. The Directory Hierarchy</h2>
+            <p>Unlike Windows, which uses drive letters (like C:), Linux organizes all files and directories into a single unified tree structure. The absolute top of this tree is called the <strong>root directory</strong>, represented by a forward slash (<code>/</code>).</p>
+            <p>Important standard directories include:</p>
+            <ul>
+                <li><code>/home</code>: Contains personal directories for users (e.g., <code>/home/student</code>). When you log in, you start here.</li>
+                <li><code>/etc</code>: Stores system-wide configuration files.</li>
+                <li><code>/var</code>: Contains variable data, such as system log files.</li>
+            </ul>
+
+            <h2>🧭 2. Navigating the File System</h2>
+            <p>Use these core commands to find out where you are and to move around:</p>
+            <ul>
+                <li><code>pwd</code> (Print Working Directory): Outputs the absolute path of your current location.</li>
+                <li><code>ls</code> (List): Displays the files and directories inside your current location.</li>
+                <li><code>cd [path]</code> (Change Directory): Moves your working directory to the specified path. Typing <code>cd</code> by itself returns you to your home directory.</li>
+            </ul>
+            <div class="exercise-box">
+                <strong>Practice: Navigation</strong>
+                1. Type <code>pwd</code> to see your starting location.<br>
+                2. Type <code>ls</code> to see what is in your home directory.<br>
+                3. Type <code>cd /etc</code> to navigate to the configuration directory, then run <code>ls</code> again.<br>
+                4. Type <code>cd</code> (with no arguments) to jump straight back home.
+            </div>
+
+            <h2>📝 3. Creating Files and Directories</h2>
+            <p>As an administrator, you will constantly create organizational structures and configuration files:</p>
+            <ul>
+                <li><code>mkdir [name]</code> (Make Directory): Creates a new folder.</li>
+                <li><code>touch [name]</code>: Creates an empty file. (If the file already exists, it updates its timestamp).</li>
+            </ul>
+            <div class="exercise-box">
+                <strong>Practice: Creation</strong>
+                1. Ensure you are in your home directory (use <code>cd</code>).<br>
+                2. Type <code>mkdir Projects</code> to create a folder.<br>
+                3. Type <code>cd Projects</code> to move into it.<br>
+                4. Type <code>touch notes.txt</code> to create an empty file.<br>
+                5. Verify your work using <code>ls</code>.
+            </div>
+
+            <h2>🚚 4. Copying and Moving</h2>
+            <p>Managing data often requires duplicating or relocating files:</p>
+            <ul>
+                <li><code>cp [source] [destination]</code> (Copy): Duplicates a file.</li>
+                <li><code>mv [source] [destination]</code> (Move): Relocates a file. This command is also used to <strong>rename</strong> files if the destination is in the same folder.</li>
+            </ul>
+            <div class="exercise-box">
+                <strong>Practice: Duplication & Renaming</strong>
+                1. While inside the <code>Projects</code> folder, type <code>cp notes.txt backup.txt</code>.<br>
+                2. Rename the backup by typing <code>mv backup.txt secret_notes.txt</code>.<br>
+                3. Use <code>ls</code> to see the results.
+            </div>
+
+            <h2>🗑️ 5. Removing Files and Directories</h2>
+            <p>Keeping a system clean requires removing old data. <em>Note: In Linux, there is no "Recycle Bin" by default. Deletions are permanent!</em></p>
+            <ul>
+                <li><code>rm [file]</code> (Remove): Deletes a file.</li>
+                <li><code>rmdir [directory]</code>: Deletes an <em>empty</em> directory.</li>
+                <li><code>rm -r [directory]</code>: Recursively deletes a directory and <strong>all</strong> of its contents. Use with extreme caution!</li>
+            </ul>
+            <div class="exercise-box">
+                <strong>Practice: Deletion</strong>
+                1. Type <code>rm secret_notes.txt</code> to delete the file.<br>
+                2. Go back up one directory by typing <code>cd ..</code><br>
+                3. Try to delete the folder: <code>rmdir Projects</code>. It will fail because <code>notes.txt</code> is still inside.<br>
+                4. Force delete it by typing <code>rm -r Projects</code>.
+            </div>
+        </div>
+
+        <!-- Right Panel: Interactive Terminal -->
+        <div class="terminal-panel">
+            <div class="terminal-header">
+                <div class="mac-dot dot-red"></div>
+                <div class="mac-dot dot-yellow"></div>
+                <div class="mac-dot dot-green"></div>
+                <div class="terminal-title-bar" id="terminal-title">student@linux-server:~</div>
+            </div>
+            <div class="terminal-body" id="terminal-body">
+                <div class="output-line">CompTIA Linux+ Interactive Shell v1.0</div>
+                <div class="output-line">Type 'help' to see a list of supported commands.</div>
+                <div class="output-line"><br></div>
+                
+                <div class="input-line" id="input-anchor">
+                    <span class="prompt" id="prompt">student@linux-server:~$</span>
+                    <input type="text" class="command-input" id="command-input" autocomplete="off" spellcheck="false" autofocus>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Virtual File System State
+        let fileSystem = {
+            '/': {
+                type: 'dir',
+                children: {
+                    'home': {
+                        type: 'dir',
+                        children: {
+                            'student': {
+                                type: 'dir',
+                                children: {
+                                    'Documents': { type: 'dir', children: {
+                                        'report.pdf': { type: 'file', content: '' }
+                                    }},
+                                    'Downloads': { type: 'dir', children: {} },
+                                    'welcome.txt': { type: 'file', content: '' }
+                                }
+                            }
+                        }
+                    },
+                    'etc': {
+                        type: 'dir',
+                        children: {
+                            'passwd': { type: 'file', content: '' },
+                            'hostname': { type: 'file', content: '' }
+                        }
+                    },
+                    'var': {
+                        type: 'dir',
+                        children: {
+                            'log': { type: 'dir', children: {
+                                'syslog': { type: 'file', content: '' }
+                            }}
+                        }
+                    }
+                }
+            }
+        };
+
+        // Current working directory state (array of path segments)
+        let currentPath = ['/', 'home', 'student'];
+
+        // Helper: Convert a path string (e.g. "../Documents", "/etc") into an array of path segments
+        function resolvePathSegments(pathStr) {
+            if (!pathStr) return [...currentPath];
+            
+            // Handle tilde ~ expanding to home directory
+            if (pathStr.startsWith('~')) {
+                pathStr = pathStr.replace('~', '/home/student');
+            }
+
+            let segments = pathStr.split('/');
+            let targetPath = [];
+            
+            if (pathStr.startsWith('/')) {
+                targetPath = ['/']; // Absolute path starts at root
+                segments = segments.filter(s => s !== ''); // clean up empty strings from split
+            } else {
+                targetPath = [...currentPath]; // Relative path starts at current
+            }
+
+            for (let segment of segments) {
+                if (segment === '' || segment === '.') continue; // stay in current dir
+                if (segment === '..') {
+                    if (targetPath.length > 1) targetPath.pop(); // go up, but never above root
+                } else {
+                    targetPath.push(segment); // go down
+                }
+            }
+            return targetPath;
+        }
+
+        // Helper: Get the actual node object from the fileSystem based on path array
+        function getNode(pathArray) {
+            if (pathArray.length === 0) return null;
+            let node = fileSystem['/'];
+            for (let i = 1; i < pathArray.length; i++) {
+                if (!node.children || !node.children[pathArray[i]]) return null;
+                node = node.children[pathArray[i]];
+            }
+            return node;
+        }
+
+        // Helper: Get the parent node (useful for creating/deleting things inside it)
+        function getParentNode(pathArray) {
+            if (pathArray.length <= 1) return null;
+            let parentPath = pathArray.slice(0, -1);
+            return getNode(parentPath);
+        }
+
+        // Helper: Build the prompt string for the UI
+        function getPromptString() {
+            let pathStr = cmdPwd();
+            let displayPath = pathStr.startsWith('/home/student') ? pathStr.replace('/home/student', '~') : pathStr;
+            return `student@linux-server:${displayPath}$`;
+        }
+
+        
+        // Command: pwd
+        function cmdPwd() {
+            if (currentPath.length === 1) return '/';
+            return '/' + currentPath.slice(1).join('/');
+        }
+
+        // Command: ls
+        function cmdLs(args) {
+            // filter out basic flags like -l, -a for this simplified shell
+            let cleanArgs = args.filter(a => !a.startsWith('-'));
+            let target = cleanArgs.length > 0 ? resolvePathSegments(cleanArgs[0]) : currentPath;
+            let node = getNode(target);
+            
+            if (!node) {
+                let targetStr = cleanArgs.length > 0 ? cleanArgs[0] : '';
+                return `ls: cannot access '${targetStr}': No such file or directory`;
+            }
+            if (node.type === 'file') return target[target.length - 1]; // if targeting a file, just echo the file name
+            
+            let output = [];
+            for (let childName in node.children) {
+                if (node.children[childName].type === 'dir') {
+                    output.push(`<span class="output-dir">${childName}</span>`);
+                } else {
+                    output.push(childName);
+                }
+            }
+            return output.sort().join('  ');
+        }
+
+        // Command: cd
+        function cmdCd(args) {
+            if (args.length === 0) {
+                currentPath = ['/', 'home', 'student'];
+                return '';
+            }
+            let target = resolvePathSegments(args[0]);
+            let node = getNode(target);
+            
+            if (!node) return `bash: cd: ${args[0]}: No such file or directory`;
+            if (node.type !== 'dir') return `bash: cd: ${args[0]}: Not a directory`;
+            
+            currentPath = target;
+            return '';
+        }
+
+        // Command: mkdir
+        function cmdMkdir(args) {
+            if (args.length === 0) return `mkdir: missing operand`;
+            let target = resolvePathSegments(args[0]);
+            let name = target[target.length - 1];
+            let parent = getParentNode(target);
+            
+            if (!parent) return `mkdir: cannot create directory '${args[0]}': No such file or directory`;
+            if (parent.type !== 'dir') return `mkdir: cannot create directory '${args[0]}': Not a directory`;
+            if (parent.children[name]) return `mkdir: cannot create directory '${args[0]}': File exists`;
+            
+            parent.children[name] = { type: 'dir', children: {} };
+            return '';
+        }
+
+        // Command: touch
+        function cmdTouch(args) {
+            if (args.length === 0) return `touch: missing file operand`;
+            let target = resolvePathSegments(args[0]);
+            let name = target[target.length - 1];
+            let parent = getParentNode(target);
+            
+            if (!parent || parent.type !== 'dir') return `touch: cannot touch '${args[0]}': No such file or directory`;
+            
+            if (!parent.children[name]) {
+                parent.children[name] = { type: 'file', content: '' };
+            }
+            // If it exists, touch normally updates timestamps, we do nothing here.
+            return '';
+        }
+
+        // Command: rm
+        function cmdRm(args) {
+            if (args.length === 0) return `rm: missing operand`;
+            
+            let isRecursive = args.includes('-r') || args.includes('-rf');
+            let pathArg = args.find(a => !a.startsWith('-')); // get first non-flag arg
+            
+            if (!pathArg) return `rm: missing operand`;
+            
+            let target = resolvePathSegments(pathArg);
+            if (target.length === 1) return `rm: it is dangerous to operate recursively on '/'`;
+            
+            let name = target[target.length - 1];
+            let parent = getParentNode(target);
+            
+            if (!parent || !parent.children[name]) return `rm: cannot remove '${pathArg}': No such file or directory`;
+            let node = parent.children[name];
+            
+            if (node.type === 'dir' && !isRecursive) return `rm: cannot remove '${pathArg}': Is a directory`;
+            
+            delete parent.children[name];
+            return '';
+        }
+
+        // Command: rmdir
+        function cmdRmdir(args) {
+            if (args.length === 0) return `rmdir: missing operand`;
+            let target = resolvePathSegments(args[0]);
+            let name = target[target.length - 1];
+            let parent = getParentNode(target);
+            let node = getNode(target);
+            
+            if (!node) return `rmdir: failed to remove '${args[0]}': No such file or directory`;
+            if (node.type !== 'dir') return `rmdir: failed to remove '${args[0]}': Not a directory`;
+            if (Object.keys(node.children).length > 0) return `rmdir: failed to remove '${args[0]}': Directory not empty`;
+            
+            delete parent.children[name];
+            return '';
+        }
+
+        // Command: cp
+        function cmdCp(args) {
+            if (args.length < 2) return `cp: missing file operand`;
+            let srcPath = resolvePathSegments(args[0]);
+            let destPath = resolvePathSegments(args[1]);
+            
+            let srcNode = getNode(srcPath);
+            if (!srcNode) return `cp: cannot stat '${args[0]}': No such file or directory`;
+            if (srcNode.type === 'dir') return `cp: -r not specified; omitting directory '${args[0]}'`;
+            
+            let destNode = getNode(destPath);
+            let destParent = getParentNode(destPath);
+            let destName = destPath[destPath.length - 1];
+
+            // Deep copy the object
+            let clonedNode = JSON.parse(JSON.stringify(srcNode));
+
+            if (destNode && destNode.type === 'dir') {
+                destNode.children[srcPath[srcPath.length - 1]] = clonedNode;
+            } else if (destParent && destParent.type === 'dir') {
+                destParent.children[destName] = clonedNode;
+            } else {
+                return `cp: cannot create regular file '${args[1]}': No such file or directory`;
+            }
+            return '';
+        }
+
+        // Command: mv
+        function cmdMv(args) {
+            if (args.length < 2) return `mv: missing file operand`;
+            let srcPath = resolvePathSegments(args[0]);
+            let destPath = resolvePathSegments(args[1]);
+            
+            let srcParent = getParentNode(srcPath);
+            let srcName = srcPath[srcPath.length - 1];
+            let srcNode = getNode(srcPath);
+            
+            if (!srcNode) return `mv: cannot stat '${args[0]}': No such file or directory`;
+            
+            let destNode = getNode(destPath);
+            let destParent = getParentNode(destPath);
+            let destName = destPath[destPath.length - 1];
+
+            if (destNode && destNode.type === 'dir') {
+                destNode.children[srcName] = srcNode; // place inside dest dir
+                delete srcParent.children[srcName];   // remove from original
+            } else if (destParent && destParent.type === 'dir') {
+                destParent.children[destName] = srcNode; // rename in parent dir
+                delete srcParent.children[srcName];      // remove original
+            } else {
+                return `mv: cannot move '${args[0]}' to '${args[1]}': No such file or directory`;
+            }
+            return '';
+        }
+
+        const terminalBody = document.getElementById('terminal-body');
+        const commandInput = document.getElementById('command-input');
+        const promptElement = document.getElementById('prompt');
+        const inputAnchor = document.getElementById('input-anchor');
+        const terminalTitle = document.getElementById('terminal-title');
+
+        // Ensure clicking anywhere on the terminal focuses the input
+        terminalBody.addEventListener('click', () => {
+            commandInput.focus();
+        });
+
+        function printToTerminal(text, isError = false) {
+            if (text === null || text === undefined || text === '') return;
+            const div = document.createElement('div');
+            div.className = `output-line ${isError ? 'output-error' : ''}`;
+            div.innerHTML = text;
+            terminalBody.insertBefore(div, inputAnchor);
+        }
+
+        commandInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const cmdText = commandInput.value.trim();
+                
+                // Echo the command just executed
+                printToTerminal(`<span class="prompt">${getPromptString()}</span> ${cmdText}`);
+                commandInput.value = '';
+                
+                if (cmdText) {
+                    // Split command text by spaces, preserving quotes is not needed for this basic sim
+                    const parts = cmdText.split(/\s+/);
+                    const cmd = parts[0];
+                    const args = parts.slice(1);
+                    
+                    let output = '';
+                    let isError = false;
+
+                    switch(cmd) {
+                        case 'ls': output = cmdLs(args); break;
+                        case 'cd': output = cmdCd(args); break;
+                        case 'pwd': output = cmdPwd(); break;
+                        case 'mkdir': output = cmdMkdir(args); break;
+                        case 'touch': output = cmdTouch(args); break;
+                        case 'rm': output = cmdRm(args); break;
+                        case 'rmdir': output = cmdRmdir(args); break;
+                        case 'cp': output = cmdCp(args); break;
+                        case 'mv': output = cmdMv(args); break;
+                        case 'clear': 
+                            // Special case: remove all previous lines
+                            document.querySelectorAll('.output-line').forEach(el => {
+                                if (el !== inputAnchor) el.remove();
+                            });
+                            break;
+                        case 'help':
+                            output = "Available commands: ls, cd, pwd, mkdir, touch, rm, rmdir, cp, mv, clear";
+                            break;
+                        default:
+                            output = `bash: ${cmd}: command not found`;
+                            isError = true;
+                    }
+
+                    if (cmd !== 'clear') {
+                        // Check if the output string contains standard error messages
+                        if (output.includes('cannot') || output.includes('missing') || output.includes('failed') || output.includes('bash:')) {
+                            isError = true;
+                        }
+                        printToTerminal(output, isError);
+                    }
+                }
+                
+                // Update UI state after command execution
+                const newPrompt = getPromptString();
+                promptElement.textContent = newPrompt;
+                terminalTitle.textContent = newPrompt.replace('$', '');
+                
+                // Auto-scroll to bottom
+                terminalBody.scrollTop = terminalBody.scrollHeight;
+            }
+        });
+
+    </script>
+</body>
+</html>
