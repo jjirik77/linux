@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Storage Architect | Complete Chapter 7 & 8 Mastery</title>
+    <!-- Lucide Icons for UI elements -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-soft: rgba(37, 99, 235, 0.08);
+            --primary-border: rgba(37, 99, 235, 0.25);
+            --bg-page: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-card-subtle: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-hard: #cbd5e1;
+            --success: #059669;
+            --success-soft: rgba(5, 150, 105, 0.1);
+            --error: #dc2626;
+            --error-soft: rgba(220, 38, 38, 0.1);
+            --warning: #d97706;
+            --warning-soft: rgba(217, 119, 6, 0.12);
+            --radius: 0.65rem;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 6px -2px rgb(15 23 42 / 0.04);
+            --code-bg: #0b1120;
+            --code-text: #38bdf8;
+            
+            /* Professional Telemetry & Partition Colors */
+            --part-root: #2563eb;
+            --part-home: #0d9488;
+            --part-swap: #d97706;
+            --part-var: #7c3aed;
+            --part-data: #0284c7;
+            --part-unalloc-bg: #e2e8f0;
+            --part-unalloc-stripe: #cbd5e1;
+            --part-unalloc-text: #475569;
+            
+            /* Hardware Chassis */
+            --chassis-bg: #0f172a;
+            --chassis-border: #334155;
+            --chassis-metal: #1e293b;
+        }
+
+        .dark-mode {
+            --bg-page: #060913;
+            --bg-card: #0d1527;
+            --bg-card-subtle: #111c33;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --border-hard: #334155;
+            --primary-soft: rgba(59, 130, 246, 0.14);
+            --primary-border: rgba(59, 130, 246, 0.35);
+            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4);
+            --shadow: 0 6px 18px -3px rgb(0 0 0 / 0.6), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+            --code-bg: #030712;
+            --code-text: #7dd3fc;
+            
+            --part-root: #3b82f6;
+            --part-home: #14b8a6;
+            --part-swap: #f59e0b;
+            --part-var: #8b5cf6;
+            --part-data: #38bdf8;
+            --part-unalloc-bg: #1e293b;
+            --part-unalloc-stripe: #0f172a;
+            --part-unalloc-text: #cbd5e1;
+            
+            --chassis-bg: #030712;
+            --chassis-border: #1e293b;
+            --chassis-metal: #0f172a;
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s, color 0.2s; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.5;
+            font-variant-numeric: tabular-nums;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 1140px; margin: 0 auto; padding: 0.85rem 1.25rem 2rem 1.25rem; }
+
+        /* Unified Compact App Header Bar */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+        .logo-icon-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+        .logo-text {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .cert-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-radius: 9999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+        }
+
+        /* Streamlined Segmented Master Navigation */
+        nav#main-nav {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-card);
+            padding: 0.25rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0.5rem;
+            z-index: 100;
+            border: 1px solid var(--border);
+            margin-bottom: 0.65rem;
+        }
+        nav#main-nav button {
+            flex: 1;
+            padding: 0.48rem 0.75rem;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0.45rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+        nav#main-nav button.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);
+        }
+        nav#main-nav button:hover:not(.active) {
+            background: var(--bg-card-subtle);
+            color: var(--text-main);
+        }
+
+        /* Compact Horizontal Sub Navigation */
+        .sub-nav {
+            display: flex;
+            gap: 0.35rem;
+            margin-bottom: 0.85rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .sub-nav::-webkit-scrollbar { display: none; }
+        .sub-nav button {
+            padding: 0.35rem 0.75rem;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 0.4rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .sub-nav button.active {
+            color: var(--primary);
+            background: var(--primary-soft);
+            box-shadow: inset 0 0 0 1px var(--primary-border);
+        }
+        .sub-nav button:hover:not(.active) {
+            color: var(--text-main);
+            background: rgba(0,0,0,0.03);
+        }
+
+        /* Top Slim Progress Strip */
+        .progress-container {
+            width: 100%;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #60a5fa);
+            width: 0%;
+            transition: width 0.35s ease;
+        }
+
+        /* Cards and Structural Enclosures */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.4rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.85rem;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+        .grid-2col { display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.2rem; }
+        @media (max-width: 820px) { .grid-2col { grid-template-columns: 1fr; } }
+
+        /* Button Metaphors */
+        .btn {
+            padding: 0.48rem 0.95rem;
+            border-radius: 0.45rem;
+            border: 1px solid transparent;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            font-size: 0.83rem;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: #ffffff; box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-outline { background: var(--bg-card); border-color: var(--border-hard); color: var(--text-main); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+        .btn-sm { padding: 0.32rem 0.65rem; font-size: 0.78rem; }
+        .btn-danger { background: var(--error); color: white; box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25); }
+        .btn-danger:hover { background: #b91c1c; }
+
+        /* Typography & Callout Elements */
+        h1, h2, h3, h4 { margin-top: 0; color: var(--text-main); letter-spacing: -0.015em; }
+        h2 { font-size: 1.2rem; display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.65rem; }
+        h3 { font-size: 1.02rem; margin-bottom: 0.45rem; }
+        p { margin: 0 0 0.65rem 0; font-size: 0.88rem; color: var(--text-main); }
+        ul { margin: 0 0 0.65rem 1.15rem; padding: 0; font-size: 0.86rem; }
+        li { margin-bottom: 0.3rem; }
+        code, .terminal-text {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 0.12rem 0.35rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .why-box {
+            background: var(--primary-soft);
+            border-left: 3px solid var(--primary);
+            padding: 0.75rem 0.9rem;
+            margin: 0.75rem 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.85rem;
+        }
+        .exam-tip {
+            background: var(--warning-soft);
+            border-left: 3px solid var(--warning);
+            padding: 0.75rem 0.9rem;
+            margin: 0.75rem 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.85rem;
+            color: var(--text-main);
+        }
+
+        .feedback {
+            margin-top: 0.75rem;
+            padding: 0.75rem 0.95rem;
+            border-radius: 0.45rem;
+            display: none;
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+        .feedback.success {
+            background: var(--success-soft);
+            color: #065f46;
+            display: block;
+            border: 1px solid var(--success);
+        }
+        .dark-mode .feedback.success { color: #34d399; }
+        .feedback.error {
+            background: var(--error-soft);
+            color: #991b1b;
+            display: block;
+            border: 1px solid var(--error);
+        }
+        .dark-mode .feedback.error { color: #f87171; }
+        .explanation-text {
+            font-size: 0.85rem;
+            line-height: 1.48;
+            color: var(--text-main);
+            margin-top: 0.65rem;
+            padding: 0.75rem 0.85rem;
+            background: var(--bg-card-subtle);
+            border-radius: 0.45rem;
+            border: 1px dashed var(--border-hard);
+        }
+
+        /* Hardware Drive Bay Enclosure Metaphor */
+        .disk-visualization-enclosure {
+            background: var(--chassis-bg);
+            border: 1px solid var(--chassis-border);
+            border-radius: 8px;
+            padding: 0.5rem 0.65rem 0.65rem 0.65rem;
+            margin: 0.85rem 0;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.4), var(--shadow-sm);
+        }
+        .disk-bay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.35rem;
+            font-size: 0.72rem;
+            font-family: ui-monospace, monospace;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 0.45rem;
+        }
+        .disk-bay-header .status-led {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 6px #10b981;
+            margin-right: 0.35rem;
+        }
+        
+        .disk-visualization {
+            height: 68px;
+            background: #000000;
+            border-radius: 5px;
+            display: flex;
+            overflow: hidden;
+            border: 1px solid #334155;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+        }
+        .disk-ruler-ticks {
+            height: 8px;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3px;
+            padding: 0 2px;
+            font-size: 0.65rem;
+            color: #64748b;
+            font-family: ui-monospace, monospace;
+        }
+
+        .partition-block {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: -0.01em;
+            transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 1px solid rgba(0,0,0,0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .partition-block::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+        .partition-block span {
+            font-size: 0.68rem;
+            opacity: 0.95;
+            font-weight: 500;
+            font-family: ui-monospace, monospace;
+        }
+        
+        .partition-root { background: var(--part-root); }
+        .partition-home { background: var(--part-home); }
+        .partition-swap { background: var(--part-swap); }
+        .partition-var { background: var(--part-var); }
+        .partition-data { background: var(--part-data); }
+        .partition-unallocated {
+            background-color: var(--part-unalloc-bg);
+            background-image: repeating-linear-gradient(45deg, var(--part-unalloc-stripe) 0, var(--part-unalloc-stripe) 6px, transparent 6px, transparent 12px);
+            color: var(--part-unalloc-text);
+            text-shadow: none;
+            font-weight: 700;
+        }
+
+        /* LVM Storage Pipeline Hierarchy */
+        .lvm-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 0.85rem;
+            background: var(--bg-card-subtle);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .lvm-layer-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .disk-pool { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .disk-unit {
+            width: 74px;
+            height: 66px;
+            border: 1px solid var(--border-hard);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            cursor: pointer;
+            background: var(--bg-card);
+            transition: all 0.15s ease;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+        .disk-unit.selected {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            box-shadow: 0 0 0 1px var(--primary), 0 3px 6px -1px rgba(37, 99, 235, 0.25);
+            transform: translateY(-2px);
+        }
+        .vg-bar {
+            height: 34px;
+            background: var(--bg-card);
+            border-radius: 5px;
+            border: 2px dashed var(--primary-border);
+            position: relative;
+            display: flex;
+            overflow: hidden;
+        }
+        .vg-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #3b82f6);
+            opacity: 0.25;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Server RAID Hot-Swap Sled Metaphors */
+        .raid-disk-container {
+            display: flex;
+            gap: 0.85rem;
+            justify-content: center;
+            margin: 1.25rem 0;
+            flex-wrap: wrap;
+        }
+        .raid-disk {
+            width: 88px;
+            border: 1px solid var(--border-hard);
+            border-radius: 6px;
+            padding: 0.45rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--chassis-bg);
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5), var(--shadow-sm);
+        }
+        .raid-disk::before {
+            content: 'SAS-12G';
+            display: block;
+            text-align: center;
+            font-size: 0.58rem;
+            font-family: ui-monospace, monospace;
+            color: #64748b;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+        .raid-disk.failed {
+            border-color: var(--error);
+            opacity: 0.5;
+            filter: grayscale(85%);
+        }
+        .raid-block {
+            height: 20px;
+            background: var(--primary);
+            border-radius: 3px;
+            font-size: 9px;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-weight: 700;
+            font-family: ui-monospace, monospace;
+            letter-spacing: 0.05em;
+        }
+        .raid-block.parity {
+            background: var(--warning);
+            color: #000000;
+            font-weight: 800;
+        }
+
+        /* Authentic Console Terminal Windows */
+        .terminal-window {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 0.75rem 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+        .terminal-window-bar {
+            display: flex;
+            align-items: center;
+            padding: 0.35rem 0.65rem;
+            background: rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            gap: 0.4rem;
+        }
+        .terminal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .terminal-dot.red { background: #ef4444; }
+        .terminal-dot.yellow { background: #f59e0b; }
+        .terminal-dot.green { background: #10b981; }
+        .terminal-title {
+            font-size: 0.7rem;
+            font-family: ui-monospace, monospace;
+            color: #94a3b8;
+            margin-left: 0.35rem;
+        }
+        .fstab-preview {
+            color: var(--code-text);
+            padding: 0.65rem 0.85rem;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 0;
+        }
+
+        /* Form Controls & Tables */
+        .fstab-table-wrap {
+            overflow-x: auto;
+            margin: 0.65rem 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .fstab-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+        }
+        .fstab-table th {
+            background: var(--bg-card-subtle);
+            padding: 0.45rem 0.55rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+        .fstab-table td { padding: 0.45rem 0.55rem; border-bottom: 1px solid var(--border); }
+        .fstab-input {
+            width: 100%;
+            padding: 0.35rem 0.45rem;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-hard);
+            border-radius: 4px;
+            background: var(--bg-card);
+            color: var(--text-main);
+            outline: none;
+        }
+        .fstab-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-soft);
+        }
+
+        /* Gauge Bars */
+        .gauge-container { margin: 0.65rem 0; }
+        .gauge-bar-outer {
+            height: 22px;
+            background: var(--bg-card-subtle);
+            border: 1px solid var(--border-hard);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+        }
+        .gauge-fill { height: 100%; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .marker-line { position: absolute; top: 0; bottom: 0; width: 2px; z-index: 5; }
+        .marker-label { font-size: 0.68rem; font-weight: 700; position: absolute; top: -16px; transform: translateX(-50%); }
+
+        /* Spec Table */
+        .spec-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin: 0.5rem 0; }
+        .spec-table th { text-align: left; padding: 0.5rem 0.6rem; background: var(--bg-card-subtle); border-bottom: 2px solid var(--border); }
+        .spec-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); }
+
+        /* Screen States & Practice Activities */
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .scenario-card {
+            border: 1px solid var(--border);
+            padding: 0.75rem 0.85rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: var(--bg-card);
+            margin-bottom: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .scenario-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+        .scenario-card.selected {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 640px) { .vocab-grid { grid-template-columns: 1fr; } }
+        .vocab-list { display: flex; flex-direction: column; gap: 0.35rem; }
+        .vocab-item {
+            padding: 0.55rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.45rem;
+            cursor: pointer;
+            font-size: 0.83rem;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .vocab-item.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .vocab-item.matched { background: var(--success); color: white; border-color: var(--success); cursor: default; }
+
+        .sequence-container { display: flex; flex-direction: column; gap: 0.35rem; }
+        .sequence-item {
+            padding: 0.55rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.45rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.83rem;
+            transition: all 0.15s ease;
+        }
+
+        .quiz-option {
+            display: block;
+            padding: 0.75rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 0.45rem;
+            margin-bottom: 0.45rem;
+            cursor: pointer;
+            font-size: 0.86rem;
+            transition: all 0.15s ease;
+            background: var(--bg-card);
+        }
+        .quiz-option:hover:not(.correct):not(.incorrect) { background: var(--bg-card-subtle); border-color: var(--border-hard); }
+        .quiz-option.correct { background: var(--success); color: white; border-color: var(--success); }
+        .quiz-option.incorrect { background: var(--error); color: white; border-color: var(--error); }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 0.4rem;
+        }
+        .theme-toggle:hover { background: var(--bg-card-subtle); border-color: var(--primary-border); }
+        .small { font-size: 0.78rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="logo-icon-badge">
+                <i data-lucide="database" style="width: 18px; height: 18px;"></i>
+            </div>
+            <div class="logo-text">
+                Linux Storage Architect
+                <span class="cert-badge"><i data-lucide="award" style="width:11px;"></i> Linux+ Ch. 7 & 8</span>
+            </div>
+        </div>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode" title="Toggle Dark/Light Mode">
+            <i data-lucide="moon" style="width: 16px; height: 16px;"></i>
+        </button>
+    </header>
+
+    <div class="progress-container">
+        <div id="main-progress" class="progress-bar"></div>
+    </div>
+
+    <nav id="main-nav">
+        <button data-screen="welcome" class="active"><i data-lucide="home" style="width:15px;"></i> Start</button>
+        <button data-screen="learn"><i data-lucide="book-open" style="width:15px;"></i> 1. Learn</button>
+        <button data-screen="explore"><i data-lucide="compass" style="width:15px;"></i> 2. Explore</button>
+        <button data-screen="practice"><i data-lucide="check-circle" style="width:15px;"></i> 3. Practice</button>
+    </nav>
+
+    <!-- 0. Welcome Screen -->
+    <section id="welcome-screen" class="screen active">
+        <div class="card" style="text-align: center; padding: 2.25rem 1.25rem;">
+            <h1 style="font-size: 1.85rem; margin-bottom: 0.65rem;">Linux Storage & Filesystem Architecture</h1>
+            <p style="font-size: 1.02rem; color: var(--text-muted); max-width: 760px; margin: 0 auto 1.5rem;">
+                A comprehensive interactive module aligned with <strong>CompTIA Linux+ (XK0-005) Chapter 7 & 8</strong>. Master partition tables (MBR vs. GPT), block utilities, `/etc/fstab` syntax, inode architecture, disk quotas, LUKS encryption, RAID levels, and Logical Volume Management (LVM).
+            </p>
+
+            <div class="grid" style="text-align: left; margin-bottom: 1.5rem;">
+                <div class="card" style="margin: 0; padding: 1.15rem;">
+                    <h3><i data-lucide="hard-drive" style="color: var(--primary); width:16px;"></i> Partitioning & Tools</h3>
+                    <p class="small">Master MBR 2TB limits, GPT secondary backup headers, and the differences between <code>fdisk</code>, <code>gdisk</code>, and <code>parted</code>.</p>
+                </div>
+                <div class="card" style="margin: 0; padding: 1.15rem;">
+                    <h3><i data-lucide="file-text" style="color: var(--primary); width:16px;"></i> fstab, Inodes & Quotas</h3>
+                    <p class="small">Inspect the 6 fields of <code>/etc/fstab</code>, diagnose <code>df -i</code> inode exhaustion, and understand soft vs. hard quota limits with grace periods.</p>
+                </div>
+                <div class="card" style="margin: 0; padding: 1.15rem;">
+                    <h3><i data-lucide="layers" style="color: var(--primary); width:16px;"></i> LVM & RAID Architecture</h3>
+                    <p class="small">Experience flexible storage pooling (PV &rarr; VG &rarr; LV) with live volume expansion alongside RAID 0, 1, 5, and 10 fault-tolerance tests.</p>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" style="padding: 0.65rem 1.8rem; font-size: 0.95rem;" onclick="app.setScreen('learn')">
+                Begin Study Module <i data-lucide="arrow-right" style="width:16px;"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- 1. Learn Screen -->
+    <section id="learn-screen" class="screen">
+        <div class="sub-nav">
+            <button class="active" onclick="app.setTab('learn', 'stack')"><i data-lucide="layers" style="width:14px;"></i> Storage Hierarchy</button>
+            <button onclick="app.setTab('learn', 'mbr-gpt')"><i data-lucide="table" style="width:14px;"></i> MBR vs GPT & Tools</button>
+            <button onclick="app.setTab('learn', 'fstab')"><i data-lucide="file-code" style="width:14px;"></i> /etc/fstab Anatomy</button>
+            <button onclick="app.setTab('learn', 'inodes-quotas')"><i data-lucide="sliders" style="width:14px;"></i> Inodes & Quotas</button>
+            <button onclick="app.setTab('learn', 'lvm')"><i data-lucide="box" style="width:14px;"></i> LVM 3-Tier System</button>
+            <button onclick="app.setTab('learn', 'raid')"><i data-lucide="shield-check" style="width:14px;"></i> RAID Reliability</button>
+        </div>
+
+        <!-- 1A. Storage Stack Tab -->
+        <div id="tab-learn-stack" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h2>Physical Storage Layers</h2>
+                    <p>In Linux, storage is organized strictly from physical electronics up to directory tree endpoints:</p>
+                    <ul>
+                        <li><strong>Raw Block Device:</strong> Hardware drives (e.g., SATA <code>/dev/sda</code>, NVMe <code>/dev/nvme0n1</code>, VirtIO <code>/dev/vda</code>).</li>
+                        <li><strong>Partition:</strong> Logical slices on the disk (e.g., <code>/dev/sda1</code>, NVMe <code>/dev/nvme0n1p1</code>).</li>
+                        <li><strong>Filesystem:</strong> The indexing format (e.g., <code>ext4</code>, <code>xfs</code>, <code>btrfs</code>).</li>
+                        <li><strong>Mount Point:</strong> The target directory where the filesystem attaches (e.g., <code>/</code>, <code>/home</code>, <code>/var</code>).</li>
+                    </ul>
+                    <div class="why-box">
+                        <strong>Why this matters:</strong> Linux doesn't use drive letters like <code>C:</code> or <code>D:</code>. Everything exists in a single unified directory tree starting at <code>/</code>. Isolating paths like <code>/var</code> onto separate partitions protects the root OS from running out of space due to rogue logs.
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Inspection Commands & Quiz</h2>
+                    <p>Key tools administrators use to inspect block devices before mounting:</p>
+                    <ul>
+                        <li><code>lsblk</code>: Lists block devices in a visual parent-child hierarchy tree.</li>
+                        <li><code>blkid</code>: Prints UUIDs and filesystem <code>TYPE</code> attributes.</li>
+                        <li><code>fdisk -l</code>: Displays low-level sector geometry and partition tables.</li>
+                    </ul>
+                    <div class="card" style="background: var(--bg-card-subtle); margin-top: 0.75rem; padding: 0.85rem;">
+                        <p><strong>Knowledge Check:</strong> Which command prints universally unique identifiers (UUIDs) required for safe <code>/etc/fstab</code> entries?</p>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="app.checkLearn('stack', false)">ls -l /dev</button>
+                            <button class="btn btn-outline btn-sm" onclick="app.checkLearn('stack', true)">blkid</button>
+                            <button class="btn btn-outline btn-sm" onclick="app.checkLearn('stack', false)">df -h</button>
+                        </div>
+                        <div id="learn-stack-fb" class="feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1B. MBR vs GPT Tab -->
+        <div id="tab-learn-mbr-gpt" class="tab-content">
+            <div class="card">
+                <h2>Master Boot Record (MBR) vs. GUID Partition Table (GPT)</h2>
+                <p>CompTIA Linux+ heavily tests the structural specifications and limitations of both partition table schemes:</p>
+                <table class="spec-table">
+                    <thead>
+                        <tr>
+                            <th>Specification</th>
+                            <th>MBR (Legacy BIOS)</th>
+                            <th>GPT (Modern UEFI)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Maximum Disk Size</strong></td>
+                            <td><strong>2 Terabytes (2 TB)</strong> (32-bit sector addressing)</td>
+                            <td><strong>9.4 Zettabytes (9.4 ZB)</strong> (64-bit LBA addressing)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Partition Maximum</strong></td>
+                            <td>4 Primary partitions (or 3 Primary + 1 Extended containing logical partitions)</td>
+                            <td><strong>128 Partitions</strong> by default in Linux</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Redundancy & Headers</strong></td>
+                            <td>Single sector (LBA 0, first 512 bytes). No backup. Corrupted sector 0 = lost partition table.</td>
+                            <td><strong>Primary GPT at LBA 1</strong> and a <strong>Secondary Backup GPT</strong> stored at the very last sectors of the disk.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Integrity Protection</strong></td>
+                            <td>None</td>
+                            <td><strong>CRC32 Checksums</strong> verify header and partition table health.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="grid" style="margin-top: 1rem;">
+                    <div>
+                        <h3>Partitioning CLI Utilities</h3>
+                        <ul>
+                            <li><code>fdisk</code>: The standard menu-driven tool (historically MBR; modern versions support GPT). Core keys: <code>m</code> (menu), <code>p</code> (print table), <code>n</code> (new), <code>d</code> (delete), <code>t</code> (type code), <code>w</code> (write to disk), <code>q</code> (quit without saving).</li>
+                            <li><code>gdisk</code>: GPT-dedicated interactive tool. Uses 4-digit hex codes (e.g., <code>8300</code> Linux FS, <code>8200</code> Linux Swap, <code>EF00</code> EFI System).</li>
+                            <li><code>parted</code>: Non-interactive/scriptable CLI tool capable of handling disks > 2TB (<code>mklabel gpt</code>, <code>mkpart</code>, <code>resizepart</code>).</li>
+                        </ul>
+                    </div>
+                    <div class="card" style="background: var(--bg-card-subtle); padding: 0.85rem;">
+                        <p><strong>Knowledge Check:</strong> A storage technician installs a 14TB disk array. Why will partitioning it with classic MBR fail to utilize the full disk?</p>
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <button class="btn btn-outline btn-sm" style="text-align:left;" onclick="app.checkLearn('mbr', true)">MBR 32-bit sector addressing caps usable address space at 2 TB.</button>
+                            <button class="btn btn-outline btn-sm" style="text-align:left;" onclick="app.checkLearn('mbr', false)">MBR does not support ext4 or XFS filesystems.</button>
+                            <button class="btn btn-outline btn-sm" style="text-align:left;" onclick="app.checkLearn('mbr', false)">MBR requires a minimum of 5 disks in an array.</button>
+                        </div>
+                        <div id="learn-mbr-fb" class="feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1C. fstab Tab -->
+        <div id="tab-learn-fstab" class="tab-content">
+            <div class="card">
+                <h2>The 6-Field Anatomy of <code>/etc/fstab</code></h2>
+                <p>The <code>/etc/fstab</code> configuration file controls automatic filesystem mounting during system boot. Every active entry requires exactly <strong>6 space-delimited positional fields</strong>:</p>
+
+                <div class="terminal-window">
+                    <div class="terminal-window-bar">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span class="terminal-title">cat /etc/fstab</span>
+                    </div>
+                    <pre class="fstab-preview"># &lt;file system&gt;                           &lt;mount point&gt;   &lt;type&gt;  &lt;options&gt;       &lt;dump&gt;  &lt;pass&gt;
+UUID=3a7b9c12-4d5e-6f7a-8b9c-0d1e2f3a4b5c  /var            xfs     defaults,noatime 0       2</pre>
+                </div>
+
+                <div class="grid" style="margin-top: 0.85rem;">
+                    <div>
+                        <ol style="padding-left: 1.15rem; font-size: 0.85rem;">
+                            <li><strong>Device Identifier:</strong> Preferred: <code>UUID=...</code> (immune to drive cable order changes). Also accepts <code>/dev/sdX</code> or device labels.</li>
+                            <li><strong>Mount Point:</strong> Target directory in the tree (e.g., <code>/</code>, <code>/home</code>, <code>/data</code>, or <code>none</code> for swap).</li>
+                            <li><strong>Filesystem Type:</strong> <code>ext4</code>, <code>xfs</code>, <code>btrfs</code>, <code>vfat</code>, or <code>swap</code>.</li>
+                            <li><strong>Mount Options:</strong> <code>defaults</code> (rw, suid, dev, exec, auto, nouser, async), plus <code>ro</code>, <code>noexec</code>, <code>usrquota</code>, <code>nofail</code>.</li>
+                            <li><strong>Dump Flag:</strong> <code>0</code> = ignore during backup; <code>1</code> = back up with legacy dump utility. (Almost always <code>0</code> on modern servers).</li>
+                            <li><strong>Fsck Pass Order:</strong> Boot filesystem check order: <code>0</code> = do not check (used for swap and XFS); <code>1</code> = root partition <code>/</code>; <code>2</code> = all other local drives checked sequentially.</li>
+                        </ol>
+                    </div>
+                    <div class="card" style="background: var(--bg-card-subtle); padding: 0.85rem;">
+                        <div class="exam-tip" style="margin-top: 0;">
+                            <strong>Exam Tip:</strong> Always test changes to <code>/etc/fstab</code> using <code>mount -a</code> before rebooting! If there is a syntax error, <code>mount -a</code> will report it immediately; otherwise, the system will halt into Emergency Mode during boot.
+                        </div>
+                        <p><strong>Knowledge Check:</strong> What should the 6th field (Fsck Pass) be set to for an XFS data partition mounted at <code>/data</code>?</p>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="app.checkLearn('fstab', false)">1 (Checked first)</button>
+                            <button class="btn btn-outline btn-sm" onclick="app.checkLearn('fstab', true)">0 (XFS handles log replay; do not fsck)</button>
+                            <button class="btn btn-outline btn-sm" onclick="app.checkLearn('fstab', false)">2 (Checked second)</button>
+                        </div>
+                        <div id="learn-fstab-fb" class="feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1D. Inodes & Quotas Tab -->
+        <div id="tab-learn-inodes-quotas" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Inodes & The "No Space" Paradox</h2>
+                    <p>Every file on an ext4 or XFS filesystem requires two things: <strong>data blocks</strong> (holding file content) and an <strong>inode</strong> (index node holding metadata: permissions, owner, timestamps, and block pointers).</p>
+                    <div class="why-box">
+                        <strong>The Inode Exhaustion Trap:</strong> If an application creates millions of empty (0-byte) temporary or log files, the disk can run out of inodes while having <strong>hundreds of gigabytes of free disk space</strong>. Any new file creation fails with: <code>No space left on device</code>.
+                    </div>
+                    <ul>
+                        <li><code>df -h</code>: Shows disk <strong>block capacity</strong> in human-readable gigabytes.</li>
+                        <li><code>df -i</code>: Shows disk <strong>inode usage</strong> and percentage remaining.</li>
+                        <li><code>du -sh /path/*</code>: Summarizes folder block consumption to find giant directories.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>Disk Quotas & LUKS Encryption</h2>
+                    <p><strong>Disk Quotas:</strong> Prevent individual users or groups from filling shared drives.</p>
+                    <ul>
+                        <li><strong>Soft Limit:</strong> Warning threshold. Users can temporarily write above this limit during a <strong>grace period</strong> (default: 7 days).</li>
+                        <li><strong>Hard Limit:</strong> Absolute ceiling. Further write attempts are blocked immediately.</li>
+                        <li>Tools: <code>quotacheck -cugm</code>, <code>quotaon -v /home</code>, <code>edquota -u &lt;user&gt;</code>, <code>repquota -a</code>.</li>
+                    </ul>
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: 0.75rem 0;">
+                    <p><strong>LUKS (Linux Unified Key Setup):</strong></p>
+                    <p class="small">The standard specification for full-disk and partition encryption. Workflow: <code>cryptsetup luksFormat /dev/sdb1</code> &rarr; <code>cryptsetup open /dev/sdb1 secure_vault</code> &rarr; formats virtual device <code>/dev/mapper/secure_vault</code> &rarr; mounts to directory.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1E. LVM Tab -->
+        <div id="tab-learn-lvm" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Logical Volume Management (LVM)</h2>
+                    <p>LVM introduces an abstraction layer between physical hardware and mounted filesystems, enabling dynamic resizing without downtime.</p>
+                    <p><strong>The LVM Three-Tier Hierarchy:</strong></p>
+                    <ul>
+                        <li><strong>1. Physical Volume (PV):</strong> Raw disks or partitions initialized for LVM via <code>pvcreate /dev/sdb</code>.</li>
+                        <li><strong>2. Volume Group (VG):</strong> The shared storage pool combining one or more PVs via <code>vgcreate vg_data /dev/sdb /dev/sdc</code>.</li>
+                        <li><strong>3. Logical Volume (LV):</strong> Virtual partitions carved out of the VG pool via <code>lvcreate -L 50G -n lv_var vg_data</code>. Filesystems are formatted on <code>/dev/vg_data/lv_var</code>.</li>
+                    </ul>
+                    <div class="why-box">
+                        <strong>Why this matters:</strong> If a database running on an LV runs out of space, the admin simply executes <code>lvextend -L +20G -r /dev/vg_data/lv_db</code>. The <code>-r</code> flag expands the underlying filesystem online instantly with zero downtime.
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Knowledge Check</h2>
+                    <p>Which component acts as the "shared pool" from which logical storage is carved?</p>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <button class="btn btn-outline btn-sm" onclick="app.checkLearn('lvm', false)">Physical Volume (PV)</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.checkLearn('lvm', true)">Volume Group (VG)</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.checkLearn('lvm', false)">Logical Volume (LV)</button>
+                    </div>
+                    <div id="learn-lvm-fb" class="feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1F. RAID Tab -->
+        <div id="tab-learn-raid" class="tab-content">
+            <div class="card">
+                <h2>RAID Architecture Fundamentals</h2>
+                <div class="grid">
+                    <div>
+                        <p><strong>RAID 0 (Striping):</strong> Performance focus. Data split across 2+ drives. No redundancy. If 1 disk fails, 100% of data is lost.</p>
+                        <p><strong>RAID 1 (Mirroring):</strong> High reliability. Exact replica across 2 drives. 50% capacity efficiency. Survives 1 drive failure.</p>
+                        <p><strong>RAID 5 (Distributed Parity):</strong> Balanced. Requires 3+ drives. Capacity = (N - 1). Survives 1 drive failure through XOR parity reconstruction.</p>
+                        <p><strong>RAID 10 (Striped Mirrors):</strong> Combines speed of RAID 0 with safety of RAID 1. Requires 4+ drives (even count). 50% capacity. Can survive multiple disk failures if in different mirror sets.</p>
+                    </div>
+                    <div class="why-box">
+                        <strong>LVM vs RAID:</strong> RAID provides <strong>hardware fault tolerance</strong> (protecting against disk death). LVM provides <strong>storage flexibility</strong> (space allocation and expansion). Enterprise servers frequently build LVM Volume Groups on top of hardware RAID arrays!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Explore Screen -->
+    <section id="explore-screen" class="screen">
+        <div class="sub-nav">
+            <button class="active" onclick="app.setTab('explore', 'partitions')"><i data-lucide="pie-chart" style="width:14px;"></i> 1. Partition Showcase</button>
+            <button onclick="app.setTab('explore', 'fstab-builder')"><i data-lucide="edit-3" style="width:14px;"></i> 2. /etc/fstab Lab</button>
+            <button onclick="app.setTab('explore', 'quotas-inodes')"><i data-lucide="sliders" style="width:14px;"></i> 3. Quota & Inode Lab</button>
+            <button onclick="app.setTab('explore', 'lvm')"><i data-lucide="box" style="width:14px;"></i> 4. LVM Builder</button>
+            <button onclick="app.setTab('explore', 'raid')"><i data-lucide="shield" style="width:14px;"></i> 5. RAID Visualizer</button>
+        </div>
+
+        <!-- 2A. Partition Showcase Tab -->
+        <div id="tab-explore-partitions" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Fixed Partition Layout Architect</h3>
+                        <p class="small">Compare recommended standard fixed partition architectures for common deployment roles.</p>
+                    </div>
+                </div>
+                <div class="grid-2col">
+                    <div id="partition-scenarios" class="list"></div>
+                    <div>
+                        <div class="disk-visualization-enclosure">
+                            <div class="disk-bay-header">
+                                <span><span class="status-led"></span>DRIVE: /dev/sda (SATA 6Gb/s)</span>
+                                <span>TOTAL: 100 GiB</span>
+                            </div>
+                            <div id="disk-viz" class="disk-visualization"></div>
+                            <div class="disk-ruler-ticks">
+                                <span>LBA 0</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                                <span>75%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                        <div id="partition-explanation" class="explanation-text">Select a scenario to reveal the architectural breakdown.</div>
+                        <div style="margin-top: 0.85rem; text-align: right;">
+                            <button class="btn btn-outline btn-sm" onclick="app.setTab('explore', 'fstab-builder')">Next: /etc/fstab Lab <i data-lucide="chevron-right" style="width:14px;"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2B. /etc/fstab Builder Lab -->
+        <div id="tab-explore-fstab-builder" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Interactive <code>/etc/fstab</code> Constructor & Validator</h3>
+                        <p class="small">Configure all 6 positional fields for a new storage volume, inspect the generated entry, and execute a simulated <code>mount -a</code>.</p>
+                    </div>
+                </div>
+
+                <div class="fstab-table-wrap">
+                    <table class="fstab-table">
+                        <thead>
+                            <tr>
+                                <th>1. Device / UUID</th>
+                                <th>2. Mount Point</th>
+                                <th>3. Type</th>
+                                <th>4. Options</th>
+                                <th>5. Dump</th>
+                                <th>6. Pass</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <select id="fstab-in-dev" class="fstab-input" onchange="app.updateFstabPreview()">
+                                        <option value="UUID=4b8e21a0-9c3f-4e52-a1b7-d8c9e0f1a2b3">UUID=4b8e21a0... (Best Practice)</option>
+                                        <option value="/dev/sdb1">/dev/sdb1 (SATA Block)</option>
+                                        <option value="/dev/nvme0n1p2">/dev/nvme0n1p2 (NVMe Block)</option>
+                                        <option value="/dev/mapper/vg0-lv_data">/dev/mapper/vg0-lv_data (LVM)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" id="fstab-in-mnt" class="fstab-input" value="/data" oninput="app.updateFstabPreview()">
+                                </td>
+                                <td>
+                                    <select id="fstab-in-type" class="fstab-input" onchange="app.updateFstabPreview()">
+                                        <option value="xfs">xfs</option>
+                                        <option value="ext4">ext4</option>
+                                        <option value="btrfs">btrfs</option>
+                                        <option value="swap">swap</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" id="fstab-in-opt" class="fstab-input" value="defaults,noatime" oninput="app.updateFstabPreview()">
+                                </td>
+                                <td>
+                                    <select id="fstab-in-dump" class="fstab-input" onchange="app.updateFstabPreview()">
+                                        <option value="0">0 (No dump)</option>
+                                        <option value="1">1 (Backup)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select id="fstab-in-pass" class="fstab-input" onchange="app.updateFstabPreview()">
+                                        <option value="0">0 (No fsck - required for XFS)</option>
+                                        <option value="1">1 (Root / only)</option>
+                                        <option value="2">2 (Non-root local drive)</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 0.65rem;">
+                    <strong>Generated <code>/etc/fstab</code> Line Preview:</strong>
+                    <div class="terminal-window">
+                        <div class="terminal-window-bar">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                            <span class="terminal-title">/etc/fstab</span>
+                        </div>
+                        <pre id="fstab-line-preview" class="fstab-preview"></pre>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="app.testFstabEntry()"><i data-lucide="play" style="width:14px;"></i> Execute Simulated "mount -a"</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.loadFstabPreset('root')">Preset: Root Ext4</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.loadFstabPreset('var-xfs')">Preset: /var XFS</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.loadFstabPreset('swap')">Preset: Swap</button>
+                </div>
+                <div id="fstab-test-fb" class="feedback"></div>
+            </div>
+        </div>
+
+        <!-- 2C. Quotas & Inodes Lab -->
+        <div id="tab-explore-quotas-inodes" class="tab-content">
+            <div class="grid">
+                <!-- Inode Simulator Card -->
+                <div class="card">
+                    <h3>1. Inode Exhaustion Simulator</h3>
+                    <p class="small">Observe how millions of 0-byte log files crash file creation even with 95% free disk capacity.</p>
+                    
+                    <div class="gauge-container">
+                        <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom: 0.25rem;">
+                            <span>Block Storage (df -h)</span>
+                            <span id="inode-block-stat" style="font-family:ui-monospace, monospace;">5 GB / 100 GB (5% used)</span>
+                        </div>
+                        <div class="gauge-bar-outer">
+                            <div id="inode-block-fill" class="gauge-fill" style="width: 5%; background: var(--primary);"></div>
+                        </div>
+                    </div>
+
+                    <div class="gauge-container" style="margin-top: 0.85rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-bottom: 0.25rem;">
+                            <span>Inode Table Usage (df -i)</span>
+                            <span id="inode-count-stat" style="font-family:ui-monospace, monospace;">50,000 / 1,000,000 (5% used)</span>
+                        </div>
+                        <div class="gauge-bar-outer">
+                            <div id="inode-fill" class="gauge-fill" style="width: 5%; background: var(--success);"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.45rem; margin-top: 0.85rem; flex-wrap: wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="app.simulateInodes('create')"><i data-lucide="plus" style="width:13px;"></i> Spawn 450,000 Micro-logs</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.simulateInodes('exhaust')"><i data-lucide="alert-triangle" style="width:13px;"></i> Exhaust 100% Inodes</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.simulateInodes('reset')"><i data-lucide="rotate-ccw" style="width:13px;"></i> Clean /tmp</button>
+                    </div>
+                    <div id="inode-sim-fb" class="feedback"></div>
+                </div>
+
+                <!-- Disk Quota Simulator Card -->
+                <div class="card">
+                    <h3>2. Disk Quota: Soft vs. Hard Limits</h3>
+                    <p class="small">Simulate student account <code>sstudent1</code> uploading data against a <strong>100 MB Soft Limit</strong> and <strong>150 MB Hard Limit</strong>.</p>
+                    
+                    <div class="gauge-container" style="margin-top: 1.25rem;">
+                        <div style="position: relative; margin-bottom: 0.25rem;">
+                            <span class="marker-label" style="left: 50%; color: var(--warning);">Soft: 100M</span>
+                            <span class="marker-label" style="left: 75%; color: var(--error);">Hard: 150M</span>
+                        </div>
+                        <div class="gauge-bar-outer" style="position: relative;">
+                            <div class="marker-line" style="left: 50%; background: var(--warning);"></div>
+                            <div class="marker-line" style="left: 75%; background: var(--error);"></div>
+                            <div id="quota-fill" class="gauge-fill" style="width: 30%; background: var(--primary);"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.78rem; margin-top: 0.25rem; font-family:ui-monospace, monospace;">
+                            <span>0 MB</span>
+                            <span id="quota-status-text" style="font-weight: bold;">Usage: 60 MB (Under Limits)</span>
+                            <span>200 MB</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.45rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="app.simulateQuota(60)">Safe (60 MB)</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.simulateQuota(120)">Grace Period (120 MB)</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.simulateQuota(160)">Blocked (160 MB)</button>
+                    </div>
+                    <div id="quota-sim-fb" class="feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2D. LVM Builder Tab -->
+        <div id="tab-explore-lvm" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>LVM Architect Simulation</h3>
+                        <p class="small">Experience zero-downtime storage management: Initialize Physical Volumes (PV), combine into Volume Group (VG), and expand Logical Volumes (LV).</p>
+                    </div>
+                </div>
+                <div class="grid-2col">
+                    <div id="lvm-scenarios" class="list"></div>
+                    <div>
+                        <div class="lvm-stack">
+                            <div>
+                                <div class="lvm-layer-label"><i data-lucide="hard-drive" style="width:13px;"></i> 1. Physical Disks (Click to initialize as PV)</div>
+                                <div class="disk-pool" id="lvm-disk-pool"></div>
+                            </div>
+                            <div>
+                                <div class="lvm-layer-label"><i data-lucide="box" style="width:13px;"></i> 2. Volume Group Pool (Shared VG Capacity)</div>
+                                <div class="vg-bar" id="lvm-vg-bar">
+                                    <div id="vg-fill-area" class="vg-fill" style="width: 0%;"></div>
+                                </div>
+                                <div id="vg-stats" style="font-size: 0.75rem; margin-top: 0.25rem; font-weight: bold; font-family:ui-monospace, monospace;">Pool: 0 GB available</div>
+                            </div>
+                            <div>
+                                <div class="lvm-layer-label"><i data-lucide="layers" style="width:13px;"></i> 3. Logical Volumes (Carved from VG)</div>
+                                <div class="disk-visualization-enclosure" style="margin: 0.35rem 0;">
+                                    <div id="lvm-viz-lvs" class="disk-visualization"></div>
+                                </div>
+                                <div id="lv-controls" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                    <button class="btn btn-primary btn-sm" onclick="app.addLV('root')">+ / (Root)</button>
+                                    <button class="btn btn-primary btn-sm" onclick="app.addLV('var')">+ /var</button>
+                                    <button class="btn btn-primary btn-sm" onclick="app.addLV('data')">+ /data</button>
+                                    <button id="lvm-expand-btn" class="btn btn-outline btn-sm" onclick="app.resizeLastLV()" style="display:none;">Expand Last LV (+10G)</button>
+                                    <button class="btn btn-outline btn-sm" style="color: var(--error); border-color: var(--error);" onclick="app.resetLVM()">Clear All</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="lvm-explanation" class="explanation-text">Select an LVM scenario to start building your flexible storage pool.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2E. RAID Visualizer Tab -->
+        <div id="tab-explore-raid" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>RAID Multi-Disk Visualizer & Fault Injector</h3>
+                        <p class="small">Toggle RAID levels to inspect data striping and parity distribution. Test hardware failure resilience with simulated disk failure.</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.45rem; margin-bottom: 0.85rem; flex-wrap: wrap;">
+                    <button class="btn btn-outline btn-sm" onclick="app.updateRAID('0')">RAID 0 (Striping)</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.updateRAID('1')">RAID 1 (Mirroring)</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.updateRAID('5')">RAID 5 (Parity)</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.updateRAID('10')">RAID 10 (1+0)</button>
+                </div>
+                <div class="raid-disk-container" id="raid-disks"></div>
+                <div id="raid-stats" class="grid" style="grid-template-columns: repeat(4, 1fr); text-align: center; font-size: 0.82rem; background: var(--bg-card-subtle); padding: 0.65rem; border-radius: 6px; border: 1px solid var(--border);">
+                    <div><span class="text-muted">Tolerance</span><br><strong id="raid-ft">-</strong></div>
+                    <div><span class="text-muted">Speed</span><br><strong id="raid-speed">-</strong></div>
+                    <div><span class="text-muted">Capacity</span><br><strong id="raid-eff">-</strong></div>
+                    <div><span class="text-muted">Min Disks</span><br><strong id="raid-min">-</strong></div>
+                </div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button class="btn btn-danger btn-sm" onclick="app.toggleRAIDFailure()"><i data-lucide="zap-off" style="width:14px;"></i> Simulate Drive Failure</button>
+                </div>
+                <div id="raid-failure-fb" class="feedback"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Practice Screen -->
+    <section id="practice-screen" class="screen">
+        <div class="sub-nav">
+            <button class="active" onclick="app.setTab('practice', 'match')"><i data-lucide="check-square" style="width:14px;"></i> Activity 1: Vocabulary</button>
+            <button onclick="app.setTab('practice', 'sequence')"><i data-lucide="list-ordered" style="width:14px;"></i> Activity 2: Hierarchy Flow</button>
+            <button onclick="app.setTab('practice', 'troubleshoot')"><i data-lucide="tool" style="width:14px;"></i> Activity 3: Troubleshooting</button>
+            <button onclick="app.setTab('practice', 'challenge')"><i data-lucide="compass" style="width:14px;"></i> Activity 4: Architect Design</button>
+            <button onclick="app.setTab('practice', 'quiz')"><i data-lucide="help-circle" style="width:14px;"></i> Activity 5: Final Exam Quiz</button>
+        </div>
+
+        <!-- 3A. Vocabulary Matcher -->
+        <div id="tab-practice-match" class="tab-content active">
+            <div class="card">
+                <h2>Linux+ Storage Terminology Matcher</h2>
+                <p class="small">Click a term on the left, then select its accurate CompTIA Linux+ definition on the right.</p>
+                <div class="vocab-grid">
+                    <div class="vocab-list" id="vocab-terms"></div>
+                    <div class="vocab-list" id="vocab-defs"></div>
+                </div>
+                <div id="vocab-fb" class="feedback"></div>
+            </div>
+        </div>
+
+        <!-- 3B. Sequence Activity -->
+        <div id="tab-practice-sequence" class="tab-content">
+            <div class="card">
+                <h2>Storage Architecture Hierarchy Ordering</h2>
+                <p class="small">Order the components strictly from <strong>Raw Physical Drive</strong> up to the <strong>Mounted User Directory</strong>.</p>
+                <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="sequence-container" id="seq-options"></div>
+                    <div class="sequence-container" id="seq-user" style="border: 1px dashed var(--border-hard); padding: 0.85rem; border-radius: 6px; background: var(--bg-card-subtle);">
+                        <p class="text-muted" style="text-align: center; font-size: 0.78rem; margin: 0 0 0.45rem 0;">Your Ordered Stack:</p>
+                    </div>
+                </div>
+                <div id="seq-fb" class="feedback"></div>
+            </div>
+        </div>
+
+        <!-- 3C. Troubleshooting Mini-Cases -->
+        <div id="tab-practice-troubleshoot" class="tab-content">
+            <div class="card">
+                <h2>Chapter 7 Troubleshooting Scenarios</h2>
+                <p class="small">Select a real-world Linux administration issue and determine the correct troubleshooting command.</p>
+                <div style="display: flex; gap: 0.4rem; margin-bottom: 0.85rem; flex-wrap: wrap;">
+                    <button class="btn btn-outline btn-sm active" id="case-btn-0" onclick="app.loadTroubleshootCase(0)">Case 1: Inode Paradox</button>
+                    <button class="btn btn-outline btn-sm" id="case-btn-1" onclick="app.loadTroubleshootCase(1)">Case 2: Emergency Mode Boot</button>
+                    <button class="btn btn-outline btn-sm" id="case-btn-2" onclick="app.loadTroubleshootCase(2)">Case 3: Unmountable Drive Check</button>
+                </div>
+                <div id="troubleshoot-case-body"></div>
+                <div id="troubleshoot-fb" class="feedback"></div>
+            </div>
+        </div>
+
+        <!-- 3D. Architect Challenge -->
+        <div id="tab-practice-challenge" class="tab-content">
+            <div class="card">
+                <h2>Storage Architect Decision Scenarios</h2>
+                <div id="challenge-content"></div>
+            </div>
+        </div>
+
+        <!-- 3E. Final Quiz -->
+        <div id="tab-practice-quiz" class="tab-content">
+            <div class="card" id="quiz-card">
+                <div id="quiz-content"></div>
+            </div>
+            <div id="mastery-dashboard" class="card" style="display: none; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; border: none;">
+                <h2 style="color: white;">Certification Readiness Dashboard</h2>
+                <div class="grid">
+                    <div>
+                        <h1 id="final-score" style="font-size: 2.8rem; margin: 0; color: white;">0%</h1>
+                        <p style="color: rgba(255,255,255,0.85);">Exam Accuracy</p>
+                    </div>
+                    <ul id="mastery-list" style="list-style: none; padding: 0; font-size: 0.9rem;"></ul>
+                </div>
+                <button class="btn" style="background: white; color: var(--primary); margin-top: 0.85rem; font-weight: 700;" onclick="location.reload()">
+                    <i data-lucide="rotate-ccw" style="width:14px;"></i> Retake Practice Module
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+const app = {
+    state: {
+        activeScreen: 'welcome',
+        score: { quiz: 0, vocab: 0 },
+        tabs: { learn: 'stack', explore: 'partitions', practice: 'match' },
+        
+        // Partition Module
+        pScenarioIdx: null,
+
+        // LVM Module
+        lvmScenarioIdx: null,
+        lvmDisks: [
+            { id: 1, size: 40, active: false },
+            { id: 2, size: 40, active: false },
+            { id: 3, size: 80, active: false }
+        ],
+        lvmLVs: [],
+
+        // RAID Module
+        raid: { level: '0', failed: false },
+
+        // Practice State
+        vocabSelected: null,
+        seqCorrect: ["Physical Block Device (/dev/sda)", "Physical Volume (PV)", "Volume Group (VG)", "Logical Volume (LV)", "Filesystem (mkfs.xfs)", "Mount Point (/var)"],
+        seqUser: [],
+        quizIndex: 0,
+        currentCaseIdx: 0,
+
+        // Simulator states
+        inodesExhausted: false,
+        quotaUsage: 60
+    },
+
+    init() {
+        lucide.createIcons();
+        this.setupNav();
+        this.setupTheme();
+        this.renderPartitionScenarios();
+        this.renderLVMScenarios();
+        this.renderLVMDisks();
+        this.updateRAID('0');
+        this.updateFstabPreview();
+        this.simulateInodes('reset');
+        this.simulateQuota(60);
+        this.initVocab();
+        this.initSequence();
+        this.loadTroubleshootCase(0);
+        this.renderChallenge();
+        this.renderQuiz();
+    },
+
+    setupNav() {
+        document.querySelectorAll('#main-nav button').forEach(btn => {
+            btn.onclick = () => this.setScreen(btn.dataset.screen);
+        });
+    },
+
+    setScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`${id}-screen`).classList.add('active');
+        document.querySelectorAll('#main-nav button').forEach(b => b.classList.toggle('active', b.dataset.screen === id));
+        this.state.activeScreen = id;
+        this.updateProgress();
+        window.scrollTo(0, 0);
+    },
+
+    setTab(screen, tabId) {
+        this.state.tabs[screen] = tabId;
+        const screenContainer = document.getElementById(`${screen}-screen`);
+        if (!screenContainer) return;
+
+        screenContainer.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        const targetTab = document.getElementById(`tab-${screen}-${tabId}`);
+        if (targetTab) targetTab.classList.add('active');
+
+        screenContainer.querySelectorAll('.sub-nav button').forEach(b => {
+            const onclickAttr = b.getAttribute('onclick') || '';
+            b.classList.toggle('active', onclickAttr.includes(`'${tabId}'`));
+        });
+        lucide.createIcons();
+    },
+
+    updateProgress() {
+        const order = ['welcome', 'learn', 'explore', 'practice'];
+        const idx = order.indexOf(this.state.activeScreen);
+        const p = (idx / (order.length - 1)) * 100;
+        document.getElementById('main-progress').style.width = `${p}%`;
+    },
+
+    setupTheme() {
+        const toggle = document.getElementById('theme-toggle');
+        toggle.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            toggle.innerHTML = isDark ? '<i data-lucide="sun" style="width:16px;height:16px;"></i>' : '<i data-lucide="moon" style="width:16px;height:16px;"></i>';
+            lucide.createIcons();
+        };
+    },
+
+    checkLearn(id, correct) {
+        const fb = document.getElementById(`learn-${id}-fb`);
+        fb.className = correct ? "feedback success" : "feedback error";
+        fb.textContent = correct 
+            ? "Correct! You have mastered this CompTIA Linux+ Chapter 7 exam principle." 
+            : "Not quite. Re-read the technical notes and specifications above.";
+    },
+
+    partitionScenarios: [
+        { 
+            name: "Linux Workstation", 
+            layout: [{type: 'root', size: 30}, {type: 'home', size: 60}, {type: 'swap', size: 10}], 
+            why: "Users store personal files, downloads, and IDE projects in /home. Allocating 60% ensures users don't saturate the OS root filesystem." 
+        },
+        { 
+            name: "High-Traffic Web Server", 
+            layout: [{type: 'root', size: 25}, {type: 'var', size: 65}, {type: 'swap', size: 10}], 
+            why: "Apache/Nginx document roots (/var/www) and log directories (/var/log) grow rapidly. Isolating /var protects the core OS from disk crashes." 
+        },
+        { 
+            name: "Multi-User Lab Node", 
+            layout: [{type: 'root', size: 20}, {type: 'home', size: 50}, {type: 'var', size: 20}, {type: 'swap', size: 10}], 
+            why: "Balanced division for student environments. Combines generous /home allocation with user disk quotas." 
+        }
+    ],
+
+    renderPartitionScenarios() {
+        const container = document.getElementById('partition-scenarios');
+        container.innerHTML = '';
+        this.partitionScenarios.forEach((s, idx) => {
+            const card = document.createElement('div');
+            card.className = 'scenario-card';
+            card.innerHTML = `<strong>${s.name}</strong><p style="font-size:0.75rem; margin:0; color:var(--text-muted);">Click to inspect recommended layout.</p>`;
+            card.onclick = () => this.selectPartitionScenario(idx);
+            container.appendChild(card);
+        });
+        this.selectPartitionScenario(0);
+    },
+
+    selectPartitionScenario(idx) {
+        const s = this.partitionScenarios[idx];
+        document.querySelectorAll('#partition-scenarios .scenario-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+        const viz = document.getElementById('disk-viz');
+        viz.innerHTML = '';
+        s.layout.forEach(p => {
+            const el = document.createElement('div');
+            el.className = `partition-block partition-${p.type}`;
+            el.style.width = `${p.size}%`;
+            el.innerHTML = `/${p.type === 'swap' ? 'swap' : p.type}<span>${p.size}G</span>`;
+            viz.appendChild(el);
+        });
+        document.getElementById('partition-explanation').innerHTML = `<strong>Architectural Rationale:</strong> ${s.why}`;
+    },
+
+    updateFstabPreview() {
+        const dev = document.getElementById('fstab-in-dev').value;
+        const mnt = document.getElementById('fstab-in-mnt').value.trim() || '/';
+        const type = document.getElementById('fstab-in-type').value;
+        const opt = document.getElementById('fstab-in-opt').value.trim() || 'defaults';
+        const dump = document.getElementById('fstab-in-dump').value;
+        const pass = document.getElementById('fstab-in-pass').value;
+
+        const line = `${dev.padEnd(42, ' ')} ${mnt.padEnd(16, ' ')} ${type.padEnd(8, ' ')} ${opt.padEnd(18, ' ')} ${dump}  ${pass}`;
+        document.getElementById('fstab-line-preview').textContent = line;
+    },
+
+    loadFstabPreset(preset) {
+        if (preset === 'root') {
+            document.getElementById('fstab-in-dev').value = 'UUID=4b8e21a0-9c3f-4e52-a1b7-d8c9e0f1a2b3';
+            document.getElementById('fstab-in-mnt').value = '/';
+            document.getElementById('fstab-in-type').value = 'ext4';
+            document.getElementById('fstab-in-opt').value = 'defaults';
+            document.getElementById('fstab-in-dump').value = '0';
+            document.getElementById('fstab-in-pass').value = '1';
+        } else if (preset === 'var-xfs') {
+            document.getElementById('fstab-in-dev').value = '/dev/mapper/vg0-lv_data';
+            document.getElementById('fstab-in-mnt').value = '/var';
+            document.getElementById('fstab-in-type').value = 'xfs';
+            document.getElementById('fstab-in-opt').value = 'defaults,noatime,usrquota';
+            document.getElementById('fstab-in-dump').value = '0';
+            document.getElementById('fstab-in-pass').value = '0';
+        } else if (preset === 'swap') {
+            document.getElementById('fstab-in-dev').value = '/dev/nvme0n1p2';
+            document.getElementById('fstab-in-mnt').value = 'none';
+            document.getElementById('fstab-in-type').value = 'swap';
+            document.getElementById('fstab-in-opt').value = 'sw';
+            document.getElementById('fstab-in-dump').value = '0';
+            document.getElementById('fstab-in-pass').value = '0';
+        }
+        this.updateFstabPreview();
+        document.getElementById('fstab-test-fb').style.display = 'none';
+    },
+
+    testFstabEntry() {
+        const mnt = document.getElementById('fstab-in-mnt').value.trim();
+        const type = document.getElementById('fstab-in-type').value;
+        const pass = document.getElementById('fstab-in-pass').value;
+        const fb = document.getElementById('fstab-test-fb');
+
+        if (!mnt.startsWith('/') && mnt !== 'none') {
+            fb.className = "feedback error";
+            fb.innerHTML = `<strong>Error: mount -a failed:</strong> Mount point <code>${mnt}</code> is invalid. All mount points must be absolute paths starting with <code>/</code> (or <code>none</code> for swap).`;
+            return;
+        }
+
+        if (type === 'xfs' && pass !== '0') {
+            fb.className = "feedback error";
+            fb.innerHTML = `<strong>Warning / Best Practice Conflict:</strong> XFS filesystems should use pass order <code>0</code>. XFS performs metadata log replay automatically upon mounting; running <code>fsck</code> at boot is unnecessary and can cause boot delays.`;
+            return;
+        }
+
+        if (mnt === '/' && pass !== '1') {
+            fb.className = "feedback error";
+            fb.innerHTML = `<strong>Syntax Error:</strong> The root filesystem (<code>/</code>) MUST have a fsck pass order of <code>1</code> so it is inspected before any secondary partitions.`;
+            return;
+        }
+
+        fb.className = "feedback success";
+        fb.innerHTML = `<strong>Success! mount -a executed cleanly:</strong> Target filesystem <code>${type}</code> successfully validated and mounted to <code>${mnt}</code> without halting the OS.`;
+    },
+
+    simulateInodes(action) {
+        const blockFill = document.getElementById('inode-block-fill');
+        const inodeFill = document.getElementById('inode-fill');
+        const blockStat = document.getElementById('inode-block-stat');
+        const inodeStat = document.getElementById('inode-count-stat');
+        const fb = document.getElementById('inode-sim-fb');
+
+        if (action === 'exhaust') {
+            blockFill.style.width = '6%';
+            inodeFill.style.width = '100%';
+            inodeFill.style.background = 'var(--error)';
+            blockStat.textContent = '6 GB / 100 GB (6% used - 94GB free!)';
+            inodeStat.textContent = '1,000,000 / 1,000,000 (100% EXHAUSTED)';
+            fb.className = 'feedback error';
+            fb.innerHTML = `<strong>CRITICAL ERROR: touch /tmp/newfile.txt &rarr; No space left on device</strong><br>Even though <code>df -h</code> shows 94 GB of free storage space, <code>df -i</code> reveals 0 remaining inodes. The filesystem cannot create metadata records for any new files.`;
+        } else if (action === 'create') {
+            blockFill.style.width = '5.5%';
+            inodeFill.style.width = '50%';
+            inodeFill.style.background = 'var(--warning)';
+            blockStat.textContent = '5.5 GB / 100 GB (5.5% used)';
+            inodeStat.textContent = '500,000 / 1,000,000 (50% used)';
+            fb.className = 'feedback success';
+            fb.innerHTML = `450,000 micro-files generated in <code>/tmp</code>. Notice how block consumption barely moved (+0.5GB), but inode capacity dropped by 45%.`;
+        } else {
+            blockFill.style.width = '5%';
+            inodeFill.style.width = '5%';
+            inodeFill.style.background = 'var(--success)';
+            blockStat.textContent = '5 GB / 100 GB (5% used)';
+            inodeStat.textContent = '50,000 / 1,000,000 (5% used)';
+            fb.style.display = 'none';
+        }
+    },
+
+    simulateQuota(megabytes) {
+        this.state.quotaUsage = megabytes;
+        const fill = document.getElementById('quota-fill');
+        const text = document.getElementById('quota-status-text');
+        const fb = document.getElementById('quota-sim-fb');
+
+        const pct = (megabytes / 200) * 100;
+        fill.style.width = `${pct}%`;
+
+        if (megabytes > 150) {
+            fill.style.background = 'var(--error)';
+            text.textContent = `Usage: ${megabytes} MB (HARD LIMIT REACHED)`;
+            text.style.color = 'var(--error)';
+            fb.className = 'feedback error';
+            fb.innerHTML = `<strong>EDQUOT (Disk quota exceeded):</strong> User attempted to write beyond the 150 MB Hard Limit. The kernel abruptly terminated write operations.`;
+        } else if (megabytes > 100) {
+            fill.style.background = 'var(--warning)';
+            text.textContent = `Usage: ${megabytes} MB (Soft Limit Exceeded - Grace Period Active)`;
+            text.style.color = 'var(--warning)';
+            fb.className = 'feedback error';
+            fb.style.borderColor = 'var(--warning)';
+            fb.style.background = 'var(--warning-soft)';
+            fb.style.color = 'var(--text-main)';
+            fb.innerHTML = `<strong>Warning: Soft limit exceeded:</strong> User is in the 7-day grace period. Writes are permitted temporarily, but if space is not freed within 7 days, the soft limit locks into an immovable hard limit.`;
+        } else {
+            fill.style.background = 'var(--primary)';
+            text.textContent = `Usage: ${megabytes} MB (Normal - Under Limits)`;
+            text.style.color = 'var(--text-main)';
+            fb.style.display = 'none';
+        }
+    },
+
+    lvmScenarios: [
+        { 
+            title: "Growing Log Server", 
+            desc: "Start small, expand /var as logs grow over time.", 
+            layout: { disks: [1], lvs: [{type: 'root', size: 20}, {type: 'var', size: 20}] },
+            explanation: "<strong>Architectural Choice:</strong> By starting with a single 40G disk as a PV, we carve out /root and /var. As logs grow, LVM allows us to add the 80G disk to the Volume Group later and expand the /var Logical Volume instantly."
+        },
+        { 
+            title: "Shared Data Pool", 
+            desc: "Combine multiple disks into one large pooled storage.", 
+            layout: { disks: [1, 2, 3], lvs: [{type: 'data', size: 120}] },
+            explanation: "<strong>Architectural Choice:</strong> LVM abstracts physical boundaries. Here, we pool three physical disks (40G + 40G + 80G) into a single 160G Volume Group, allowing us to create a 120G /data volume that is larger than any single disk."
+        }
+    ],
+
+    renderLVMScenarios() {
+        const container = document.getElementById('lvm-scenarios');
+        container.innerHTML = '';
+        this.lvmScenarios.forEach((s, idx) => {
+            const card = document.createElement('div');
+            card.className = 'scenario-card';
+            card.innerHTML = `<strong>${s.title}</strong><p style="font-size:0.75rem; margin:0; color:var(--text-muted);">${s.desc}</p>`;
+            card.onclick = () => {
+                this.state.lvmScenarioIdx = idx;
+                document.querySelectorAll('#lvm-scenarios .scenario-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+                
+                this.state.lvmLVs = s.layout ? JSON.parse(JSON.stringify(s.layout.lvs)) : [];
+                this.state.lvmDisks.forEach(d => {
+                    d.active = s.layout ? s.layout.disks.includes(d.id) : false;
+                });
+                
+                document.getElementById('lvm-explanation').innerHTML = s.explanation;
+                document.getElementById('lvm-expand-btn').style.display = (this.state.lvmLVs.length > 0) ? 'inline-flex' : 'none';
+                
+                this.updateVG();
+                this.renderLVMDisks();
+                this.renderLVVisuals();
+            };
+            container.appendChild(card);
+        });
+    },
+
+    renderLVMDisks() {
+        const pool = document.getElementById('lvm-disk-pool');
+        pool.innerHTML = '';
+        this.state.lvmDisks.forEach(d => {
+            const el = document.createElement('div');
+            el.className = `disk-unit ${d.active ? 'selected' : ''}`;
+            el.innerHTML = `<i data-lucide="hard-drive" style="width:16px;"></i><span style="font-family:ui-monospace, monospace; font-weight:700;">${d.size}G</span>`;
+            el.onclick = () => {
+                d.active = !d.active;
+                this.updateVG();
+                this.renderLVMDisks();
+            };
+            pool.appendChild(el);
+        });
+        lucide.createIcons();
+    },
+
+    updateVG() {
+        const cap = this.state.lvmDisks.filter(d => d.active).reduce((a, b) => a + b.size, 0);
+        document.getElementById('vg-fill-area').style.width = cap > 0 ? "100%" : "0%";
+        document.getElementById('vg-stats').textContent = `VG Pool: ${cap} GB total capacity`;
+        this.renderLVVisuals();
+    },
+
+    addLV(type) {
+        const vgCap = this.state.lvmDisks.filter(d => d.active).reduce((a, b) => a + b.size, 0);
+        const used = this.state.lvmLVs.reduce((a, b) => a + b.size, 0);
+        if (vgCap - used >= 20) {
+            this.state.lvmLVs.push({ type, size: 20 });
+            this.renderLVVisuals();
+            document.getElementById('lvm-expand-btn').style.display = 'inline-flex';
+        }
+    },
+
+    resizeLastLV() {
+        const last = this.state.lvmLVs[this.state.lvmLVs.length - 1];
+        const vgCap = this.state.lvmDisks.filter(d => d.active).reduce((a, b) => a + b.size, 0);
+        const used = this.state.lvmLVs.reduce((a, b) => a + b.size, 0);
+        if (vgCap - used >= 10 && last) {
+            last.size += 10;
+            this.renderLVVisuals();
+            document.getElementById('lvm-explanation').innerHTML = `<span style="color:var(--success)"><strong>Online Resizing Success:</strong> Logical Volume /${last.type} expanded using free space in the VG pool via <code>lvextend -L +10G -r</code>.</span>`;
+        }
+    },
+
+    renderLVVisuals() {
+        const viz = document.getElementById('lvm-viz-lvs');
+        viz.innerHTML = '';
+        const vgCap = this.state.lvmDisks.filter(d => d.active).reduce((a, b) => a + b.size, 0);
+        if (vgCap === 0) return;
+        
+        let total = 0;
+        this.state.lvmLVs.forEach(lv => {
+            const el = document.createElement('div');
+            el.className = `partition-block partition-${lv.type}`;
+            el.style.width = `${(lv.size / vgCap) * 100}%`;
+            el.innerHTML = `/${lv.type}<span>${lv.size}G</span>`;
+            viz.appendChild(el);
+            total += lv.size;
+        });
+        
+        if (total < vgCap) {
+            const el = document.createElement('div');
+            el.className = 'partition-block partition-unallocated';
+            el.style.width = `${((vgCap - total) / vgCap) * 100}%`;
+            el.innerHTML = `VG Free<span>${vgCap - total}G</span>`;
+            viz.appendChild(el);
+        }
+    },
+
+    resetLVM() {
+        this.state.lvmLVs = [];
+        this.state.lvmDisks.forEach(d => d.active = false);
+        document.getElementById('lvm-expand-btn').style.display = 'none';
+        this.updateVG();
+        this.renderLVMDisks();
+        this.renderLVVisuals();
+    },
+
+    updateRAID(level) {
+        this.state.raid.level = level;
+        this.state.raid.failed = false;
+        const container = document.getElementById('raid-disks');
+        container.innerHTML = '';
+        const count = level === '5' ? 3 : (level === '10' ? 4 : 2);
+        for (let i = 0; i < count; i++) {
+            const d = document.createElement('div');
+            d.className = 'raid-disk';
+            d.id = `raid-disk-${i}`;
+            for (let j = 0; j < 3; j++) {
+                const b = document.createElement('div');
+                b.className = 'raid-block';
+                b.textContent = level === '5' && i === j ? 'P' : 'D';
+                if (b.textContent === 'P') b.className += ' parity';
+                d.appendChild(b);
+            }
+            container.appendChild(d);
+        }
+        const stats = {
+            '0': { ft: 'None (0 Disks)', speed: 'Fast (Striped)', eff: '100%', min: '2 Disks' },
+            '1': { ft: '1 Disk', speed: 'Normal Write / Fast Read', eff: '50%', min: '2 Disks' },
+            '5': { ft: '1 Disk (Parity)', speed: 'Fast Read / Parity Calc Write', eff: 'N - 1', min: '3 Disks' },
+            '10': { ft: '1 Disk per mirror pair', speed: 'Very Fast', eff: '50%', min: '4 Disks (Even)' }
+        }[level];
+        document.getElementById('raid-ft').textContent = stats.ft;
+        document.getElementById('raid-speed').textContent = stats.speed;
+        document.getElementById('raid-eff').textContent = stats.eff;
+        document.getElementById('raid-min').textContent = stats.min;
+        document.getElementById('raid-failure-fb').style.display = 'none';
+    },
+
+    toggleRAIDFailure() {
+        this.state.raid.failed = !this.state.raid.failed;
+        const disk = document.querySelector('.raid-disk');
+        const fb = document.getElementById('raid-failure-fb');
+        if (this.state.raid.failed) {
+            disk.classList.add('failed');
+            fb.textContent = this.state.raid.level === '0' 
+                ? "CRITICAL ALERT: RAID 0 has NO redundancy. With one drive destroyed, all block pointers are unrecoverable. 100% DATA LOSS." 
+                : "ARRAY DEGRADED: Disk 0 failed. Redundancy permits full uninterrupted I/O while you hot-swap a replacement drive.";
+            fb.className = this.state.raid.level === '0' ? "feedback error" : "feedback success";
+        } else {
+            disk.classList.remove('failed');
+            fb.style.display = 'none';
+        }
+    },
+
+    initVocab() {
+        const data = [
+            { t: 'GPT', d: 'Partition scheme supporting disks >2TB and 128 partitions with backup headers.' },
+            { t: 'Inode', d: 'Data structure containing file metadata (permissions, owner, block pointers).' },
+            { t: 'fstab Pass', d: 'Position 6 in /etc/fstab determining the fsck inspection order at boot.' },
+            { t: 'Soft Limit', d: 'Quota threshold that issues warnings and triggers a 7-day grace period.' },
+            { t: 'LUKS', d: 'The Linux standard specification for block device encryption.' },
+            { t: 'Physical Volume', d: 'A raw disk or partition initialized for LVM via pvcreate.' },
+            { t: 'Volume Group', d: 'A centralized storage pool combining one or more PVs.' },
+            { t: 'blkid', d: 'Utility that queries block devices to print UUIDs and filesystem formats.' }
+        ];
+        const terms = document.getElementById('vocab-terms');
+        const defs = document.getElementById('vocab-defs');
+        terms.innerHTML = '';
+        defs.innerHTML = '';
+
+        [...data].sort(() => Math.random() - 0.5).forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'vocab-item';
+            el.textContent = item.t;
+            el.onclick = () => this.selectVocab(el, 't', item.t);
+            terms.appendChild(el);
+        });
+        [...data].sort(() => Math.random() - 0.5).forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'vocab-item';
+            el.textContent = item.d;
+            el.onclick = () => this.selectVocab(el, 'd', item.t);
+            defs.appendChild(el);
+        });
+    },
+
+    selectVocab(el, type, id) {
+        if (el.classList.contains('matched')) return;
+        if (this.state.vocabSelected && this.state.vocabSelected.type !== type) {
+            if (this.state.vocabSelected.id === id) {
+                el.classList.add('matched');
+                this.state.vocabSelected.el.classList.add('matched');
+                this.state.vocabSelected = null;
+                this.state.score.vocab++;
+                if (this.state.score.vocab === 8) {
+                    const fb = document.getElementById('vocab-fb');
+                    fb.textContent = "Outstanding! All CompTIA Linux+ storage terms matched perfectly.";
+                    fb.className = "feedback success";
+                }
+            } else {
+                this.state.vocabSelected.el.classList.remove('selected');
+                this.state.vocabSelected = null;
+            }
+        } else {
+            if (this.state.vocabSelected) this.state.vocabSelected.el.classList.remove('selected');
+            this.state.vocabSelected = { el, type, id };
+            el.classList.add('selected');
+        }
+    },
+
+    initSequence() {
+        const opts = document.getElementById('seq-options');
+        opts.innerHTML = '';
+        this.state.seqUser = [];
+        document.getElementById('seq-user').innerHTML = '<p class="text-muted" style="text-align: center; font-size: 0.78rem; margin: 0 0 0.45rem 0;">Your Ordered Stack:</p>';
+        document.getElementById('seq-fb').style.display = 'none';
+        
+        [...this.state.seqCorrect].sort(() => Math.random() - 0.5).forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'sequence-item';
+            el.innerHTML = `<i data-lucide="arrow-right" style="width:13px;"></i> ${item}`;
+            el.onclick = () => {
+                if (el.style.opacity === "0.4") return;
+                this.state.seqUser.push(item);
+                el.style.opacity = "0.4";
+                const row = document.createElement('div');
+                row.className = 'sequence-item';
+                row.style.background = "var(--primary-soft)";
+                row.innerHTML = `<strong>${this.state.seqUser.length}.</strong> ${item}`;
+                document.getElementById('seq-user').appendChild(row);
+                if (this.state.seqUser.length === this.state.seqCorrect.length) this.checkSequence();
+            };
+            opts.appendChild(el);
+        });
+        lucide.createIcons();
+    },
+
+    checkSequence() {
+        const ok = JSON.stringify(this.state.seqUser) === JSON.stringify(this.state.seqCorrect);
+        const fb = document.getElementById('seq-fb');
+        fb.className = ok ? "feedback success" : "feedback error";
+        fb.textContent = ok 
+            ? "Flawless Architecture! From Raw Device &rarr; PV &rarr; VG &rarr; LV &rarr; Filesystem &rarr; Mount Point." 
+            : "Sequence error. Storage flows strictly upward from raw hardware to directory mount. Click here to retry.";
+        fb.onclick = () => this.initSequence();
+    },
+
+    troubleshootCases: [
+        {
+            title: "Case 1: The 'No Space Left on Device' Paradox",
+            scenario: "A web developer cannot save session files to <code>/var/www/sessions</code>. Running <code>df -h</code> shows 180 GB available (12% used).",
+            q: "What is the most effective command to immediately diagnose the root cause?",
+            options: [
+                { text: "df -i (Inspect inode table exhaustion)", correct: true },
+                { text: "du -sh /var/www (Calculate total directory size)", correct: false },
+                { text: "fdisk -l /dev/sda (Re-read partition sector table)", correct: false },
+                { text: "mkfs.xfs -f /dev/sda2 (Reformat the drive)", correct: false }
+            ],
+            explanation: "<strong>Explanation:</strong> Inode exhaustion occurs when millions of zero-byte or microscopic session files exhaust all available inode records, causing write failures despite having abundant gigabytes of free block space."
+        },
+        {
+            title: "Case 2: Emergency Mode Halting After Editing /etc/fstab",
+            scenario: "An administrator adds a backup drive to <code>/etc/fstab</code> and reboots. The server drops directly into Emergency Mode and asks for root maintenance credentials.",
+            q: "How should the administrator correct this and test before rebooting?",
+            options: [
+                { text: "Remount root read-write (mount -o remount,rw /), fix the typo in /etc/fstab, and execute mount -a to test.", correct: true },
+                { text: "Run fdisk /dev/sda and write a new MBR signature.", correct: false },
+                { text: "Delete /etc/fstab completely and reboot.", correct: false },
+                { text: "Execute fsck -y on all mounted filesystems simultaneously.", correct: false }
+            ],
+            explanation: "<strong>Explanation:</strong> If an <code>/etc/fstab</code> entry has a bad UUID or invalid mount option without the <code>nofail</code> flag, systemd halts the boot process. You must remount <code>/</code> read-write, fix the line, and run <code>mount -a</code>."
+        },
+        {
+            title: "Case 3: Unmountable Ext4 Corruption",
+            scenario: "A server experienced sudden power failure. Upon booting, <code>/dev/sdb1</code> fails to mount due to filesystem metadata corruption.",
+            q: "Which safety rule MUST be observed before executing filesystem repairs?",
+            options: [
+                { text: "Ensure the filesystem is unmounted (umount) or mounted read-only before running fsck / e2fsck.", correct: true },
+                { text: "Run fsck while writing active data to rebuild the journal.", correct: false },
+                { text: "Convert the drive to GPT using gdisk before repairing.", correct: false },
+                { text: "Initialize the drive with pvcreate to bypass corruption.", correct: false }
+            ],
+            explanation: "<strong>Explanation:</strong> Running <code>fsck</code> or <code>e2fsck</code> on a mounted, read-write filesystem can result in catastrophic, unrecoverable data loss because the kernel and fsck will both modify sectors concurrently."
+        }
+    ],
+
+    loadTroubleshootCase(idx) {
+        this.state.currentCaseIdx = idx;
+        for (let i = 0; i < 3; i++) {
+            const btn = document.getElementById(`case-btn-${i}`);
+            if (btn) btn.classList.toggle('active', i === idx);
+        }
+        const c = this.troubleshootCases[idx];
+        const body = document.getElementById('troubleshoot-case-body');
+        document.getElementById('troubleshoot-fb').style.display = 'none';
+
+        body.innerHTML = `
+            <div class="card" style="background: var(--bg-card-subtle); padding: 0.85rem; margin-top: 0.4rem;">
+                <h4 style="margin-bottom:0.35rem;">${c.title}</h4>
+                <p>${c.scenario}</p>
+                <p><strong>Question:</strong> ${c.q}</p>
+                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    ${c.options.map((opt, i) => `
+                        <button class="btn btn-outline" style="text-align:left; justify-content:flex-start;" onclick="app.checkTroubleshoot(${i})">
+                            <strong>${String.fromCharCode(65 + i)}.</strong> ${opt.text}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    },
+
+    checkTroubleshoot(optionIdx) {
+        const c = this.troubleshootCases[this.state.currentCaseIdx];
+        const opt = c.options[optionIdx];
+        const fb = document.getElementById('troubleshoot-fb');
+
+        if (opt.correct) {
+            fb.className = "feedback success";
+            fb.innerHTML = `<strong>Correct!</strong> ${c.explanation}`;
+        } else {
+            fb.className = "feedback error";
+            fb.innerHTML = `<strong>Incorrect choice.</strong> Try again or re-read the scenario requirements.`;
+        }
+    },
+
+    renderChallenge() {
+        const div = document.getElementById('challenge-content');
+        div.innerHTML = `
+            <p><strong>Scenario:</strong> You are architecting a high-throughput video surveillance server with 4 physical disks (4 TB each). Requirements: 1) Must store large multi-gigabyte video files efficiently, 2) Storage needs must expand online over time, and 3) Must survive a single drive hardware failure.</p>
+            <div class="grid" style="margin-top: 0.85rem;">
+                <button class="btn btn-outline" style="padding: 0.85rem; text-align: left;" onclick="app.checkChallenge(false)">
+                    <strong>Option A:</strong><br>MBR Partitions with Ext4 on RAID 0
+                </button>
+                <button class="btn btn-outline" style="padding: 0.85rem; text-align: left;" onclick="app.checkChallenge(true)">
+                    <strong>Option B:</strong><br>LVM on top of RAID 5 with an XFS Filesystem
+                </button>
+                <button class="btn btn-outline" style="padding: 0.85rem; text-align: left;" onclick="app.checkChallenge(false)">
+                    <strong>Option C:</strong><br>Standard GPT Partitions with VFAT on RAID 1
+                </button>
+            </div>
+            <div id="challenge-fb" class="feedback"></div>
+        `;
+    },
+
+    checkChallenge(ok) {
+        const fb = document.getElementById('challenge-fb');
+        fb.className = ok ? "feedback success" : "feedback error";
+        fb.innerHTML = ok 
+            ? "<strong>Architectural Perfection!</strong> RAID 5 provides single-drive hardware fault tolerance, LVM allows seamless capacity expansion, and XFS is engineered specifically for massive files and parallel 64-bit I/O." 
+            : "<strong>Suboptimal Architecture:</strong> Option A has zero redundancy (RAID 0) and MBR cannot address 4TB drives; Option C uses VFAT which cannot handle modern Linux permissions or large video files.";
+    },
+
+    quizQuestions: [
+        { q: "What is the maximum addressable disk capacity supported by Master Boot Record (MBR)?", a: ["2 Terabytes (2 TB)", "18 Exabytes", "512 Gigabytes", "4 Petabytes"], c: 0 },
+        { q: "Where does GPT store its secondary backup partition header to guard against drive corruption?", a: ["At the very end of the disk", "In LBA sector 0", "In /etc/fstab", "In the /boot EFI partition"], c: 0 },
+        { q: "A user receives 'No space left on device', but 'df -h' shows 80GB free. Which command will confirm inode exhaustion?", a: ["df -i", "du -sh /", "lsblk -f", "quotacheck -u"], c: 0 },
+        { q: "Which utility is designed specifically for partitioning GUID Partition Table (GPT) disks interactively?", a: ["gdisk", "mkfs.ext4", "fdisk (legacy)", "lvextend"], c: 0 },
+        { q: "In the 6-field structure of /etc/fstab, what does a '0' in the 6th field indicate?", a: ["Fsck will bypass checking this filesystem at boot", "The filesystem is mounted read-only", "Dump utility will back up the volume daily", "The volume has highest check priority"], c: 0 },
+        { q: "What is the purpose of the 'grace period' in Linux disk quota management?", a: ["Allows users temporary writes above the soft limit before it behaves as a hard limit", "Postpones filesystem formatting", "Delays fsck repairs during boot", "Gives admins 7 days to replace a dead RAID drive"], c: 0 },
+        { q: "Which command initializes a physical hard disk partition so that it can join an LVM Volume Group?", a: ["pvcreate", "vgcreate", "lvcreate", "mkfs.xfs"], c: 0 },
+        { q: "What is the minimum number of physical disks required to construct a RAID 5 array?", a: ["3 Disks", "2 Disks", "4 Disks", "1 Disk"], c: 0 }
+    ],
+
+    renderQuiz() {
+        const container = document.getElementById('quiz-content');
+        if (this.state.quizIndex >= this.quizQuestions.length) {
+            this.showMastery();
+            return;
+        }
+        const q = this.quizQuestions[this.state.quizIndex];
+        container.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">COMPTIA LINUX+ PRACTICE QUESTION ${this.state.quizIndex + 1} OF ${this.quizQuestions.length}</span>
+                <span class="cert-badge">Chapter 7 & 8</span>
+            </div>
+            <h3 style="font-size: 1.08rem; margin-bottom: 1rem;">${q.q}</h3>
+            ${q.a.map((o, i) => `<div class="quiz-option" onclick="app.handleQuiz(${i}, ${q.c})">${o}</div>`).join('')}
+        `;
+    },
+
+    handleQuiz(idx, correct) {
+        const opts = document.querySelectorAll('.quiz-option');
+        if (idx === correct) {
+            opts[idx].classList.add('correct');
+            this.state.score.quiz++;
+        } else {
+            opts[idx].classList.add('incorrect');
+            opts[correct].classList.add('correct');
+        }
+        setTimeout(() => {
+            this.state.quizIndex++;
+            this.renderQuiz();
+        }, 1100);
+    },
+
+    showMastery() {
+        document.getElementById('quiz-card').style.display = 'none';
+        const dash = document.getElementById('mastery-dashboard');
+        dash.style.display = 'block';
+        const pct = Math.round((this.state.score.quiz / this.quizQuestions.length) * 100);
+        document.getElementById('final-score').textContent = `${pct}%`;
+        document.getElementById('mastery-list').innerHTML = `
+            <li><i data-lucide="check" style="width:14px; vertical-align:middle; margin-right:4px;"></i> <strong>MBR vs. GPT Architecture:</strong> ${pct >= 75 ? 'Mastered' : 'Needs Review'}</li>
+            <li><i data-lucide="check" style="width:14px; vertical-align:middle; margin-right:4px;"></i> <strong>/etc/fstab 6-Field Parsing:</strong> Verified</li>
+            <li><i data-lucide="check" style="width:14px; vertical-align:middle; margin-right:4px;"></i> <strong>Inode & Disk Quota Mechanics:</strong> Understood</li>
+            <li><i data-lucide="check" style="width:14px; vertical-align:middle; margin-right:4px;"></i> <strong>LVM & RAID Storage Design:</strong> Complete</li>
+        `;
+        lucide.createIcons();
+    }
+};
+
+window.onload = () => app.init();
+</script>
+</body>
+</html>
