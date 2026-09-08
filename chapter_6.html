@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Permissions Masterclass | CompTIA Linux+ Ch. 6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 22px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #64748b;
+        }
+
+        .tab-btn.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        .tab-btn:not(.active):hover {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            width: 100%;
+            max-width: 940px;
+            padding: 32px 38px;
+            margin: auto;
+        }
+
+        .bit-btn {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .bit-btn.active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+        }
+
+        .mastery-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto;
+        }
+
+        .view-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 20px;
+        }
+
+        .terminal {
+            background-color: #0f172a;
+            color: #f8fafc;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 12px;
+        }
+
+        .sub-tab {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            color: #64748b;
+        }
+
+        .sub-tab.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .sub-tab:hover:not(.active) {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <header class="px-8 py-3.5 flex justify-between items-center bg-white border-b border-slate-200">
+        <div class="flex items-center gap-2.5 text-blue-600 font-extrabold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <span class="text-lg tracking-tight">Linux Permissions Master</span>
+            <span class="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded ml-1">CompTIA Linux+ Ch. 6</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-500">
+            <span class="mono">Exam XK0-005 Prep</span>
+        </div>
+    </header>
+
+    <!-- Nav Pills -->
+    <div class="flex justify-center pt-6 pb-2">
+        <div class="bg-white p-1.5 rounded-xl border border-slate-200 flex gap-1 shadow-sm">
+            <button onclick="showView('start')" id="btn-start" class="tab-btn active">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Start
+            </button>
+            <button onclick="showView('learn')" id="btn-learn" class="tab-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                1. Learn
+            </button>
+            <button onclick="showView('explore')" id="btn-explore" class="tab-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.068-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                2. Explore
+            </button>
+            <button onclick="showView('practice')" id="btn-practice" class="tab-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                3. Practice
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Card Area -->
+    <div class="view-container">
+        
+        <!-- START VIEW -->
+        <div id="view-start" class="content-card text-center space-y-7">
+            <div class="space-y-3">
+                <h2 class="text-3xl font-extrabold text-slate-900">Master Linux Permissions & Ownership</h2>
+                <p class="text-slate-500 max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
+                    A comprehensive interactive module covering standard rwx bits, octal calculation, umask defaults, special bits, file attributes, and ACLs for CompTIA Linux+ Chapter 6.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-5 text-left px-2">
+                <div class="space-y-1.5 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        UGO & Octal Modes
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-normal">Owner, Group, Other tiers; binary read (4), write (2), and execute (1) arithmetic.</p>
+                </div>
+                <div class="space-y-1.5 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 3c1.72 0 3.347.433 4.775 1.202m0 0L17 5m-1.833 4.667L12 15m0 0l-1.833-2.333M12 15V3"></path></svg>
+                        Default umask & Ownership
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-normal">Base masks (files 666 / dirs 777), umask deduction math, <code class="mono text-blue-600">chown</code>, and <code class="mono text-blue-600">chgrp</code>.</p>
+                </div>
+                <div class="space-y-1.5 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Special Bits & ACLs
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-normal">SUID/SGID/Sticky, <code class="mono text-blue-600">chattr +i/+a</code>, and POSIX Access Control Lists (<code class="mono text-blue-600">setfacl</code>).</p>
+                </div>
+            </div>
+
+            <button onclick="showView('learn')" class="bg-blue-600 text-white px-7 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 mx-auto hover:bg-blue-700 transition shadow-md shadow-blue-200">
+                Get Started
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </div>
+
+        <!-- LEARN VIEW -->
+        <div id="view-learn" class="content-card hidden space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <span class="text-blue-600">01.</span> Learn: Core Topics
+                </h2>
+                <!-- 4 Sub Tabs for Chapter 6 Topics -->
+                <div class="flex gap-1.5">
+                    <button onclick="showSubLearn('standard')" id="sub-standard" class="sub-tab active">Standard & Groups</button>
+                    <button onclick="showSubLearn('special')" id="sub-special" class="sub-tab">Special Bits</button>
+                    <button onclick="showSubLearn('umask')" id="sub-umask" class="sub-tab">umask Defaults</button>
+                    <button onclick="showSubLearn('acls')" id="sub-acls" class="sub-tab">Ownership & ACLs</button>
+                </div>
+            </div>
+
+            <!-- Sub 1: Standard & Groups -->
+            <div id="learn-standard" class="space-y-4">
+                <div class="grid grid-cols-2 gap-5">
+                    <div class="space-y-3">
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs space-y-1.5">
+                            <h4 class="font-bold text-[11px] uppercase text-slate-400">The 3 Permission Tiers</h4>
+                            <div><span class="font-bold text-slate-700">Owner (u):</span> User account that owns the node.</div>
+                            <div><span class="font-bold text-slate-700">Group (g):</span> All users in the assigned group.</div>
+                            <div><span class="font-bold text-slate-700">Others (o):</span> Everyone else with a shell on the system.</div>
+                        </div>
+                        <div class="p-3 bg-blue-50/70 rounded-lg border border-blue-100 text-xs">
+                            <span class="font-bold text-blue-900">File vs. Directory:</span>
+                            <p class="text-slate-600 mt-0.5"><span class="mono text-blue-700 font-semibold">x</span> on a file runs it. On a directory, <span class="mono text-blue-700 font-semibold">x</span> allows entering (<code class="mono">cd</code>) or accessing files within it!</p>
+                        </div>
+                    </div>
+                    <div class="terminal mono leading-relaxed">
+                        <div class="text-slate-500 mb-1"># ls -l snapshot</div>
+                        <div class="text-emerald-400 font-bold">-rwxr-xr--</div>
+                        <div class="mt-3 space-y-1 text-slate-400 text-[10.5px]">
+                            <div><span class="text-slate-200 font-bold">rwx (7)</span> : Owner has Read (4) + Write (2) + Exec (1)</div>
+                            <div><span class="text-slate-200 font-bold">r-x (5)</span> : Group has Read (4) + Exec (1)</div>
+                            <div><span class="text-slate-200 font-bold">r-- (4)</span> : Others have Read (4) only</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub 2: Special Bits -->
+            <div id="learn-special" class="hidden space-y-3">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="p-3 bg-blue-50/70 border border-blue-100 rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="font-bold text-xs text-blue-800">SUID (4000)</h4>
+                            <span class="mono text-[10px] bg-blue-100 text-blue-700 px-1 rounded">u+s</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600">Executes with <strong>owner</strong> permissions (e.g. <code class="mono">/usr/bin/passwd</code>). Shown as <span class="mono font-bold text-blue-700">'s'</span> in User slot.</p>
+                    </div>
+                    <div class="p-3 bg-indigo-50/70 border border-indigo-100 rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="font-bold text-xs text-indigo-800">SGID (2000)</h4>
+                            <span class="mono text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded">g+s</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600">New files in directory inherit <strong>parent group</strong>. Shown as <span class="mono font-bold text-indigo-700">'s'</span> in Group slot.</p>
+                    </div>
+                    <div class="p-3 bg-pink-50/70 border border-pink-100 rounded-lg">
+                        <div class="flex justify-between items-center mb-1">
+                            <h4 class="font-bold text-xs text-pink-800">Sticky Bit (1000)</h4>
+                            <span class="mono text-[10px] bg-pink-100 text-pink-700 px-1 rounded">+t</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600">Only <strong>file owner or root</strong> can delete (used on <code class="mono">/tmp</code>). Shown as <span class="mono font-bold text-pink-700">'t'</span> in Others slot.</p>
+                    </div>
+                </div>
+                <div class="terminal mono text-xs flex justify-between items-center py-2.5 px-4">
+                    <span class="text-slate-400">Exam Note:</span>
+                    <span>Capital <strong class="text-amber-400">S</strong> or <strong class="text-amber-400">T</strong> = Missing underlying <code class="text-slate-200">x</code> bit (error / non-executable)!</span>
+                    <span class="text-emerald-400 font-bold">-rwsr-xr-x</span>
+                </div>
+            </div>
+
+            <!-- Sub 3: umask Defaults -->
+            <div id="learn-umask" class="hidden space-y-3">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
+                        <h4 class="font-bold text-slate-800 text-[11px] uppercase tracking-wide">The Base Permission Rule</h4>
+                        <div class="space-y-1 text-slate-600">
+                            <div>• <strong>New Files base:</strong> <span class="mono font-bold text-slate-900">666</span> (<span class="mono">rw-rw-rw-</span>, no execution)</div>
+                            <div>• <strong>New Directories base:</strong> <span class="mono font-bold text-slate-900">777</span> (<span class="mono">rwxrwxrwx</span>)</div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 pt-1">The system <strong>subtracts</strong> the current <code class="mono font-bold text-blue-600">umask</code> to determine effective mode.</p>
+                    </div>
+                    <div class="terminal mono text-[11.5px] space-y-1.5">
+                        <div class="text-slate-400"># Standard Default: umask 022</div>
+                        <div>Files: 666 - 022 = <span class="text-emerald-400 font-bold">644 (-rw-r--r--)</span></div>
+                        <div>Dirs:  777 - 022 = <span class="text-emerald-400 font-bold">755 (drwxr-xr-x)</span></div>
+                        <div class="text-slate-400 pt-1"># Secure Default: umask 027</div>
+                        <div>Files: 666 - 027 = <span class="text-sky-400 font-bold">640 (-rw-r-----)</span></div>
+                        <div>Dirs:  777 - 027 = <span class="text-sky-400 font-bold">750 (drwxr-x---)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub 4: Ownership & ACLs -->
+            <div id="learn-acls" class="hidden space-y-3">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
+                        <h4 class="font-bold text-slate-800 text-[11px] uppercase tracking-wide">Ownership & Attributes</h4>
+                        <div class="space-y-1 text-slate-600 text-[11.5px]">
+                            <div>• <code class="mono font-bold text-blue-700">chown user:group file</code> : Change owner & group (<code class="mono">-R</code> recursive)</div>
+                            <div>• <code class="mono font-bold text-blue-700">chgrp group file</code> : Change group ownership only</div>
+                            <div>• <code class="mono font-bold text-purple-700">chattr +i file</code> : <strong>Immutable</strong> (cannot delete or edit even as root!)</div>
+                            <div>• <code class="mono font-bold text-purple-700">chattr +a file</code> : <strong>Append-only</strong> (ideal for audit logs)</div>
+                        </div>
+                    </div>
+                    <div class="terminal mono text-[11px] space-y-1.5">
+                        <div class="text-slate-400"># POSIX Access Control Lists (ACLs)</div>
+                        <div class="text-slate-300">$ getfacl document.pdf</div>
+                        <div class="text-emerald-400"># Grant maria read-write access:</div>
+                        <div class="text-white">$ setfacl -m u:maria:rw document.pdf</div>
+                        <div class="text-slate-400">Notice the '+' symbol: <span class="text-amber-300">-rw-rw-r--+</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                <span class="text-[11px] text-slate-400">Select tabs above to explore Chapter 6 topics</span>
+                <button onclick="showView('explore')" class="text-blue-600 font-bold text-xs flex items-center gap-1 hover:underline">
+                    Proceed to Lab <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- EXPLORE VIEW -->
+        <div id="view-explore" class="content-card hidden space-y-5">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <span class="text-blue-600">02.</span> Configuration & umask Lab
+                </h2>
+                <!-- Lab Mode Selector -->
+                <div class="flex bg-slate-100 p-1 rounded-lg gap-1 text-xs">
+                    <button onclick="setLabMode('chmod')" id="lab-btn-chmod" class="px-3 py-1 rounded font-semibold bg-white text-blue-700 shadow-sm transition">chmod Bitmask</button>
+                    <button onclick="setLabMode('umask')" id="lab-btn-umask" class="px-3 py-1 rounded font-semibold text-slate-600 hover:text-slate-900 transition">umask Simulator</button>
+                </div>
+            </div>
+
+            <!-- CHMOD MODE -->
+            <div id="lab-chmod-container" class="space-y-5">
+                <div class="grid grid-cols-3 gap-5">
+                    <div class="text-center space-y-2.5">
+                        <div class="text-[10px] uppercase font-black tracking-widest text-slate-400">Owner (u)</div>
+                        <div class="flex justify-center gap-1.5">
+                            <button id="u-r" onclick="toggleBit('u','r')" class="bit-btn">R</button>
+                            <button id="u-w" onclick="toggleBit('u','w')" class="bit-btn">W</button>
+                            <button id="u-x" onclick="toggleBit('u','x')" class="bit-btn">X</button>
+                        </div>
+                        <div id="u-val" class="text-2xl font-black mono text-slate-700">0</div>
+                    </div>
+                    <div class="text-center space-y-2.5">
+                        <div class="text-[10px] uppercase font-black tracking-widest text-slate-400">Group (g)</div>
+                        <div class="flex justify-center gap-1.5">
+                            <button id="g-r" onclick="toggleBit('g','r')" class="bit-btn">R</button>
+                            <button id="g-w" onclick="toggleBit('g','w')" class="bit-btn">W</button>
+                            <button id="g-x" onclick="toggleBit('g','x')" class="bit-btn">X</button>
+                        </div>
+                        <div id="g-val" class="text-2xl font-black mono text-slate-700">0</div>
+                    </div>
+                    <div class="text-center space-y-2.5">
+                        <div class="text-[10px] uppercase font-black tracking-widest text-slate-400">Others (o)</div>
+                        <div class="flex justify-center gap-1.5">
+                            <button id="o-r" onclick="toggleBit('o','r')" class="bit-btn">R</button>
+                            <button id="o-w" onclick="toggleBit('o','w')" class="bit-btn">W</button>
+                            <button id="o-x" onclick="toggleBit('o','x')" class="bit-btn">X</button>
+                        </div>
+                        <div id="o-val" class="text-2xl font-black mono text-slate-700">0</div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50/80 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
+                    <div class="space-y-0.5">
+                        <div class="text-[10px] uppercase font-bold text-blue-500">Generated Command</div>
+                        <div class="mono text-xl font-bold text-slate-800">chmod <span id="octal-final" class="text-blue-600">000</span> node.log</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Mode String</div>
+                        <div id="string-preview" class="mono text-xl text-slate-600 tracking-widest font-semibold">---------</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UMASK SIMULATOR MODE -->
+            <div id="lab-umask-container" class="hidden space-y-4">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-slate-700">Select Preset umask:</span>
+                        <div class="flex gap-2 mt-1">
+                            <button onclick="setUmask('022')" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-mono font-bold text-blue-600 hover:bg-blue-50">022 (Standard)</button>
+                            <button onclick="setUmask('027')" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-mono font-bold text-blue-600 hover:bg-blue-50">027 (Strict Group)</button>
+                            <button onclick="setUmask('077')" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-mono font-bold text-blue-600 hover:bg-blue-50">077 (Private)</button>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Active umask</div>
+                        <div id="active-umask-val" class="mono text-2xl font-black text-blue-600">022</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-white border border-slate-200 rounded-lg space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-700">New Regular File</span>
+                            <span class="mono text-[11px] text-slate-400">Base: 666</span>
+                        </div>
+                        <div class="mono text-2xl font-black text-slate-800" id="umask-file-octal">644</div>
+                        <div class="mono text-xs text-emerald-600 font-bold" id="umask-file-str">-rw-r--r--</div>
+                    </div>
+                    <div class="p-4 bg-white border border-slate-200 rounded-lg space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-700">New Directory</span>
+                            <span class="mono text-[11px] text-slate-400">Base: 777</span>
+                        </div>
+                        <div class="mono text-2xl font-black text-slate-800" id="umask-dir-octal">755</div>
+                        <div class="mono text-xs text-emerald-600 font-bold" id="umask-dir-str">drwxr-xr-x</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRACTICE VIEW -->
+        <div id="view-practice" class="content-card hidden">
+            <div id="quiz-screen" class="space-y-6">
+                <div class="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <span id="quiz-step">Sequence: 01 / 06</span>
+                    <span id="quiz-score" class="text-blue-600">Integrity: 100%</span>
+                </div>
+                <h4 id="quiz-q" class="text-lg font-bold text-slate-900 leading-snug">Validation sequence loading...</h4>
+                <div id="quiz-opts" class="grid gap-2.5"></div>
+            </div>
+
+            <div id="result-screen" class="hidden text-center space-y-6 py-2">
+                <div class="mastery-circle">
+                    <span id="final-percent" class="text-3xl font-black text-blue-600">0%</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mastery</span>
+                </div>
+                <div class="space-y-1.5">
+                    <h2 class="text-2xl font-bold text-slate-900">Validation Complete</h2>
+                    <p class="text-xs text-slate-500">CompTIA Linux+ Chapter 6 concepts verified.</p>
+                </div>
+                <button onclick="showView('start')" class="text-blue-600 font-bold text-xs hover:underline uppercase tracking-widest">Return to Dashboard</button>
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-4 px-8 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <span>&copy; 2024 Linux Education Node &bull; CompTIA Linux+ Certification Alignment</span>
+        <span>XK0-005 Module 06</span>
+    </footer>
+
+    <script>
+        const views = ['start', 'learn', 'explore', 'practice'];
+        
+        function showView(name) {
+            views.forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`btn-${v}`).classList.remove('active');
+            });
+            document.getElementById(`view-${name}`).classList.remove('hidden');
+            document.getElementById(`btn-${name}`).classList.add('active');
+            
+            if(name === 'practice') resetQuiz();
+        }
+
+        function showSubLearn(subName) {
+            ['standard', 'special', 'umask', 'acls'].forEach(s => {
+                const el = document.getElementById(`learn-${s}`);
+                const btn = document.getElementById(`sub-${s}`);
+                if (el) el.classList.add('hidden');
+                if (btn) btn.classList.remove('active');
+            });
+            
+            document.getElementById(`learn-${subName}`).classList.remove('hidden');
+            document.getElementById(`sub-${subName}`).classList.add('active');
+        }
+
+        function setLabMode(mode) {
+            const chmodCont = document.getElementById('lab-chmod-container');
+            const umaskCont = document.getElementById('lab-umask-container');
+            const chmodBtn = document.getElementById('lab-btn-chmod');
+            const umaskBtn = document.getElementById('lab-btn-umask');
+
+            if (mode === 'chmod') {
+                chmodCont.classList.remove('hidden');
+                umaskCont.classList.add('hidden');
+                chmodBtn.className = "px-3 py-1 rounded font-semibold bg-white text-blue-700 shadow-sm transition";
+                umaskBtn.className = "px-3 py-1 rounded font-semibold text-slate-600 hover:text-slate-900 transition";
+            } else {
+                chmodCont.classList.add('hidden');
+                umaskCont.classList.remove('hidden');
+                umaskBtn.className = "px-3 py-1 rounded font-semibold bg-white text-blue-700 shadow-sm transition";
+                chmodBtn.className = "px-3 py-1 rounded font-semibold text-slate-600 hover:text-slate-900 transition";
+                setUmask('022');
+            }
+        }
+
+        // umask calculator logic
+        function setUmask(val) {
+            document.getElementById('active-umask-val').innerText = val;
+            const umaskDigits = val.split('').map(Number); // e.g. [0, 2, 2]
+            
+            // Base for file is 666 (rw-rw-rw-)
+            // Base for dir is 777 (rwxrwxrwx)
+            let fileOctal = "";
+            let fileStr = "-";
+            let dirOctal = "";
+            let dirStr = "d";
+
+            const fileBase = [6, 6, 6];
+            const dirBase = [7, 7, 7];
+
+            for (let i = 0; i < 3; i++) {
+                const fRes = fileBase[i] & (~umaskDigits[i]);
+                const dRes = dirBase[i] & (~umaskDigits[i]);
+
+                fileOctal += fRes;
+                dirOctal += dRes;
+
+                fileStr += (fRes & 4 ? 'r' : '-') + (fRes & 2 ? 'w' : '-') + (fRes & 1 ? 'x' : '-');
+                dirStr += (dRes & 4 ? 'r' : '-') + (dRes & 2 ? 'w' : '-') + (dRes & 1 ? 'x' : '-');
+            }
+
+            document.getElementById('umask-file-octal').innerText = fileOctal;
+            document.getElementById('umask-file-str').innerText = fileStr;
+            document.getElementById('umask-dir-octal').innerText = dirOctal;
+            document.getElementById('umask-dir-str').innerText = dirStr;
+        }
+
+        // Lab Logic
+        const state = { u:{r:0,w:0,x:0}, g:{r:0,w:0,x:0}, o:{r:0,w:0,x:0} };
+        const vals = {r:4, w:2, x:1};
+
+        function toggleBit(cat, bit) {
+            state[cat][bit] = state[cat][bit] ? 0 : 1;
+            const btn = document.getElementById(`${cat}-${bit}`);
+            if(state[cat][bit]) btn.classList.add('active');
+            else btn.classList.remove('active');
+            updateUI();
+        }
+
+        function updateUI() {
+            let finalOctal = "";
+            let finalStr = "";
+            ['u','g','o'].forEach(cat => {
+                let sum = 0;
+                ['r','w','x'].forEach(bit => {
+                    if(state[cat][bit]) {
+                        sum += vals[bit];
+                        finalStr += bit;
+                    } else {
+                        finalStr += "-";
+                    }
+                });
+                document.getElementById(`${cat}-val`).innerText = sum;
+                finalOctal += sum;
+            });
+            document.getElementById('octal-final').innerText = finalOctal;
+            document.getElementById('string-preview').innerText = finalStr;
+        }
+
+        // CompTIA Linux+ Ch. 6 Quiz Questions
+        const questions = [
+            { q: "With a umask of 022, what are the default permissions on a newly created regular file?", o: ["755 (-rwxr-xr-x)", "644 (-rw-r--r--)", "666 (-rw-rw-rw-)", "600 (-rw-------)"], a: 1 },
+            { q: "Which command prevents a log file from being deleted or renamed even by the root user?", o: ["chmod 000 file", "chattr +i file", "setfacl -b file", "chown root:root file"], a: 1 },
+            { q: "A directory has permissions 'drwxrwsr-x'. What does the lowercase 's' in the group position indicate?", o: ["SUID is set", "SGID is set and directory execute is enabled", "Sticky bit is set", "Capital S error condition"], a: 1 },
+            { q: "Which command assigns user 'maria' read and write access using an Access Control List (ACL)?", o: ["chmod u+maria:rw file", "setfacl -m u:maria:rw file", "getfacl -u maria file", "chown maria:rw file"], a: 1 },
+            { q: "What does 'execute (x)' permission on a DIRECTORY allow a user to do?", o: ["Read the directory names with ls", "Enter or traverse into the directory (cd)", "Delete the directory", "Rename files inside the directory"], a: 1 },
+            { q: "Which command recursively changes both owner to 'webadmin' and group to 'www-data'?", o: ["chmod -R webadmin:www-data /var/www", "chown -R webadmin:www-data /var/www", "chgrp -R webadmin:www-data /var/www", "setfacl -R webadmin /var/www"], a: 1 }
+        ];
+        let curQ = 0;
+        let score = 0;
+
+        function resetQuiz() {
+            curQ = 0; score = 0;
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            loadQ();
+        }
+
+        function loadQ() {
+            const q = questions[curQ];
+            document.getElementById('quiz-step').innerText = `Sequence: 0${curQ + 1} / 0${questions.length}`;
+            document.getElementById('quiz-q').innerText = q.q;
+            const container = document.getElementById('quiz-opts');
+            container.innerHTML = '';
+            q.o.forEach((opt, i) => {
+                const b = document.createElement('button');
+                b.className = "w-full text-left p-3 rounded-lg border border-slate-200 hover:border-blue-600 hover:bg-blue-50 transition text-xs sm:text-sm font-medium text-slate-700";
+                b.innerText = `> ${opt}`;
+                b.onclick = () => {
+                    if(i === q.a) score++;
+                    curQ++;
+                    if(curQ < questions.length) loadQ();
+                    else showResult();
+                }
+                container.appendChild(b);
+            });
+            document.getElementById('quiz-score').innerText = `Integrity: ${Math.round(((curQ)/questions.length)*100)}%`;
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-percent').innerText = Math.round((score/questions.length)*100) + "%";
+        }
+
+        window.onload = () => {
+            updateUI();
+            setUmask('022');
+        };
+    </script>
+</body>
+</html>
