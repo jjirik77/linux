@@ -4,877 +4,1289 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Managing Linux Applications: Interactive Lab</title>
+    <!-- Tailwind CSS for modern utility styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        },
+                        surface: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            card: '#ffffff'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         :root {
-            /* Light Theme */
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
-            --bg-card: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --accent: #2563eb;
-            --accent-hover: #1d4ed8;
-            --border: #e2e8f0;
-            --terminal-bg: #1e1e1e;
-            --terminal-text: #33ff33;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
+            --bg-canvas: #f8fafc;
+            --card-surface: #ffffff;
+            --border-subtle: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
         }
-
         [data-theme="dark"] {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-card: #1e293b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #60a5fa;
-            --border: #334155;
-            --terminal-bg: #000000;
-        }
-
-        * {
-            box-sizing: border-box;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            --bg-canvas: #0f172a;
+            --card-surface: #1e293b;
+            --border-subtle: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            margin: 0;
-            line-height: 1.6;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
 
-        /* Layout Structure */
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 20px;
-            gap: 20px;
-            flex-grow: 1;
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
         }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        /* Controls */
-        button {
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
-        .btn-outline:hover { background: var(--bg-secondary); }
-
-        .theme-toggle {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-        }
-
-        /* Progress Tracker */
-        .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background: var(--border);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--success);
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-
-        /* Module Navigation */
-        .module-nav {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-            scrollbar-width: thin;
-        }
-
-        .nav-item {
-            white-space: nowrap;
-            padding: 6px 12px;
-            border-radius: 20px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
-
-        .nav-item.active {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: rgba(37, 99, 235, 0.1);
-        }
-
-        .nav-item.completed {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border-color: var(--success);
-        }
-
-        /* Main Content Cards */
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 20px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-content { grid-template-columns: 1fr; }
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .instruction-card {
-            min-height: 400px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Terminal Simulator */
-        .terminal-container {
-            background: var(--terminal-bg);
-            border-radius: 8px;
-            padding: 15px;
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
-            color: var(--terminal-text);
-            height: 400px;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #333;
-        }
-
-        .terminal-output {
-            flex-grow: 1;
-            margin-bottom: 10px;
-            white-space: pre-wrap;
-        }
-
-        .terminal-input-line {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .terminal-prompt { color: #50fa7b; }
-        .terminal-input {
+        ::-webkit-scrollbar-track {
             background: transparent;
-            border: none;
-            color: inherit;
-            font-family: inherit;
-            font-size: inherit;
-            outline: none;
-            width: 100%;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
 
-        /* Interactions */
-        .command-builder {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 20px 0;
-            padding: 15px;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            border: 1px dashed var(--border);
+        /* Terminal scrollbar */
+        .terminal-scroll::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+        .terminal-scroll::-webkit-scrollbar-thumb:hover {
+            background: #475569;
         }
 
-        .chip {
-            padding: 4px 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            cursor: pointer;
-            user-select: none;
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 0.3; }
         }
-
-        .chip.selected {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
+        .animate-terminal-cursor {
+            animation: pulseGlow 1s infinite;
         }
-
-        .quiz-option {
-            display: block;
-            width: 100%;
-            text-align: left;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .quiz-option:hover { background: var(--bg-primary); }
-        .quiz-option.correct { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
-        .quiz-option.incorrect { border-color: var(--error); background: rgba(239, 68, 68, 0.1); }
-
-        .feedback {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 6px;
-            display: none;
-        }
-
-        .feedback.visible { display: block; }
-        .feedback-success { background: rgba(16, 185, 129, 0.1); color: #065f46; border-left: 4px solid var(--success); }
-        .feedback-error { background: rgba(239, 68, 68, 0.1); color: #991b1b; border-left: 4px solid var(--error); }
-
-        /* Typography & Helper Classes */
-        h1, h2, h3 { margin-top: 0; }
-        .text-sm { font-size: 0.85rem; color: var(--text-secondary); }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; background: var(--border); margin-right: 5px; }
-        .exam-tip { background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px; margin: 15px 0; color: #92400e; font-size: 0.9rem; }
-        [data-theme="dark"] .exam-tip { background: #451a03; color: #fde68a; border-color: #92400e; }
-
-        .hidden { display: none; }
-
-        /* Animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-fade { animation: fadeIn 0.4s ease-out; }
-
-        /* Cheat Sheet */
-        .cheatsheet-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .cheatsheet-panel {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 101;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 100;
-        }
-
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col font-sans bg-slate-50 text-slate-800 selection:bg-blue-600 selection:text-white">
 
-    <div class="app-container">
-        <header>
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                Linux App Management Lab
+    <!-- Top App Header in Light Aesthetic -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-white/90 border-b border-slate-200/90 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-3">
+            <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black shadow-md shadow-blue-500/20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </div>
-            <div class="header-actions">
-                <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌓</button>
-                <div class="text-sm">Progress: <span id="progressText">0%</span></div>
+            <div>
+                <h1 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                    Linux Application Management
+                    <span class="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">CompTIA Linux+ XK0-005</span>
+                </h1>
+                <p class="text-xs text-slate-500">Interactive Hands-on Microlearning Lab</p>
             </div>
-        </header>
-
-        <div class="progress-bar-container">
-            <div class="progress-fill" id="progressBar"></div>
         </div>
+        <div class="flex items-center space-x-3 sm:space-x-4">
+            <!-- Global Mastery Score -->
+            <div class="flex items-center space-x-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs">
+                <span class="text-slate-600 font-medium hidden sm:inline">Lab Progress:</span>
+                <span id="headerProgressPercent" class="font-bold text-emerald-600">0%</span>
+                <div class="w-16 sm:w-24 bg-slate-200 h-2 rounded-full overflow-hidden">
+                    <div id="headerProgressBar" class="bg-gradient-to-r from-blue-600 to-emerald-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
 
-        <nav class="module-nav" id="moduleNav"></nav>
+            <!-- Command Cheat Sheet Modal Trigger -->
+            <button onclick="app.toggleCheatSheet()" class="p-2 text-xs font-semibold rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm flex items-center gap-1.5" title="Command Quick Reference">
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                <span class="hidden md:inline">Command Cheat Sheet</span>
+            </button>
 
-        <main class="main-content">
-            <div class="instruction-card card animate-fade" id="contentArea">
-                <!-- Content injected here -->
-                <div id="intro">
-                    <h1>Welcome, SysAdmin</h1>
-                    <p>Software management is the cornerstone of Linux administration. In this interactive lab, you will master the tools and workflows used to install, update, and troubleshoot applications on Enterprise Linux and Debian systems.</p>
-                    <div class="exam-tip">
-                        <strong>Lab Objective:</strong> Prepare for CompTIA Linux+ style tasks involving RPM, DNF, APT, and source compilation.
+            <!-- Light/Dark Mode Switcher -->
+            <button id="themeToggleBtn" onclick="app.toggleTheme()" class="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-sm" title="Toggle Theme">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Module Progress & Navigation Bar in Light Palette -->
+    <nav class="bg-white/70 border-b border-slate-200 px-4 sm:px-6 py-2 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center space-x-2" id="moduleNavTrack">
+        <!-- Injected via JavaScript -->
+    </nav>
+
+    <!-- Main Content Workspace (Two Column Layout) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Instructional & Interactive Card (Left / Center) -->
+        <section class="lg:col-span-7 flex flex-col space-y-4">
+            <div id="instructionCard" class="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm flex-1 flex flex-col justify-between transition-all">
+                <!-- Content injected dynamically by renderModule() -->
+            </div>
+        </section>
+
+        <!-- Interactive Linux Terminal Simulator (Right Column) -->
+        <section class="lg:col-span-5 flex flex-col space-y-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl flex flex-col h-[580px] overflow-hidden">
+                <!-- Terminal Window Header -->
+                <div class="bg-slate-950 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between select-none">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        <span class="ml-2 text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                            <span id="activeTerminalTab" class="text-blue-400 font-semibold">root@linux-lab:~</span>
+                            <span id="distroBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-sans">RHEL 9</span>
+                        </span>
                     </div>
-                    <div style="margin-top: 20px;">
-                        <h3>What we'll cover:</h3>
-                        <ul>
-                            <li>Dependency resolution and package foundations.</li>
-                            <li>RPM and DNF (Red Hat family).</li>
-                            <li>dpkg and APT (Debian family).</li>
-                            <li>Universal formats (Snap, Flatpak).</li>
-                            <li>Compiling from source and shared libraries.</li>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="app.clearTerminal()" class="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded border border-slate-800 hover:bg-slate-800 transition">Clear</button>
+                    </div>
+                </div>
+                <!-- Terminal Output Display -->
+                <div id="terminalScreen" class="flex-1 p-4 font-mono text-xs sm:text-sm text-slate-200 overflow-y-auto terminal-scroll bg-[#0b0f19] space-y-1.5">
+                    <div class="text-slate-500">CompTIA Linux+ Interactive Execution Sandbox</div>
+                    <div class="text-slate-500">Kernel: Linux 5.14.0-362.el9.x86_64 | Architecture: x86_64</div>
+                    <div class="text-emerald-400 font-semibold">Type requested commands to solve lab challenges or explore. Type 'help' for manual.</div>
+                    <div class="border-b border-slate-800 my-2"></div>
+                </div>
+
+                <!-- Suggested Command Quick Chips (Learner Assistance) -->
+                <div id="terminalQuickChips" class="px-3 py-2 bg-slate-950/90 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto text-xs whitespace-nowrap">
+                    <span class="text-[11px] text-slate-400 font-medium">Quick insert:</span>
+                    <!-- Populated dynamically per module -->
+                </div>
+
+                <!-- Terminal Interactive Input -->
+                <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center space-x-2">
+                    <span class="text-emerald-400 font-mono text-sm font-semibold select-none" id="terminalPromptPrefix">[root@lab ~]#</span>
+                    <input type="text" id="terminalCliInput" 
+                        class="flex-1 bg-transparent font-mono text-sm text-slate-100 outline-none border-none placeholder-slate-600 focus:ring-0" 
+                        placeholder="Enter Linux command..." 
+                        autocomplete="off" 
+                        spellcheck="false" 
+                        autofocus>
+                    <button onclick="app.submitTerminalCommand()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-mono font-medium transition shadow-sm">Run ↵</button>
+                </div>
+            </div>
+
+            <!-- Terminal Helper Legend in Light Palette -->
+            <div class="bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-600 flex items-center justify-between shadow-sm">
+                <span>💡 Supported tools: <code class="text-blue-700 font-bold">rpm</code>, <code class="text-amber-700 font-bold">dnf</code>, <code class="text-cyan-700 font-bold">zypper</code>, <code class="text-emerald-700 font-bold">dpkg</code>, <code class="text-emerald-700 font-bold">apt</code>, <code class="text-purple-700 font-bold">ldd</code>, <code class="text-purple-700 font-bold">ldconfig</code></span>
+                <span class="text-slate-400 font-medium hidden sm:inline">Up/Down for History</span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Floating Quick Reference Cheat Sheet Drawer / Modal in Light Palette -->
+    <div id="cheatSheetModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center space-x-2.5">
+                    <div class="p-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">CompTIA Linux+ Chapter 10 Command Reference</h2>
+                        <p class="text-xs text-slate-500">Essential package managers, shared libraries, and build tools</p>
+                    </div>
+                </div>
+                <button onclick="app.toggleCheatSheet()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 transition">✕</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-6 text-sm bg-slate-50/50">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- RPM -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-blue-700 text-sm mb-2 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-blue-600"></span>RPM (Low-Level Red Hat)
+                        </h3>
+                        <ul class="space-y-1 font-mono text-xs text-slate-700">
+                            <li><b class="text-blue-600">rpm -i pkg.rpm</b> : Install package</li>
+                            <li><b class="text-blue-600">rpm -U pkg.rpm</b> : Upgrade or install fresh</li>
+                            <li><b class="text-blue-600">rpm -F pkg.rpm</b> : Freshen (upgrade only if exists)</li>
+                            <li><b class="text-blue-600">rpm -e pkg</b> : Erase / Remove package</li>
+                            <li><b class="text-blue-600">rpm -qa</b> : Query all installed packages</li>
+                            <li><b class="text-blue-600">rpm -qi pkg</b> : Query package info / description</li>
+                            <li><b class="text-blue-600">rpm -ql pkg</b> : Query files installed by package</li>
+                            <li><b class="text-blue-600">rpm -qc pkg</b> : Query config files for package</li>
+                            <li><b class="text-blue-600">rpm -qf /path</b> : Query package that owns file</li>
+                            <li><b class="text-blue-600">rpm -qR pkg</b> : Query required dependencies</li>
+                            <li><b class="text-blue-600">rpm -V pkg</b> : Verify integrity against RPM database</li>
                         </ul>
                     </div>
-                    <button class="btn-primary" onclick="app.startLab()" style="margin-top: 20px; padding: 12px 24px;">Start Interactive Lab</button>
-                </div>
-            </div>
 
-            <div class="terminal-panel">
-                <div class="terminal-container" id="terminal">
-                    <div class="terminal-output" id="terminalOutput">Welcome to the Lab Terminal.
-System: RHEL 9 / Ubuntu 22.04 Simulation
-Type 'help' for available commands or follow the lesson prompts.</div>
-                    <div class="terminal-input-line">
-                        <span class="terminal-prompt">[learner@linux-lab ~]$</span>
-                        <input type="text" class="terminal-input" id="terminalInput" autofocus spellcheck="false" autocomplete="off">
+                    <!-- DNF & YUM -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-amber-700 text-sm mb-2 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>DNF / YUM / Zypper (Repo-Aware)
+                        </h3>
+                        <ul class="space-y-1 font-mono text-xs text-slate-700">
+                            <li><b class="text-amber-600">dnf install pkg</b> : Resolve deps & install</li>
+                            <li><b class="text-amber-600">dnf provides /path</b> : Identify package owning file</li>
+                            <li><b class="text-amber-600">dnf repolist</b> : View enabled repositories</li>
+                            <li><b class="text-amber-600">dnf check-update</b> : Check available updates</li>
+                            <li><b class="text-amber-600">dnf clean all</b> : Purge local cache files</li>
+                            <li><b class="text-amber-600">dnf localinstall file.rpm</b> : Install local RPM with repo deps</li>
+                            <li><b class="text-cyan-700">zypper in pkg</b> : openSUSE install package</li>
+                            <li><b class="text-cyan-700">zypper lr</b> : List configured repositories</li>
+                        </ul>
+                    </div>
+                    <!-- Debian dpkg & APT -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-emerald-700 text-sm mb-2 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>Debian dpkg & APT (Ubuntu / Debian)
+                        </h3>
+                        <ul class="space-y-1 font-mono text-xs text-slate-700">
+                            <li><b class="text-emerald-600">dpkg -i pkg.deb</b> : Install local deb package</li>
+                            <li><b class="text-emerald-600">dpkg -r pkg</b> : Remove package (leaves config)</li>
+                            <li><b class="text-emerald-600">dpkg -P pkg</b> : Purge package AND config files</li>
+                            <li><b class="text-emerald-600">dpkg -l</b> : List installed packages</li>
+                            <li><b class="text-emerald-600">dpkg -L pkg</b> : List files installed by package</li>
+                            <li><b class="text-emerald-600">dpkg -S /path</b> : Find which package owns file</li>
+                            <li><b class="text-emerald-600">apt update</b> : Refresh repo package index</li>
+                            <li><b class="text-emerald-600">apt upgrade</b> : Upgrade all upgradable packages</li>
+                            <li><b class="text-emerald-600">apt-cache search str</b> : Search repository cache</li>
+                        </ul>
+                    </div>
+
+                    <!-- Source Build & Libraries -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-purple-700 text-sm mb-2 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-purple-600"></span>Source Builds & Shared Libraries
+                        </h3>
+                        <ul class="space-y-1 font-mono text-xs text-slate-700">
+                            <li><b class="text-purple-600">tar -zxvf src.tar.gz</b> : Decompress source archive</li>
+                            <li><b class="text-purple-600">./configure --prefix=/usr</b> : Check deps, make Makefile</li>
+                            <li><b class="text-purple-600">make</b> : Compile source code into binaries</li>
+                            <li><b class="text-purple-600">sudo make install</b> : Copy binaries to system path</li>
+                            <li><b class="text-indigo-600">ldd /bin/ls</b> : List dynamic library dependencies</li>
+                            <li><b class="text-indigo-600">ldconfig</b> : Update shared library cache</li>
+                            <li><b class="text-indigo-600">ldconfig -p</b> : Print all cached libraries</li>
+                            <li><b class="text-indigo-600">LD_LIBRARY_PATH</b> : Env var for custom library paths</li>
+                        </ul>
                     </div>
                 </div>
-                <div class="text-sm" style="margin-top: 10px; font-style: italic;">
-                    Tip: The terminal supports <code>rpm</code>, <code>dnf</code>, <code>apt</code>, and more.
+
+                <!-- RPM Verification Flags Legend -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">RPM Verification Output Codes (CompTIA Favorite)</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                        <div><code class="text-rose-600 font-bold">S</code> : File Size differs</div>
+                        <div><code class="text-rose-600 font-bold">M</code> : File Permissions / Mode differs</div>
+                        <div><code class="text-rose-600 font-bold">5</code> : MD5 / SHA checksum differs</div>
+                        <div><code class="text-rose-600 font-bold">D</code> : Device major/minor mismatch</div>
+                        <div><code class="text-rose-600 font-bold">L</code> : Symlink readlink mismatch</div>
+                        <div><code class="text-rose-600 font-bold">U</code> : User ownership differs</div>
+                        <div><code class="text-rose-600 font-bold">G</code> : Group ownership differs</div>
+                        <div><code class="text-rose-600 font-bold">T</code> : Modification Time (mtime) differs</div>
+                    </div>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <button class="btn-outline cheatsheet-toggle" onclick="app.toggleCheatSheet()">Command Reference</button>
-
-    <div id="overlay" class="overlay hidden" onclick="app.toggleCheatSheet()"></div>
-    <div id="cheatSheet" class="cheatsheet-panel hidden">
-        <h2>Command Cheat Sheet</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <h4>RPM (Local)</h4>
-                <ul>
-                    <li><code>-i</code>: Install</li>
-                    <li><code>-U</code>: Upgrade (Installs if missing)</li>
-                    <li><code>-F</code>: Freshen (Only upgrades existing)</li>
-                    <li><code>-e</code>: Erase (Uninstall)</li>
-                    <li><code>-V</code>: Verify integrity</li>
-                    <li><code>-qi</code>: Query information</li>
-                </ul>
-            </div>
-            <div>
-                <h4>DNF / APT (Repo)</h4>
-                <ul>
-                    <li><code>dnf install [pkg]</code></li>
-                    <li><code>dnf search [string]</code></li>
-                    <li><code>apt update</code> (refresh lists)</li>
-                    <li><code>apt install [pkg]</code></li>
-                    <li><code>apt upgrade</code> (apply updates)</li>
-                </ul>
-            </div>
-            <div>
-                <h4>Shared Libraries</h4>
-                <ul>
-                    <li><code>ldd [path]</code>: List dependencies</li>
-                    <li><code>ldconfig</code>: Update library cache</li>
-                </ul>
-            </div>
-            <div>
-                <h4>Source Build</h4>
-                <ol>
-                    <li><code>tar -xvf [file]</code></li>
-                    <li><code>./configure</code></li>
-                    <li><code>make</code></li>
-                    <li><code>make install</code></li>
-                </ol>
-            </div>
         </div>
-        <button class="btn-primary" onclick="app.toggleCheatSheet()" style="margin-top: 20px;">Close Reference</button>
     </div>
 
     <script>
-        /**
-         * LEARNER DATA MODEL
-         */
-        const DATA = {
-            modules: [
-                {
-                    id: 0,
-                    title: "Foundations",
-                    content: `
-                        <h2>Package Management Foundations</h2>
-                        <p>Modern Linux distributions use package managers to handle the "Lifecycle" of software. A package isn't just a file; it contains metadata (version, description) and a list of <strong>dependencies</strong>.</p>
-                        <p><strong>Dependency Hell:</strong> Historically, if Program A needed Library B, you had to find and install Library B yourself. Modern tools (DNF, APT) solve this by checking repositories and fetching prerequisites automatically.</p>
-                        <div class="exam-tip">
-                            <strong>Key Concept:</strong> Local tools (RPM, dpkg) install files. Repository tools (DNF, APT) resolve dependencies.
+        /* =========================================================================
+         * COMPTIA LINUX+ (XK0-005) CHAPTER 10 CURRICULUM DATA MODEL (LIGHT PALETTE)
+         * ========================================================================= */
+        const LAB_CURRICULUM = [
+            {
+                id: 0,
+                shortTitle: "1. Foundations",
+                badge: "Core Architecture",
+                distro: "Generic Linux",
+                title: "Package Manager Fundamentals & The Dependency Problem",
+                timeEst: "6 mins",
+                whyItMatters: "Software in Linux is modular. Raw binaries depend on shared system libraries and services. If you try to install a package directly without its prerequisites, installation fails with 'Dependency Hell'. Understanding how repository-aware managers solve this is essential for every Linux administrator.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>A package management system manages the complete lifecycle of software: <strong class="text-blue-600 font-semibold">Installation</strong>, <strong class="text-blue-600 font-semibold">Upgrades</strong>, <strong class="text-blue-600 font-semibold">Queries</strong>, <strong class="text-blue-600 font-semibold">Integrity Verification</strong>, and <strong class="text-blue-600 font-semibold">Clean Removal</strong>.</p>
+                        
+                        <!-- Interactive Dependency Flow Diagram in Light Aesthetic -->
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Interactive Concept: Dependency Chain Failure vs. Repo Resolution</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-xs font-mono">
+                                <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 font-medium">
+                                    <strong>Target App</strong><br><code>httpd-2.4.rpm</code>
+                                </div>
+                                <div class="flex items-center justify-center text-slate-400 font-bold text-sm">
+                                    ── Requires ──▶
+                                </div>
+                                <div id="depChainNode" class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-medium transition-all">
+                                    <strong>Prerequisite</strong><br><code>apr-util >= 1.6</code>
+                                </div>
+                            </div>
+                            <div id="depChainStatus" class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800">
+                                ❌ <strong>Direct Installer (RPM/dpkg):</strong> Fails immediately! It reports <code>error: Failed dependencies: apr-util is needed by httpd</code> because direct installers lack knowledge of external repositories.
+                            </div>
+                            <div class="flex justify-end gap-2 pt-1">
+                                <button onclick="app.simulateRepoResolve()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium transition shadow-sm">
+                                    Simulate Repo Manager (DNF / APT) Resolution
+                                </button>
+                            </div>
                         </div>
-                    `,
-                    activity: {
-                        type: "quiz",
-                        question: "Why would an administrator use DNF instead of a raw RPM command to install a new web server?",
-                        options: [
-                            { text: "RPM commands are deprecated and no longer function.", correct: false, feedback: "Incorrect. RPM is still the underlying engine for DHEL/Fedora." },
-                            { text: "DNF automatically resolves and installs required dependencies from repositories.", correct: true, feedback: "Correct! DNF is a 'meta' package manager that understands repository relationships." },
-                            { text: "DNF is the only tool that can verify package integrity.", correct: false, feedback: "Actually, 'rpm -V' is the primary tool for verifying package files." }
-                        ]
-                    }
-                },
-                {
-                    id: 1,
-                    title: "RPM Essentials",
-                    content: `
-                        <h2>The RPM Package Manager</h2>
-                        <p>RPM (Red Hat Package Manager) is the low-level tool for Red Hat-based systems. You should recognize these switches:</p>
-                        <ul>
-                            <li><code>-i</code>: Install</li>
-                            <li><code>-U</code>: Upgrade (Installs if missing, replaces if present)</li>
-                            <li><code>-F</code>: Freshen (Only replaces if an older version is already present)</li>
-                            <li><code>-e</code>: Erase (Remove)</li>
-                        </ul>
-                        <h3>Package Verification</h3>
-                        <p>Run <code>rpm -V [name]</code> to check if files have been altered since installation. Symbols like <code>S</code> (Size), <code>M</code> (Mode), or <code>5</code> (MD5 hash) indicate changes.</p>
-                    `,
-                    activity: {
-                        type: "terminal",
-                        prompt: "Task: Someone may have tampered with the 'nginx' package. Use the terminal to <strong>verify</strong> the integrity of the 'nginx' package.",
-                        hint: "Try the command: rpm -V nginx",
-                        requiredCommand: "rpm -V nginx",
-                        output: "S.5....T.  c /etc/nginx/nginx.conf\n(Warning: File size and MD5 hash changed!)"
-                    }
-                },
-                {
-                    id: 2,
-                    title: "DNF & Repos",
-                    content: `
-                        <h2>DNF: Next-Gen YUM</h2>
-                        <p>DNF (Dandified YUM) is the successor to YUM. It is "repository-aware." Repositories are defined in <code>/etc/yum.repos.d/</code> as <code>.repo</code> files.</p>
-                        <h3>Common DNF tasks:</h3>
-                        <ul>
-                            <li><code>dnf install [pkg]</code> - Standard install</li>
-                            <li><code>dnf provides [file]</code> - Find which package contains a specific file</li>
-                            <li><code>dnf repolist</code> - See enabled software sources</li>
-                        </ul>
-                    `,
-                    activity: {
-                        type: "terminal",
-                        prompt: "Task: You need to find out which package provides the file '/etc/mime.types'.",
-                        hint: "The command structure is: dnf provides [filename]",
-                        requiredCommand: "dnf provides /etc/mime.types",
-                        output: "mailcap-2.1.48-3.el9.noarch : Helpers for MIME content-type management\nMatched from: Filename : /etc/mime.types"
-                    }
-                },
-                {
-                    id: 3,
-                    title: "Debian & APT",
-                    content: `
-                        <h2>The Debian Workflow</h2>
-                        <p>Debian-based systems (like Ubuntu) use <code>.deb</code> files. The relationship is similar to the RHEL world:</p>
-                        <ul>
-                            <li><strong>dpkg</strong>: Local package tool (like RPM).</li>
-                            <li><strong>APT</strong>: Repository tool (like DNF).</li>
-                        </ul>
-                        <div class="exam-tip">
-                            <strong>Note:</strong> Always run <code>apt update</code> before <code>apt upgrade</code> to ensure your local cache of available versions is current.
-                        </div>
-                    `,
-                    activity: {
-                        type: "matching",
-                        question: "Match the Debian tool to its primary function:",
-                        pairs: [
-                            { item: "apt update", target: "Refresh repository metadata" },
-                            { item: "dpkg -i", target: "Install a local .deb file" },
-                            { item: "apt-cache search", target: "Query repo for keywords" }
-                        ]
-                    }
-                },
-                {
-                    id: 4,
-                    title: "Source Install",
-                    content: `
-                        <h2>Compiling from Source</h2>
-                        <p>Sometimes software isn't in a repo. You must build it. The standard workflow is:</p>
-                        <ol>
-                            <li><strong>Extract</strong>: <code>tar -zxvf source.tar.gz</code></li>
-                            <li><strong>Configure</strong>: <code>./configure</code> (Checks for dependencies/compilers)</li>
-                            <li><strong>Build</strong>: <code>make</code> (Compiles source into binaries)</li>
-                            <li><strong>Install</strong>: <code>sudo make install</code> (Moves files to system paths)</li>
-                        </ol>
-                    `,
-                    activity: {
-                        type: "sequencing",
-                        question: "Sequence the steps to install software from source code:",
-                        items: ["./configure", "make", "make install", "tar -xvf source.tar.gz"],
-                        correctOrder: [3, 0, 1, 2] // Index of the items in correct order
-                    }
-                },
-                {
-                    id: 5,
-                    title: "Shared Libraries",
-                    content: `
-                        <h2>Shared Libraries (.so)</h2>
-                        <p>Linux binaries often rely on "Shared Objects" (<code>.so</code> files). These are loaded at runtime.</p>
-                        <h3>Troubleshooting Tools:</h3>
-                        <ul>
-                            <li><code>ldd [binary]</code>: Lists all libraries a binary needs and where it finds them.</li>
-                            <li><code>ldconfig</code>: Updates the system library cache (<code>/etc/ld.so.cache</code>).</li>
-                            <li><code>LD_LIBRARY_PATH</code>: An environment variable used to specify non-standard library locations.</li>
-                        </ul>
-                    `,
-                    activity: {
-                        type: "terminal",
-                        prompt: "Task: A custom app '/usr/local/bin/app' isn't starting. Use the terminal to check its library dependencies.",
-                        hint: "Use the command: ldd /usr/local/bin/app",
-                        requiredCommand: "ldd /usr/local/bin/app",
-                        output: "linux-vdso.so.1 => (0x00007ffd)\nlibssl.so.1.1 => not found\nlibc.so.6 => /lib64/libc.so.6"
-                    }
-                },
-                {
-                    id: 6,
-                    title: "Capstone",
-                    content: `
-                        <h2>Final Capstone: Troubleshooting</h2>
-                        <p>You are now the lead admin. Apply your knowledge to solve real-world tickets.</p>
-                        <div id="capstone-results" class="hidden">
-                             <h3>Lab Complete!</h3>
-                             <p id="scoreSummary"></p>
-                             <button class="btn-primary" onclick="location.reload()">Restart Lab</button>
-                        </div>
-                    `,
-                    activity: {
-                        type: "scenario",
-                        scenarios: [
-                            {
-                                text: "Ticket 1: A user downloaded 'web-tool.rpm' but it fails to install because 'libcurl' is missing. What is the best solution?",
-                                options: [
-                                    { text: "Force install with 'rpm -i --nodeps web-tool.rpm'", correct: false, feedback: "No! This will result in a broken application that crashes at runtime." },
-                                    { text: "Install using 'dnf localinstall web-tool.rpm'", correct: true, feedback: "Correct! DNF can install a local file while fetching its dependencies from the repos." },
-                                    { text: "Compile libcurl from source manually.", correct: false, feedback: "Too much work. Let the package manager handle it." }
-                                ]
-                            },
-                            {
-                                text: "Ticket 2: You suspect a system binary has been modified by malware. Which command helps verify if the file on disk matches the original package?",
-                                options: [
-                                    { text: "rpm -V [package]", correct: true, feedback: "Exactly. The Verify command checks size, hashes, and permissions." },
-                                    { text: "dnf list installed", correct: false, feedback: "That just lists packages, it doesn't check integrity." }
-                                ]
-                            }
-                        ]
-                    }
-                }
-            ]
-        };
 
-        /**
-         * APP LOGIC
-         */
+                        <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                            <strong>CompTIA Exam Tip:</strong> Local package tools (like <code>rpm</code> and <code>dpkg</code>) cannot query internet repositories or automatically resolve transitive dependencies. High-level repository tools (like <code>dnf</code> and <code>apt</code>) read remote metadata indexes, resolve the entire requirement tree, download prerequisites, and pass them to the underlying engine.
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["rpm -i httpd.rpm", "dnf install httpd"],
+                activity: {
+                    type: "quiz",
+                    question: "An administrator runs 'rpm -ivh custom-server.rpm' on AlmaLinux and receives a failed dependency error for 'libssl.so.3'. What is the most appropriate next action according to CompTIA best practices?",
+                    options: [
+                        {
+                            text: "Re-run the command with 'rpm -ivh --nodeps custom-server.rpm' to override the warning.",
+                            correct: false,
+                            feedback: "Incorrect. Using '--nodeps' bypasses safety checks, producing a broken application that will immediately crash when dynamically linking at runtime."
+                        },
+                        {
+                            text: "Install using 'dnf localinstall custom-server.rpm' so DNF queries repositories to fulfill the missing libssl dependency.",
+                            correct: true,
+                            feedback: "Spot on! DNF parses the local package headers, identifies the requirement, fetches 'openssl-libs' from the enabled repositories, and installs both cleanly."
+                        },
+                        {
+                            text: "Delete the RPM package and manually recompile the entire operating system kernel.",
+                            correct: false,
+                            feedback: "Incorrect. The Linux kernel does not need recompilation for standard user-space application shared library dependencies."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 1,
+                shortTitle: "2. RPM Essentials",
+                badge: "Red Hat Family",
+                distro: "RHEL 9",
+                title: "RPM Package Architecture, Inspection & Verification",
+                timeEst: "7 mins",
+                whyItMatters: "RPM (Red Hat Package Manager) is the binary engine behind RHEL, Fedora, Rocky, AlmaLinux, and CentOS. The Linux+ exam expects you to master RPM naming conventions, exact flags for install/upgrade/freshen, and how to decode cryptic integrity verification flags.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>Before executing commands, you must decode the strict <strong>RPM Package Naming Convention</strong>:</p>
+
+                        <!-- Interactive RPM Anatomy Dissector in Light Theme -->
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs">
+                            <span class="text-slate-500 block text-[11px] mb-2 uppercase font-bold tracking-wider">Interactive Breakdown: Click segments of this RPM filename</span>
+                            <div class="flex flex-wrap gap-1 items-center bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                <span onclick="app.inspectRpmPart('name')" class="cursor-pointer px-2.5 py-1 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded text-blue-700 font-semibold transition">bind</span>
+                                <span>-</span>
+                                <span onclick="app.inspectRpmPart('version')" class="cursor-pointer px-2.5 py-1 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded text-purple-700 font-semibold transition">9.16.23</span>
+                                <span>-</span>
+                                <span onclick="app.inspectRpmPart('release')" class="cursor-pointer px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded text-emerald-700 font-semibold transition">14.el9_3</span>
+                                <span>.</span>
+                                <span onclick="app.inspectRpmPart('arch')" class="cursor-pointer px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded text-amber-800 font-semibold transition">x86_64</span>
+                                <span>.rpm</span>
+                            </div>
+                            <div id="rpmPartExplainer" class="mt-2 text-slate-500 text-xs italic">
+                                Click any segment above to view its technical role in Red Hat package management.
+                            </div>
+                        </div>
+
+                        <!-- RPM Flag Differences -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <code class="text-blue-700 font-bold">rpm -U (Upgrade)</code>
+                                <p class="text-slate-600 mt-1">If the package is not installed, it installs it fresh. If an older version exists, it updates it. (Preferred for upgrades).</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <code class="text-cyan-700 font-bold">rpm -F (Freshen)</code>
+                                <p class="text-slate-600 mt-1">Freshens <em>only</em> if an older version of the package is already installed on the system. Does nothing otherwise.</p>
+                            </div>
+                        </div>
+
+                        <!-- RPM Verification Codes Cheat Box -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono">
+                            <span class="text-amber-800 font-bold block mb-1">Integrity Verification: <code>rpm -V &lt;package&gt;</code></span>
+                            <p class="text-slate-600">Flags indicate discrepancies between disk and the RPM database: <code class="text-rose-600 font-bold">S</code> (Size), <code class="text-rose-600 font-bold">5</code> (MD5/SHA), <code class="text-rose-600 font-bold">M</code> (Permissions/Mode), <code class="text-rose-600 font-bold">T</code> (Timestamp), <code class="text-rose-600 font-bold">c</code> (Configuration file marker).</p>
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["rpm -V nginx", "rpm -qa | grep nginx", "rpm -qf /etc/nginx/nginx.conf"],
+                activity: {
+                    type: "terminal",
+                    prompt: "A security alert flagged potential tampering of the web server configuration. Use the terminal to <strong>verify</strong> the integrity of the <code>nginx</code> package.",
+                    targetCommand: "rpm -V nginx",
+                    validRegex: /^rpm\s+(-V|--verify)\s+nginx$/i,
+                    expectedOutput: `S.5....T.  c /etc/nginx/nginx.conf\n[ALERT] Output decoded:\n  'S' = File size changed\n  '5' = MD5 hash mismatch\n  'T' = Modification time updated\n  'c' = Identifies file as a configuration file (/etc/nginx/nginx.conf)`
+                }
+            },
+            {
+                id: 2,
+                shortTitle: "3. YUM, DNF & ZYpp",
+                badge: "Repo Management",
+                distro: "RHEL 9 / openSUSE",
+                title: "Repository-Aware Engines: DNF, YUM & ZYpp",
+                timeEst: "7 mins",
+                whyItMatters: "YUM was replaced by DNF (Dandified YUM) in modern Red Hat distributions due to superior performance, lower memory usage, and SAT-based dependency solving. Meanwhile, SUSE systems utilize ZYpp with the 'zypper' command. Administrators must effortlessly switch syntax depending on client distros.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>Repository-aware managers check configuration files located in <code>/etc/yum.repos.d/*.repo</code>. Let's inspect a realistic repository definition file:</p>
+
+                        <!-- Interactive Repo Hotspot Inspector in Light Theme -->
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs">
+                            <span class="text-slate-500 block text-[11px] mb-2 uppercase font-bold tracking-wider">Config File Analysis: /etc/yum.repos.d/epel.repo</span>
+                            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm space-y-1.5 text-xs text-slate-800">
+                                <div><span class="text-purple-700 font-bold">[epel]</span> <span class="text-slate-400"># Unique Repository ID</span></div>
+                                <div><span class="text-blue-700">name</span>=Extra Packages for Enterprise Linux 9 - $basearch</div>
+                                <div><span class="text-blue-700">baseurl</span>=https://download.fedoraproject.org/pub/epel/9/Everything/$basearch</div>
+                                <div><span class="text-emerald-700 font-bold">enabled=1</span> <span class="text-slate-400"># 1 = active, 0 = disabled</span></div>
+                                <div><span class="text-amber-700 font-bold">gpgcheck=1</span> <span class="text-slate-400"># 1 = enforce GPG cryptographic signature</span></div>
+                                <div><span class="text-blue-700">gpgkey</span>=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9</div>
+                            </div>
+                        </div>
+
+                        <!-- DNF vs Zypper Comparison Matrix -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-mono">
+                                    <tr>
+                                        <th class="p-2.5 border-b border-slate-200">Admin Action</th>
+                                        <th class="p-2.5 border-b border-slate-200 text-blue-700">DNF / YUM (RHEL)</th>
+                                        <th class="p-2.5 border-b border-slate-200 text-cyan-800">Zypper (openSUSE)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 font-mono text-slate-700 bg-white">
+                                    <tr><td class="p-2.5">Install Package</td><td>dnf install &lt;pkg&gt;</td><td>zypper in &lt;pkg&gt;</td></tr>
+                                    <tr><td class="p-2.5">Search Catalog</td><td>dnf search &lt;term&gt;</td><td>zypper se &lt;term&gt;</td></tr>
+                                    <tr><td class="p-2.5">Find Package by File</td><td>dnf provides &lt;/path&gt;</td><td>zypper wp &lt;/path&gt;</td></tr>
+                                    <tr><td class="p-2.5">List Repositories</td><td>dnf repolist</td><td>zypper lr</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["dnf provides /etc/mime.types", "dnf repolist", "zypper lr"],
+                activity: {
+                    type: "terminal",
+                    prompt: "A developer script fails because a binary needs <code>/etc/mime.types</code>, but that file is missing. In the terminal, determine which package provides that specific file using DNF.",
+                    targetCommand: "dnf provides /etc/mime.types",
+                    validRegex: /^dnf\s+(provides|whatprovides)\s+\/etc\/mime\.types$/i,
+                    expectedOutput: `mailcap-2.1.48-3.el9.noarch : Helpers for MIME content-type management\nRepo        : @System\nMatched from:\nFilename    : /etc/mime.types\n\n[SUCCESS] Objective complete! The file is provided by 'mailcap'.`
+                }
+            },
+            {
+                id: 3,
+                shortTitle: "4. Debian & APT",
+                badge: "Debian Family",
+                distro: "Ubuntu 22.04",
+                title: "Debian Package Management: dpkg & APT Ecosystem",
+                timeEst: "6 mins",
+                whyItMatters: "Debian, Ubuntu, Linux Mint, and Kali rely on the Debian packaging format (.deb). In this ecosystem, dpkg handles low-level manipulation on disk, while Advanced Package Tool (APT) manages network repository synchronization and automated dependency trees.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>Debian package naming adheres to: <code class="text-emerald-700 font-mono font-semibold">package-name_version-revision_architecture.deb</code>.</p>
+                        
+                        <!-- Dpkg vs APT Comparison Card in Light Aesthetic -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                                <h4 class="font-bold text-emerald-800 mb-1 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>dpkg (Direct Local Tool)
+                                </h4>
+                                <ul class="space-y-1 text-slate-600 font-mono">
+                                    <li><code>dpkg -i &lt;file.deb&gt;</code> : Install local file</li>
+                                    <li><code>dpkg -r &lt;pkg&gt;</code> : Remove (keeps configs)</li>
+                                    <li><code>dpkg -P &lt;pkg&gt;</code> : Purge (deletes all configs)</li>
+                                    <li><code>dpkg -L &lt;pkg&gt;</code> : List installed files</li>
+                                    <li><code>dpkg -S /path</code> : Identify owning package</li>
+                                </ul>
+                            </div>
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                                <h4 class="font-bold text-blue-800 mb-1 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>APT (Repository Tool)
+                                </h4>
+                                <ul class="space-y-1 text-slate-600 font-mono">
+                                    <li><code>apt update</code> : Refresh metadata index</li>
+                                    <li><code>apt upgrade</code> : Upgrade all packages</li>
+                                    <li><code>apt-cache search</code> : Query package index</li>
+                                    <li><code>apt-cache show &lt;pkg&gt;</code> : View detailed metadata</li>
+                                    <li><code>apt autoremove</code> : Clean orphaned deps</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                            <span class="text-amber-800 font-bold block mb-1">Crucial Distinction: apt update vs apt upgrade</span>
+                            <p>Running <code>apt update</code> <em>does not install new software</em>. It simply reads <code>/etc/apt/sources.list</code> to refresh the local package cache. You must run <code>apt upgrade</code> to apply the new versions.</p>
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["dpkg -S /bin/tar", "dpkg -L tar", "apt update"],
+                activity: {
+                    type: "terminal",
+                    prompt: "On an Ubuntu system, you need to find out which installed Debian package owns the file <code>/bin/tar</code>. Execute the command in the terminal.",
+                    targetCommand: "dpkg -S /bin/tar",
+                    validRegex: /^dpkg\s+(-S|--search)\s+(\/bin\/tar|tar)$/i,
+                    expectedOutput: `tar: /bin/tar\n[SUCCESS] Correct! dpkg -S searches installed Debian packages for file paths.`
+                }
+            },
+            {
+                id: 4,
+                shortTitle: "5. Universal Stores",
+                badge: "Containerized Apps",
+                distro: "Cross-Distro",
+                title: "Universal Package Stores: Snap, Flatpak & AppImage",
+                timeEst: "5 mins",
+                whyItMatters: "Traditional RPM and DEB packages are tightly bound to the host distribution's specific glibc and library versions. Universal packages bundle dependencies into isolated containers, allowing the same software binary to run across any Linux distribution.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>CompTIA Linux+ XK0-005 tests your knowledge of the 3 major cross-distribution containerized packaging standards:</p>
+
+                        <!-- Universal Comparison Cards in Light Palette -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                            <!-- Snap -->
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-amber-700 font-bold text-sm">Snap</div>
+                                    <div class="text-slate-400 font-mono text-[10px] mt-0.5">Canonical / Ubuntu</div>
+                                    <p class="text-slate-600 mt-2">Mounted as read-only squashfs filesystems under <code>/snap</code>. Managed via the <code>snapd</code> daemon. Runs both GUI apps and background server daemons.</p>
+                                </div>
+                                <code class="mt-3 block font-mono text-amber-800 bg-amber-50 p-1.5 rounded border border-amber-200 text-[11px]">snap install vlc</code>
+                            </div>
+
+                            <!-- Flatpak -->
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-cyan-800 font-bold text-sm">Flatpak</div>
+                                    <div class="text-slate-400 font-mono text-[10px] mt-0.5">Fedora / Red Hat / Flathub</div>
+                                    <p class="text-slate-600 mt-2">Specialized for desktop applications. Uses Bubblewrap sandboxing and shared Ostree runtimes to save disk space.</p>
+                                </div>
+                                <code class="mt-3 block font-mono text-cyan-800 bg-cyan-50 p-1.5 rounded border border-cyan-200 text-[11px]">flatpak install flathub org.gimp</code>
+                            </div>
+
+                            <!-- AppImage -->
+                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-emerald-800 font-bold text-sm">AppImage</div>
+                                    <div class="text-slate-400 font-mono text-[10px] mt-0.5">Portable Single File</div>
+                                    <p class="text-slate-600 mt-2">Zero daemon required. A single standalone executable file containing everything. Just make executable and run!</p>
+                                </div>
+                                <code class="mt-3 block font-mono text-emerald-800 bg-emerald-50 p-1.5 rounded border border-emerald-200 text-[11px]">chmod +x app.AppImage && ./app.AppImage</code>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["snap list", "flatpak list"],
+                activity: {
+                    type: "quiz",
+                    question: "An engineer needs to distribute a single self-contained application file to external technicians that runs immediately across openSUSE, Debian, and Rocky Linux without installing background daemons or runtime managers. Which format satisfies this?",
+                    options: [
+                        {
+                            text: "Snap, because snap packages are standalone zip files.",
+                            correct: false,
+                            feedback: "Incorrect. Snaps require the 'snapd' daemon and systemd integration to be running on the host system."
+                        },
+                        {
+                            text: "AppImage, because it is a self-mounting executable that requires no host daemon or installation privileges.",
+                            correct: true,
+                            feedback: "Correct! An AppImage is executed directly like a regular binary (chmod +x) without any pre-installed system daemon."
+                        },
+                        {
+                            text: "A standard RPM package with the '--universal' flag enabled.",
+                            correct: false,
+                            feedback: "Incorrect. RPMs cannot run natively on Debian without format translation (such as alien), and there is no '--universal' flag."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 5,
+                shortTitle: "6. Compiling Source",
+                badge: "Build Tools",
+                distro: "GNU Toolchain",
+                title: "Compiling from Source: The 4-Step Build Pipeline",
+                timeEst: "8 mins",
+                whyItMatters: "When pre-packaged RPM or DEB packages are unavailable, or custom compile-time optimizations and security flags are required, sysadmins must compile software directly from source code using the GNU build pipeline.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>The universal source compilation lifecycle consists of 4 strictly ordered phases:</p>
+
+                        <!-- Build Lifecycle Pipeline in Light Aesthetic -->
+                        <div class="space-y-2 text-xs font-mono">
+                            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                                <span><b class="text-blue-700">1. Extract Tarball:</b> <code>tar -zxvf source.tar.gz</code></span>
+                                <span class="text-slate-500">Unpacks C/C++ source code</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                                <span><b class="text-amber-700">2. Configure:</b> <code>./configure --prefix=/usr/local</code></span>
+                                <span class="text-slate-500">Checks compilers & makes Makefile</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                                <span><b class="text-purple-700">3. Compile:</b> <code>make</code></span>
+                                <span class="text-slate-500">GCC compiles source into object binaries</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                                <span><b class="text-emerald-700">4. Install:</b> <code>sudo make install</code></span>
+                                <span class="text-slate-500">Copies binaries into target system paths</span>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Build Log Inspector -->
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">Interactive Build Log Diagnostic</span>
+                            <div class="bg-slate-900 p-3 rounded-lg font-mono text-xs text-slate-200 space-y-1">
+                                <div>checking for gcc... no</div>
+                                <div>checking for cc... no</div>
+                                <div>checking for cl.exe... no</div>
+                                <div class="text-red-400 font-bold">configure: error: no acceptable C compiler found in $PATH</div>
+                                <div class="text-slate-500">See 'config.log' for more details</div>
+                            </div>
+                            <div class="mt-2 text-xs text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                                🔍 <strong>Diagnostic:</strong> The <code>./configure</code> step verified system prerequisites and discovered that the GNU Compiler Collection (<code>gcc</code>) or development headers are missing. Solution: <code>dnf groupinstall "Development Tools"</code> or <code>apt install build-essential</code>.
+                            </div>
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["tar -zxvf app.tar.gz", "./configure", "make", "make install"],
+                activity: {
+                    type: "sequencing",
+                    question: "Arrange the 4 steps of installing software from source code into the correct execution sequence:",
+                    items: [
+                        { id: 'make', text: "Run 'make' to compile binaries using the Makefile" },
+                        { id: 'install', text: "Run 'sudo make install' to copy binaries to /usr/local" },
+                        { id: 'tar', text: "Extract tarball archive (tar -zxvf package.tar.gz)" },
+                        { id: 'configure', text: "Run './configure' to check compilers and create Makefile" }
+                    ],
+                    correctOrder: ['tar', 'configure', 'make', 'install']
+                }
+            },
+            {
+                id: 6,
+                shortTitle: "7. Shared Libraries",
+                badge: "Runtime Linker",
+                distro: "Linux Core",
+                title: "Managing Shared Libraries: ldd, ldconfig & LD_LIBRARY_PATH",
+                timeEst: "7 mins",
+                whyItMatters: "Most Linux executables are dynamically linked to Shared Objects (.so). If a dynamic library is missing or improperly cached, the executable will crash on startup with 'error while loading shared libraries'. CompTIA heavily emphasizes diagnosing and remediating these failures.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>Dynamic libraries use the naming format: <code class="text-purple-700 font-mono font-semibold">lib&lt;name&gt;.so.&lt;version&gt;</code>.</p>
+
+                        <!-- Key Diagnostic Toolset in Light Aesthetic -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <code class="text-purple-700 font-bold">ldd &lt;binary&gt;</code>
+                                <p class="text-slate-600 mt-1">Prints the shared library dependencies required by a binary and indicates whether they are located on disk or <code>not found</code>.</p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                <code class="text-indigo-700 font-bold">ldconfig</code>
+                                <p class="text-slate-600 mt-1">Updates the system binary cache (<code>/etc/ld.so.cache</code>) by scanning directories listed in <code>/etc/ld.so.conf</code> and <code>/etc/ld.so.conf.d/*.conf</code>.</p>
+                            </div>
+                        </div>
+
+                        <!-- LD_LIBRARY_PATH Tip -->
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono">
+                            <span class="text-amber-800 font-bold block mb-1">Temporary Remediation: LD_LIBRARY_PATH</span>
+                            <p class="text-slate-600">If a proprietary application installs libraries in a non-standard directory like <code>/opt/myapp/lib</code>, you can temporarily instruct the dynamic linker to search there without altering system-wide configs:</p>
+                            <code class="text-emerald-700 mt-1 block bg-emerald-50 p-2 rounded border border-emerald-200">export LD_LIBRARY_PATH=/opt/myapp/lib:$LD_LIBRARY_PATH</code>
+                        </div>
+                    </div>
+                `,
+                quickCommands: ["ldd /usr/local/bin/customapp", "ldconfig -p | grep libcrypto", "export LD_LIBRARY_PATH=/opt/lib"],
+                activity: {
+                    type: "terminal",
+                    prompt: "A critical database utility at <code>/usr/local/bin/customapp</code> crashes at startup. Use the terminal to diagnose which shared object (.so) library dependency is failing.",
+                    targetCommand: "ldd /usr/local/bin/customapp",
+                    validRegex: /^ldd\s+(\/usr\/local\/bin\/customapp|customapp)$/i,
+                    expectedOutput: `linux-vdso.so.1 (0x00007ffe3493e000)\nlibsqlite3.so.0 => /lib64/libsqlite3.so.0 (0x00007f35b2e50000)\nlibcrypto.so.3 => not found\nlibc.so.6 => /lib64/libc.so.6 (0x00007f35b2a00000)\n/lib64/ld-linux-x86-64.so.2 (0x00007f35b3000000)\n\n[DIAGNOSTIC] 'libcrypto.so.3' is missing! Install 'openssl-libs' or refresh ldconfig.`
+                }
+            },
+            {
+                id: 7,
+                shortTitle: "8. Capstone PBQ",
+                badge: "CompTIA Exam PBQ",
+                distro: "Multi-Distro Exam",
+                title: "Capstone Troubleshooting Lab: Realistic PBQ Scenarios",
+                timeEst: "9 mins",
+                whyItMatters: "CompTIA Linux+ Performance-Based Questions (PBQs) test your ability to synthesize command knowledge to resolve authentic sysadmin tickets. Complete these multi-faceted scenario tickets to earn your certification mastery badge.",
+                contentHtml: `
+                    <div class="space-y-4 text-sm leading-relaxed text-slate-700">
+                        <p>You are the Lead Systems Engineer. Four help desk tickets require immediate diagnosis and resolution. Choose the optimal resolution for each authentic scenario.</p>
+                        <div id="capstoneLiveScore" class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs flex justify-between items-center shadow-sm">
+                            <span class="font-medium text-slate-700">Ticket Status: <strong id="capstoneSolvedCount" class="text-blue-600 font-bold">0 / 4 Solved</strong></span>
+                            <span class="font-medium text-slate-700">Mastery Badge: <strong id="capstoneBadgeTitle" class="text-slate-500 font-bold">Uncertified</strong></span>
+                        </div>
+                    </div>
+                `,
+                activity: {
+                    type: "capstone_tickets"
+                }
+            }
+        ];
+
+        /* =========================================================================
+         * CAPSTONE SCENARIO TICKETS (Authentic CompTIA Linux+ Style)
+         * ========================================================================= */
+        const CAPSTONE_TICKETS = [
+            {
+                id: 1,
+                title: "Ticket #1: Enterprise Package Deployment Failure",
+                scenario: "A junior sysadmin downloaded a proprietary vendor RPM package 'monitoring-agent-4.1.rpm' onto a RHEL 9 server. Running 'rpm -i' fails because 14 dependent packages are missing. The server has active Red Hat Network repositories configured. What should they do?",
+                options: [
+                    {
+                        text: "Execute 'rpm -i --nodeps monitoring-agent-4.1.rpm' to force the installation.",
+                        correct: false,
+                        feedback: "Incorrect. The agent will immediately fail to run because the 14 shared library and helper dependencies are still missing on disk."
+                    },
+                    {
+                        text: "Execute 'dnf localinstall monitoring-agent-4.1.rpm' or 'dnf install ./monitoring-agent-4.1.rpm'.",
+                        correct: true,
+                        feedback: "Correct! DNF installs the local RPM while automatically querying configured repositories to fetch and install all 14 prerequisites."
+                    },
+                    {
+                        text: "Convert the RPM to a Debian DEB package using 'alien' and install with 'dpkg'.",
+                        correct: false,
+                        feedback: "Incorrect. This is an enterprise RHEL system. Adding foreign deb packages will corrupt package management consistency."
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Ticket #2: Configuration File Modification After Breach",
+                scenario: "Following an intrusion alert on a Fedora server, you need to check if any configuration files belonging to the 'sshd' package were modified compared to their original vendor-distributed checksums. Which command performs this?",
+                options: [
+                    {
+                        text: "rpm -V openssh-server",
+                        correct: true,
+                        feedback: "Spot on! 'rpm -V' verifies file sizes, MD5/SHA hashes, timestamps, and marks configuration files with 'c'."
+                    },
+                    {
+                        text: "dnf check-update openssh-server",
+                        correct: false,
+                        feedback: "Incorrect. 'check-update' checks the remote repository for available newer package versions; it does not inspect on-disk file integrity."
+                    },
+                    {
+                        text: "ldd /usr/sbin/sshd",
+                        correct: false,
+                        feedback: "Incorrect. 'ldd' prints shared library links, not package configuration integrity."
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Ticket #3: Post-Build Shared Library Failure",
+                scenario: "An engineer compiled an open-source analytics engine from source code and ran 'sudo make install'. The new shared library was written to '/usr/local/lib/libanalytics.so.2'. However, when users run the application, it throws: 'error while loading shared libraries: libanalytics.so.2: cannot open shared object file'. How should this be fixed permanently?",
+                options: [
+                    {
+                        text: "Re-extract the original source code tarball and re-run './configure' without options.",
+                        correct: false,
+                        feedback: "Incorrect. The compilation succeeded; the kernel's dynamic linker runtime cache just hasn't indexed the new library yet."
+                    },
+                    {
+                        text: "Ensure '/usr/local/lib' is defined in '/etc/ld.so.conf.d/local.conf' and execute 'sudo ldconfig'.",
+                        correct: true,
+                        feedback: "Exact! 'ldconfig' updates the binary cache '/etc/ld.so.cache' so the dynamic loader knows where to find the library."
+                    },
+                    {
+                        text: "Change the file permissions of the executable to 777.",
+                        correct: false,
+                        feedback: "Incorrect. Changing executable permissions does not resolve dynamic library linker path issues."
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Ticket #4: Complete Purge in Debian",
+                scenario: "On an Ubuntu web server, you want to remove an old testing version of Apache2. You need to ensure both the software binaries AND all configuration files in '/etc/apache2' are completely removed. Which command should you execute?",
+                options: [
+                    {
+                        text: "dpkg -r apache2",
+                        correct: false,
+                        feedback: "Incorrect. 'dpkg -r' removes only the package files, intentionally preserving configuration files on disk."
+                    },
+                    {
+                        text: "dpkg -P apache2 (or apt purge apache2)",
+                        correct: true,
+                        feedback: "Correct! The '--purge' or '-P' switch completely erases the package along with its configuration files."
+                    },
+                    {
+                        text: "rpm -e --nodeps apache2",
+                        correct: false,
+                        feedback: "Incorrect. Ubuntu does not use RPM as its native package tool; it uses Debian dpkg/APT."
+                    }
+                ]
+            }
+        ];
+
+        /* =========================================================================
+         * APPLICATION CORE CONTROLLER
+         * ========================================================================= */
         const app = {
             state: {
                 currentModule: 0,
-                completedModules: [],
-                score: 0,
-                totalPossible: 0,
-                theme: 'light'
+                completedModules: new Set(),
+                theme: 'light',
+                commandHistory: [],
+                historyIndex: -1,
+                capstoneAnswers: {},
+                sequencingOrder: []
             },
 
             init() {
-                this.renderNav();
-                this.setupEventListeners();
-                this.updateUI();
+                this.renderNavigation();
+                this.renderModule(0);
+                this.setupTerminalListeners();
+                this.updateProgress();
             },
 
-            setupEventListeners() {
-                document.getElementById('themeToggle').onclick = () => this.toggleTheme();
-                
-                const termInput = document.getElementById('terminalInput');
-                termInput.onkeydown = (e) => {
-                    if (e.key === 'Enter') {
-                        this.handleTerminal(termInput.value);
-                        termInput.value = '';
-                    }
-                };
+            // Navigation Track in Light Palette
+            renderNavigation() {
+                const track = document.getElementById('moduleNavTrack');
+                track.innerHTML = '';
+                LAB_CURRICULUM.forEach((mod, idx) => {
+                    const isCompleted = this.state.completedModules.has(idx);
+                    const isActive = this.state.currentModule === idx;
 
-                // Click terminal to focus input
-                document.getElementById('terminal').onclick = () => termInput.focus();
+                    const btn = document.createElement('button');
+                    btn.className = `px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border shadow-sm ${
+                        isActive 
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/20' 
+                            : isCompleted 
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100' 
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`;
+                    btn.innerHTML = `
+                        <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${isActive ? 'bg-blue-700 text-white' : isCompleted ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">${isCompleted ? '✓' : idx + 1}</span>
+                        <span>${mod.shortTitle}</span>
+                    `;
+                    btn.onclick = () => this.renderModule(idx);
+                    track.appendChild(btn);
+                });
+            },
+
+            // Module Loader
+            renderModule(id) {
+                this.state.currentModule = id;
+                const mod = LAB_CURRICULUM[id];
+                const container = document.getElementById('instructionCard');
+
+                // Update Terminal Header Distro
+                document.getElementById('distroBadge').innerText = mod.distro;
+
+                let html = `
+                    <div class="space-y-4">
+                        <!-- Module Header -->
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                            <div>
+                                <span class="text-[11px] font-mono uppercase tracking-wider text-blue-600 font-bold">${mod.badge}</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-slate-900">${mod.title}</h2>
+                            </div>
+                            <span class="text-xs text-slate-600 font-medium bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">⏱ ${mod.timeEst}</span>
+                        </div>
+
+                        <!-- Why this matters -->
+                        <div class="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 leading-relaxed">
+                            <strong class="text-blue-700 font-bold">Why This Matters:</strong> ${mod.whyItMatters}
+                        </div>
+
+                        <!-- Core Explanatory Content -->
+                        ${mod.contentHtml}
+
+                        <!-- Interactive Challenge Zone -->
+                        <div class="pt-4 border-t border-slate-200 space-y-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Applied Lab Activity
+                            </h3>
+                `;
+
+                // Activity Injector in Light Palette
+                if (mod.activity.type === 'quiz') {
+                    html += `
+                        <p class="text-xs sm:text-sm text-slate-800 font-semibold">${mod.activity.question}</p>
+                        <div class="space-y-2 pt-1">
+                            ${mod.activity.options.map((opt, i) => `
+                                <button onclick="app.checkModuleQuiz(${i})" class="w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition text-xs text-slate-700 flex items-start gap-2.5 shadow-sm">
+                                    <span class="font-mono text-blue-600 font-bold mt-0.5">0${i+1}.</span>
+                                    <span>${opt.text}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                } else if (mod.activity.type === 'terminal') {
+                    html += `
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2 shadow-sm">
+                            <p class="font-medium">${mod.activity.prompt}</p>
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <span class="font-medium">Terminal target:</span>
+                                <code class="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-amber-700 font-bold shadow-xs">${mod.activity.targetCommand}</code>
+                            </div>
+                        </div>
+                    `;
+                } else if (mod.activity.type === 'sequencing') {
+                    this.state.sequencingOrder = [];
+                    html += `
+                        <p class="text-xs sm:text-sm text-slate-800 font-medium">${mod.activity.question}</p>
+                        <div id="sequencingPool" class="space-y-2 pt-1">
+                            ${mod.activity.items.map((item) => `
+                                <div onclick="app.selectSequenceStep('${item.id}', this)" class="cursor-pointer p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 transition flex items-center justify-between shadow-sm">
+                                    <span class="font-medium">${item.text}</span>
+                                    <span class="seq-badge text-[10px] font-mono px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200">Click to place</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="app.verifySequencing()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">Check Sequence</button>
+                            <button onclick="app.resetSequencing()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition border border-slate-200">Reset</button>
+                        </div>
+                    `;
+                } else if (mod.activity.type === 'capstone_tickets') {
+                    html += `
+                        <div class="space-y-4">
+                            ${CAPSTONE_TICKETS.map((t, tIdx) => `
+                                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 shadow-sm">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="font-bold text-xs text-amber-800">${t.title}</h4>
+                                        <span id="ticketStatus-${t.id}" class="text-[10px] font-mono px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200 font-bold">Pending</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 leading-relaxed">${t.scenario}</p>
+                                    <div class="space-y-1.5">
+                                        ${t.options.map((opt, oIdx) => `
+                                            <button onclick="app.solveTicket(${t.id}, ${oIdx})" class="ticket-btn-${t.id} w-full text-left p-2.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 transition shadow-2xs">
+                                                ${opt.text}
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    <div id="ticketFeedback-${t.id}" class="hidden text-xs p-3 rounded-lg font-medium"></div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                // Feedback Container in Light Palette
+                html += `
+                        <div id="moduleFeedback" class="hidden p-3.5 rounded-xl text-xs font-medium transition-all shadow-sm"></div>
+                        <div id="nextModuleAction" class="pt-2"></div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                // Update Quick Chips in Terminal
+                this.renderQuickChips(mod.quickCommands || []);
+
+                this.renderNavigation();
+                this.updateProgress();
+            },
+            renderQuickChips(cmds) {
+                const container = document.getElementById('terminalQuickChips');
+                container.innerHTML = `<span class="text-[11px] text-slate-400 font-medium">Quick insert:</span>`;
+                cmds.forEach(cmd => {
+                    const btn = document.createElement('button');
+                    btn.className = "px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition border border-slate-700";
+                    btn.innerText = cmd;
+                    btn.onclick = () => {
+                        const input = document.getElementById('terminalCliInput');
+                        input.value = cmd;
+                        input.focus();
+                    };
+                    container.appendChild(btn);
+                });
+            },
+
+            // Module Quiz Check with Light Feedback
+            checkModuleQuiz(index) {
+                const mod = LAB_CURRICULUM[this.state.currentModule];
+                const opt = mod.activity.options[index];
+                const feedback = document.getElementById('moduleFeedback');
+
+                feedback.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-300', 'bg-rose-50', 'text-rose-900', 'border-rose-300');
+                feedback.classList.add('border');
+
+                if (opt.correct) {
+                    feedback.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-300');
+                    feedback.innerHTML = `<strong>✓ Correct!</strong> ${opt.feedback}`;
+                    this.markCurrentModuleComplete();
+                } else {
+                    feedback.classList.add('bg-rose-50', 'text-rose-900', 'border-rose-300');
+                    feedback.innerHTML = `<strong>✗ Not quite:</strong> ${opt.feedback}`;
+                }
+            },
+
+            // Sequencing Interaction
+            selectSequenceStep(stepId, el) {
+                if (this.state.sequencingOrder.includes(stepId)) return;
+                this.state.sequencingOrder.push(stepId);
+                const stepNum = this.state.sequencingOrder.length;
+                const badge = el.querySelector('.seq-badge');
+                badge.innerText = `Step ${stepNum}`;
+                badge.className = "seq-badge text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600 text-white font-bold";
+                el.classList.add('border-blue-500', 'bg-blue-50');
+            },
+
+            resetSequencing() {
+                this.state.sequencingOrder = [];
+                const pool = document.getElementById('sequencingPool');
+                const items = pool.querySelectorAll('div');
+                items.forEach(el => {
+                    const badge = el.querySelector('.seq-badge');
+                    if (badge) {
+                        badge.innerText = "Click to place";
+                        badge.className = "seq-badge text-[10px] font-mono px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200";
+                    }
+                    el.classList.remove('border-blue-500', 'bg-blue-50');
+                });
+                document.getElementById('moduleFeedback').classList.add('hidden');
+            },
+
+            verifySequencing() {
+                const mod = LAB_CURRICULUM[this.state.currentModule];
+                const feedback = document.getElementById('moduleFeedback');
+                feedback.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-300', 'bg-rose-50', 'text-rose-900', 'border-rose-300');
+                feedback.classList.add('border');
+
+                const isCorrect = JSON.stringify(this.state.sequencingOrder) === JSON.stringify(mod.activity.correctOrder);
+                if (isCorrect) {
+                    feedback.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-300');
+                    feedback.innerHTML = `<strong>✓ Perfect Sequence!</strong> 1. Extract tarball ➔ 2. ./configure checks compiler & flags ➔ 3. make compiles binaries ➔ 4. make install moves to /usr/local.`;
+                    this.markCurrentModuleComplete();
+                } else {
+                    feedback.classList.add('bg-rose-50', 'text-rose-900', 'border-rose-300');
+                    feedback.innerHTML = `<strong>✗ Incorrect Sequence:</strong> You cannot run 'make' before './configure' generates the Makefile, and you cannot configure before extracting the archive. Click 'Reset' to try again.`;
+                }
+            },
+
+            // Capstone Ticket Handling
+            solveTicket(ticketId, optionIndex) {
+                const ticket = CAPSTONE_TICKETS.find(t => t.id === ticketId);
+                const opt = ticket.options[optionIndex];
+                const fb = document.getElementById(`ticketFeedback-${ticketId}`);
+                const statusBadge = document.getElementById(`ticketStatus-${ticketId}`);
+
+                fb.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-300', 'bg-rose-50', 'text-rose-900', 'border-rose-300');
+                fb.classList.add('border');
+
+                if (opt.correct) {
+                    this.state.capstoneAnswers[ticketId] = true;
+                    fb.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-300');
+                    fb.innerHTML = `<strong>Resolved:</strong> ${opt.feedback}`;
+                    statusBadge.innerText = "Resolved ✓";
+                    statusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold";
+                } else {
+                    fb.classList.add('bg-rose-50', 'text-rose-900', 'border-rose-300');
+                    fb.innerHTML = `<strong>Diagnostic Note:</strong> ${opt.feedback}`;
+                }
+
+                // Update live capstone scorecard
+                const solvedCount = Object.keys(this.state.capstoneAnswers).length;
+                document.getElementById('capstoneSolvedCount').innerText = `${solvedCount} / 4 Solved`;
+
+                if (solvedCount >= 4) {
+                    document.getElementById('capstoneBadgeTitle').innerText = "Linux+ Master 🏆";
+                    document.getElementById('capstoneBadgeTitle').className = "text-emerald-600 font-bold";
+                    this.markCurrentModuleComplete();
+                }
+            },
+            setupTerminalListeners() {
+                const input = document.getElementById('terminalCliInput');
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        this.submitTerminalCommand();
+                    } else if (e.key === 'ArrowUp') {
+                        if (this.state.commandHistory.length > 0 && this.state.historyIndex > 0) {
+                            this.state.historyIndex--;
+                            input.value = this.state.commandHistory[this.state.historyIndex];
+                        }
+                    } else if (e.key === 'ArrowDown') {
+                        if (this.state.historyIndex < this.state.commandHistory.length - 1) {
+                            this.state.historyIndex++;
+                            input.value = this.state.commandHistory[this.state.historyIndex];
+                        } else {
+                            this.state.historyIndex = this.state.commandHistory.length;
+                            input.value = '';
+                        }
+                    }
+                });
+            },
+
+            submitTerminalCommand() {
+                const input = document.getElementById('terminalCliInput');
+                const rawCmd = input.value.trim();
+                if (!rawCmd) return;
+
+                this.state.commandHistory.push(rawCmd);
+                this.state.historyIndex = this.state.commandHistory.length;
+                input.value = '';
+
+                this.printTerminalOutput(`[root@lab ~]# ${rawCmd}`, 'text-slate-300');
+                this.processTerminalLogic(rawCmd);
+            },
+
+            printTerminalOutput(text, colorClass = 'text-slate-300') {
+                const screen = document.getElementById('terminalScreen');
+                const div = document.createElement('div');
+                div.className = `font-mono text-xs whitespace-pre-wrap ${colorClass}`;
+                div.innerText = text;
+                screen.appendChild(div);
+                screen.scrollTop = screen.scrollHeight;
+            },
+
+            clearTerminal() {
+                const screen = document.getElementById('terminalScreen');
+                screen.innerHTML = `
+                    <div class="text-slate-500">CompTIA Linux+ Interactive Execution Sandbox</div>
+                    <div class="text-slate-500">Terminal buffer reset. Type 'help' for available commands.</div>
+                    <div class="border-b border-slate-800 my-2"></div>
+                `;
+            },
+
+            processTerminalLogic(cmd) {
+                const clean = cmd.trim();
+                const lower = clean.toLowerCase();
+
+                // General Utility Commands
+                if (lower === 'clear') {
+                    this.clearTerminal();
+                    return;
+                }
+                if (lower === 'help') {
+                    this.printTerminalOutput(
+                        "Supported Commands:\n" +
+                        "  rpm [ -i | -U | -F | -e | -qa | -qi | -ql | -qc | -qf | -V ]\n" +
+                        "  dnf [ install | provides | repolist | check-update | clean all ]\n" +
+                        "  zypper [ in | lr | se | wp ]\n" +
+                        "  dpkg [ -i | -r | -P | -l | -L | -S ]\n" +
+                        "  apt [ update | upgrade | autoremove ]\n" +
+                        "  ldd <binary>, ldconfig, export LD_LIBRARY_PATH\n" +
+                        "  tar, ./configure, make, make install",
+                        "text-blue-400"
+                    );
+                    return;
+                }
+
+                // Check Current Module Objective
+                const mod = LAB_CURRICULUM[this.state.currentModule];
+                if (mod.activity.type === 'terminal') {
+                    if (mod.activity.validRegex && mod.activity.validRegex.test(clean)) {
+                        this.printTerminalOutput(mod.activity.expectedOutput, "text-emerald-400");
+                        this.markCurrentModuleComplete();
+                        return;
+                    }
+                }
+
+                // Simulated Command Responses
+                if (lower.startsWith('rpm -v') || lower.startsWith('rpm --verify')) {
+                    this.printTerminalOutput("S.5....T.  c /etc/nginx/nginx.conf", "text-amber-300");
+                } else if (lower.startsWith('rpm -qa')) {
+                    this.printTerminalOutput("kernel-core-5.14.0-362.el9.x86_64\nnginx-1.20.1-14.el9_2.3.x86_64\nbash-5.1.8-6.el9.x86_64\nglibc-2.34-60.el9.x86_64", "text-slate-300");
+                } else if (lower.startsWith('rpm -qf /bin/tar') || lower.startsWith('rpm -qf /bin/ls')) {
+                    this.printTerminalOutput("coreutils-8.32-34.el9.x86_64", "text-slate-300");
+                } else if (lower.startsWith('dnf repolist')) {
+                    this.printTerminalOutput("repo id             repo name                                   status\nbaseos              Rocky Linux 9 - BaseOS                      enabled\nappstream           Rocky Linux 9 - AppStream                   enabled\nepel                Extra Packages for Enterprise Linux 9       enabled", "text-slate-300");
+                } else if (lower.startsWith('dnf provides') || lower.startsWith('dnf whatprovides')) {
+                    this.printTerminalOutput("mailcap-2.1.48-3.el9.noarch : Helpers for MIME content-type management\nMatched from: Filename : /etc/mime.types", "text-cyan-400");
+                } else if (lower.startsWith('ldd')) {
+                    this.printTerminalOutput("linux-vdso.so.1 => (0x00007ffe3493e000)\nlibcrypto.so.3 => not found\nlibc.so.6 => /lib64/libc.so.6 (0x00007f35b2a00000)", "text-rose-400");
+                } else if (lower.startsWith('ldconfig -p')) {
+                    this.printTerminalOutput("452 libs found in cache `/etc/ld.so.cache'\n\tlibssl.so.3 (libc6,x86-64) => /lib64/libssl.so.3\n\tlibc.so.6 (libc6,x86-64) => /lib64/libc.so.6", "text-slate-400");
+                } else if (lower.startsWith('apt update')) {
+                    this.printTerminalOutput("Hit:1 http://archive.ubuntu.com/ubuntu jammy InRelease\nGet:2 http://security.ubuntu.com/ubuntu jammy-security InRelease [110 kB]\nFetched 110 kB in 1s (98.2 kB/s)\nReading package lists... Done\nBuilding dependency tree... Done\n4 packages can be upgraded. Run 'apt list --upgradable' to see them.", "text-emerald-400");
+                } else if (lower.startsWith('zypper lr')) {
+                    this.printTerminalOutput("# | Alias        | Name             | Enabled | GPG Check | Refresh\n--+--------------+------------------+---------+-----------+--------\n1 | repo-oss     | Main OSS Repo    | Yes     | (r ) Yes  | Yes\n2 | repo-non-oss | Non-OSS Repo     | Yes     | (r ) Yes  | Yes", "text-cyan-400");
+                } else {
+                    this.printTerminalOutput(`bash: ${clean}: command accepted in lab environment, but does not fulfill current module task requirement.`, "text-slate-500");
+                }
+            },
+
+            // Interactive Dissector Helpers
+            inspectRpmPart(part) {
+                const exp = document.getElementById('rpmPartExplainer');
+                if (part === 'name') {
+                    exp.innerHTML = "<strong>Package Name (bind):</strong> The software title without release or CPU details.";
+                } else if (part === 'version') {
+                    exp.innerHTML = "<strong>Software Version (9.16.23):</strong> The upstream developer source version.";
+                } else if (part === 'release') {
+                    exp.innerHTML = "<strong>Distribution Release (14.el9_3):</strong> The number of times the distributor (Enterprise Linux 9) built and patched this package.";
+                } else if (part === 'arch') {
+                    exp.innerHTML = "<strong>Architecture (x86_64):</strong> The target processor instruction set (e.g., x86_64, aarch64, or 'noarch' for scripts/docs).";
+                }
+            },
+
+            simulateRepoResolve() {
+                const node = document.getElementById('depChainNode');
+                const status = document.getElementById('depChainStatus');
+                node.className = "p-3 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 transition-all font-medium";
+                node.innerHTML = "<strong>Prerequisite Auto-Fetched</strong><br><code>apr-util-1.6.1.rpm</code>";
+                status.className = "p-3 rounded-lg bg-emerald-50 border border-emerald-300 text-xs text-emerald-900 transition-all";
+                status.innerHTML = "✓ <strong>Repository Engine (DNF/APT):</strong> Identified prerequisite 'apr-util', queried mirror repository, downloaded package, and staged simultaneous installation! Zero broken dependencies.";
+            },
+
+            // Progress Management
+            markCurrentModuleComplete() {
+                this.state.completedModules.add(this.state.currentModule);
+                this.renderNavigation();
+                this.updateProgress();
+
+                const actionArea = document.getElementById('nextModuleAction');
+                if (this.state.currentModule < LAB_CURRICULUM.length - 1) {
+                    actionArea.innerHTML = `
+                        <button onclick="app.renderModule(${this.state.currentModule + 1})" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition shadow-md shadow-blue-500/20 flex items-center justify-center gap-2">
+                            <span>Continue to Next Objective: ${LAB_CURRICULUM[this.state.currentModule + 1].shortTitle}</span>
+                            <span>→</span>
+                        </button>
+                    `;
+                } else {
+                    actionArea.innerHTML = `
+                        <div class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs text-center font-bold">
+                            🎉 Congratulations! You have successfully completed all CompTIA Linux+ Chapter 10 objectives!
+                        </div>
+                    `;
+                }
+            },
+
+            updateProgress() {
+                const total = LAB_CURRICULUM.length;
+                const completed = this.state.completedModules.size;
+                const pct = Math.round((completed / total) * 100);
+
+                document.getElementById('headerProgressPercent').innerText = `${pct}%`;
+                document.getElementById('headerProgressBar').style.width = `${pct}%`;
             },
 
             toggleTheme() {
                 const html = document.documentElement;
                 this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
                 html.setAttribute('data-theme', this.state.theme);
-                document.getElementById('themeToggle').innerText = this.state.theme === 'light' ? '🌙' : '☀️';
-            },
-
-            startLab() {
-                this.renderModule(0);
-            },
-
-            renderNav() {
-                const nav = document.getElementById('moduleNav');
-                nav.innerHTML = '';
-                DATA.modules.forEach((mod, idx) => {
-                    const btn = document.createElement('button');
-                    btn.className = `nav-item ${this.state.currentModule === idx ? 'active' : ''} ${this.state.completedModules.includes(idx) ? 'completed' : ''}`;
-                    btn.innerText = mod.title;
-                    btn.onclick = () => this.renderModule(idx);
-                    nav.appendChild(btn);
-                });
-            },
-
-            renderModule(id) {
-                this.state.currentModule = id;
-                const mod = DATA.modules[id];
-                const area = document.getElementById('contentArea');
-                
-                let html = `<div class="animate-fade">
-                    <span class="badge">Module ${id + 1}</span>
-                    ${mod.content}
-                    <div id="activityZone" style="margin-top:30px; padding-top:20px; border-top: 1px solid var(--border);">
-                        <h3>Interactive Challenge</h3>
-                `;
-
-                if (mod.activity.type === 'quiz') {
-                    html += `<p>${mod.activity.question}</p>`;
-                    mod.activity.options.forEach((opt, i) => {
-                        html += `<button class="quiz-option" onclick="app.checkQuiz(${i})">${opt.text}</button>`;
-                    });
-                } else if (mod.activity.type === 'terminal') {
-                    html += `<p><strong>${mod.activity.prompt}</strong></p>
-                             <div class="exam-tip">${mod.activity.hint}</div>`;
-                } else if (mod.activity.type === 'matching') {
-                    html += `<p>${mod.activity.question}</p>`;
-                    mod.activity.pairs.forEach((pair, i) => {
-                        html += `<div style="margin-bottom:10px; display:flex; gap:10px; align-items:center;">
-                            <span class="badge" style="min-width:120px">${pair.item}</span>
-                            <select id="match-${i}" class="btn-outline" style="padding:4px; font-size:0.8rem; flex-grow:1;">
-                                <option>Select match...</option>
-                                ${mod.activity.pairs.map(p => `<option>${p.target}</option>`).sort().join('')}
-                            </select>
-                        </div>`;
-                    });
-                    html += `<button class="btn-primary" onclick="app.checkMatching()">Check Matches</button>`;
-                } else if (mod.activity.type === 'sequencing') {
-                    html += `<p>${mod.activity.question}</p><div id="sequenceList">`;
-                    mod.activity.items.forEach((item, i) => {
-                        html += `<div class="chip" onclick="app.toggleSequence(${i})" id="seq-${i}">${item}</div> `;
-                    });
-                    html += `</div><div id="seqFeedback" style="margin-top:10px; font-weight:bold;">Selection order: <span id="seqOrder"></span></div>
-                             <button class="btn-primary" style="margin-top:10px" onclick="app.checkSequence()">Verify Order</button>
-                             <button class="btn-outline" style="margin-top:10px" onclick="app.resetSequence()">Reset</button>`;
-                } else if (mod.activity.type === 'scenario') {
-                    const s = mod.activity.scenarios[0]; // Simplified for now
-                    html += `<div id="scenario-container">
-                        <p>${s.text}</p>
-                        ${s.options.map((o, i) => `<button class="quiz-option" onclick="app.checkScenario(0, ${i})">${o.text}</button>`).join('')}
-                    </div>`;
-                }
-
-                html += `</div><div id="feedbackBox" class="feedback"></div>`;
-                
-                // Add "Next" button if completed
-                if (this.state.completedModules.includes(id) && id < DATA.modules.length - 1) {
-                    html += `<button class="btn-primary" style="margin-top:20px" onclick="app.renderModule(${id+1})">Continue to Next Module →</button>`;
-                }
-
-                html += `</div>`;
-                area.innerHTML = html;
-                
-                this.renderNav();
-                this.updateUI();
-            },
-
-            checkQuiz(optIndex) {
-                const mod = DATA.modules[this.state.currentModule];
-                const opt = mod.activity.options[optIndex];
-                const box = document.getElementById('feedbackBox');
-                
-                box.className = `feedback visible ${opt.correct ? 'feedback-success' : 'feedback-error'}`;
-                box.innerHTML = `<strong>${opt.correct ? 'Correct!' : 'Try Again'}</strong><br>${opt.feedback}`;
-                
-                if (opt.correct) this.markModuleComplete();
-            },
-
-            checkScenario(sIndex, oIndex) {
-                const s = DATA.modules[this.state.currentModule].activity.scenarios[sIndex];
-                const opt = s.options[oIndex];
-                const box = document.getElementById('feedbackBox');
-                
-                box.className = `feedback visible ${opt.correct ? 'feedback-success' : 'feedback-error'}`;
-                box.innerHTML = `<strong>${opt.correct ? 'Correct!' : 'Incorrect'}</strong><br>${opt.feedback}`;
-                
-                if (opt.correct) {
-                    // Logic to show next scenario or complete module
-                    this.markModuleComplete();
-                    if (this.state.currentModule === 6) {
-                        document.getElementById('capstone-results').classList.remove('hidden');
-                        document.getElementById('scoreSummary').innerText = "Congratulations! You have successfully mastered Linux Software Management principles.";
-                    }
-                }
-            },
-
-            checkMatching() {
-                const mod = DATA.modules[this.state.currentModule];
-                let allCorrect = true;
-                mod.activity.pairs.forEach((pair, i) => {
-                    const val = document.getElementById(`match-${i}`).value;
-                    if (val !== pair.target) allCorrect = false;
-                });
-
-                const box = document.getElementById('feedbackBox');
-                if (allCorrect) {
-                    box.className = "feedback visible feedback-success";
-                    box.innerText = "Excellent! All tool mappings are correct.";
-                    this.markModuleComplete();
+                if (this.state.theme === 'light') {
+                    html.classList.remove('dark');
+                    document.getElementById('themeIcon').innerText = '🌙';
                 } else {
-                    box.className = "feedback visible feedback-error";
-                    box.innerText = "Some mappings are incorrect. Review the logic of APT vs dpkg.";
+                    html.classList.add('dark');
+                    document.getElementById('themeIcon').innerText = '☀️';
                 }
-            },
-
-            // Sequencing Logic
-            seqState: [],
-            toggleSequence(id) {
-                if (this.seqState.includes(id)) return;
-                this.seqState.push(id);
-                document.getElementById(`seq-${id}`).classList.add('selected');
-                document.getElementById('seqOrder').innerText = this.seqState.map(i => DATA.modules[this.state.currentModule].activity.items[i]).join(' → ');
-            },
-            resetSequence() {
-                this.seqState = [];
-                document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
-                document.getElementById('seqOrder').innerText = "";
-            },
-            checkSequence() {
-                const mod = DATA.modules[this.state.currentModule];
-                const isCorrect = JSON.stringify(this.seqState) === JSON.stringify(mod.activity.correctOrder);
-                const box = document.getElementById('feedbackBox');
-                if (isCorrect) {
-                    box.className = "feedback visible feedback-success";
-                    box.innerText = "Correct Sequence! Extraction -> Configuration -> Compilation -> Installation.";
-                    this.markModuleComplete();
-                } else {
-                    box.className = "feedback visible feedback-error";
-                    box.innerText = "Wrong sequence. Remember: you must extract and configure the environment before you can 'make' the binary.";
-                    this.resetSequence();
-                }
-            },
-
-            handleTerminal(cmd) {
-                const term = document.getElementById('terminalOutput');
-                const cleanCmd = cmd.trim().toLowerCase();
-                
-                term.innerText += `\n[learner@linux-lab ~]$ ${cmd}`;
-
-                if (cleanCmd === 'clear') {
-                    term.innerText = "Terminal Cleared.";
-                    return;
-                }
-
-                if (cleanCmd === 'help') {
-                    term.innerText += "\nAvailable commands: rpm, dnf, apt, ldd, tar, make, ls, clear, help.";
-                    return;
-                }
-
-                // Logic for active module task
-                const mod = DATA.modules[this.state.currentModule];
-                if (mod.activity.type === 'terminal') {
-                    if (cleanCmd === mod.activity.requiredCommand.toLowerCase()) {
-                        term.innerText += `\n${mod.activity.output}`;
-                        term.innerText += "\n[SUCCESS] Task requirement met.";
-                        this.markModuleComplete();
-                    } else {
-                        term.innerText += `\nCommand executed, but didn't match the objective. Try: ${mod.activity.requiredCommand}`;
-                    }
-                } else {
-                    // Generic responses
-                    if (cleanCmd.startsWith('rpm')) term.innerText += "\nRPM: Command valid, but no specific task active for this module.";
-                    else if (cleanCmd.startsWith('dnf')) term.innerText += "\nDNF: Metadata cache is up to date.";
-                    else term.innerText += `\n${cmd}: command not found or not relevant to current task.`;
-                }
-
-                // Scroll to bottom
-                document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
-            },
-
-            markModuleComplete() {
-                if (!this.state.completedModules.includes(this.state.currentModule)) {
-                    this.state.completedModules.push(this.state.currentModule);
-                    this.renderNav();
-                    this.updateUI();
-                    
-                    // Show continue button in content area
-                    if (this.state.currentModule < DATA.modules.length - 1) {
-                        const area = document.getElementById('contentArea');
-                        if (!area.innerHTML.includes('Continue to Next Module')) {
-                            const btn = document.createElement('button');
-                            btn.className = "btn-primary animate-fade";
-                            btn.style.marginTop = "20px";
-                            btn.innerText = "Continue to Next Module →";
-                            btn.onclick = () => this.renderModule(this.state.currentModule + 1);
-                            area.appendChild(btn);
-                        }
-                    }
-                }
-            },
-
-            updateUI() {
-                const total = DATA.modules.length;
-                const completed = this.state.completedModules.length;
-                const perc = Math.round((completed / total) * 100);
-                
-                document.getElementById('progressBar').style.width = `${perc}%`;
-                document.getElementById('progressText').innerText = `${perc}%`;
             },
 
             toggleCheatSheet() {
-                const sheet = document.getElementById('cheatSheet');
-                const overlay = document.getElementById('overlay');
-                sheet.classList.toggle('hidden');
-                overlay.classList.toggle('hidden');
+                const modal = document.getElementById('cheatSheetModal');
+                modal.classList.toggle('hidden');
             }
         };
 
-        // Initialize on load
-        window.onload = () => app.init();
-
+        // Initialize on DOM Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
     </script>
 </body>
 </html>
