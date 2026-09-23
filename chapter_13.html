@@ -484,16 +484,16 @@
                                 <p class="text-[11px] text-slate-500 mb-3">Click each statement in the required order of execution:</p>
                                 
                                 <div class="space-y-2">
-                                    <div id="block-shebang" onclick="toggleScriptBlock('shebang', '#!/bin/bash')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
+                                    <div id="block-shebang" onclick="toggleScriptBlock('shebang')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
                                         <span>#!/bin/bash</span>
                                         <span class="text-[10px] text-slate-400 font-sans block-status">Click to add</span>
                                     </div>
-                                    <div id="block-comment" onclick="toggleScriptBlock('comment', '# My first Bash script')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
+                                    <div id="block-comment" onclick="toggleScriptBlock('comment')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
                                         <span># My first Bash script</span>
                                         <span class="text-[10px] text-slate-400 font-sans block-status">Click to add</span>
                                     </div>
-                                    <div id="block-echo" onclick="toggleScriptBlock('echo', 'echo \"Hello from Bash\"')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
-                                        <span>echo "Hello from Bash"</span>
+                                    <div id="block-echo" onclick="toggleScriptBlock('echo')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
+                                        <span>echo &quot;Hello from Bash&quot;</span>
                                         <span class="text-[10px] text-slate-400 font-sans block-status">Click to add</span>
                                     </div>
                                 </div>
@@ -1556,7 +1556,7 @@ esac</pre>
             showToast("Excellent use case for shell scripting!", "fa-lightbulb", "bg-teal-700");
         }
 
-        function toggleScriptBlock(id, code) {
+        function toggleScriptBlock(id) {
             const el = document.getElementById(`block-${id}`);
             const preview = document.getElementById('scriptLiveFileContent');
             const index = state.assembledBlocks.indexOf(id);
@@ -1568,8 +1568,15 @@ esac</pre>
             } else {
                 state.assembledBlocks.push(id);
                 el.classList.add('bg-teal-50', 'border-teal-500', 'text-teal-900');
-                el.querySelector('.block-status').innerText = `Line ${state.assembledBlocks.length}`;
             }
+
+            // Dynamically update line labels for all currently selected blocks
+            state.assembledBlocks.forEach((blockId, idx) => {
+                const bEl = document.getElementById(`block-${blockId}`);
+                if (bEl) {
+                    bEl.querySelector('.block-status').innerText = `Line ${idx + 1}`;
+                }
+            });
 
             // Update live code preview
             const lineMap = {
