@@ -3,345 +3,1231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Managing Linux Networking Lab</title>
+    <title>Managing Linux Network Settings | CompTIA Linux+ Lab</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#111827',
+                            950: '#070b14',
+                        },
+                        cyber: {
+                            blue: '#0284c7',
+                            emerald: '#059669',
+                            amber: '#d97706',
+                            rose: '#e11d48',
+                            purple: '#7c3aed'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
         
-        body { font-family: 'Inter', sans-serif; }
-        .font-mono { font-family: 'JetBrains+Mono', monospace; }
-        
-        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
-        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .glass-panel-subtle {
+            background: rgba(248, 250, 252, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid #e2e8f0;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.8);
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @keyframes pulseSlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.04); }
+        }
+        .animate-pulse-slow {
+            animation: pulseSlow 3s infinite ease-in-out;
+        }
+
+        @keyframes packetFlow {
+            0% { stroke-dashoffset: 24; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .packet-cable {
+            stroke-dasharray: 6 6;
+            animation: packetFlow 1s linear infinite;
         }
 
         input[type=range] {
-            accent-color: #2563eb;
+            accent-color: #0284c7;
         }
     </style>
 </head>
-<body class="h-screen flex flex-col bg-slate-100 overflow-hidden text-slate-900">
+<body class="h-screen flex flex-col overflow-hidden text-slate-800 antialiased selection:bg-sky-500/20 selection:text-sky-900 bg-slate-50">
 
-    <!-- Mission Header -->
-    <header class="bg-slate-900 text-white p-4 border-b border-slate-700 shrink-0">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <!-- Top Mission Header & Navigation Bar -->
+    <header class="bg-white/95 border-b border-slate-200 px-4 py-3 shrink-0 z-30 flex items-center justify-between shadow-sm backdrop-blur-md">
+        <div class="flex items-center gap-4">
             <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded shadow-lg shadow-blue-900/20">
-                    <i data-lucide="network" class="w-5 h-5"></i>
+                <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 shadow-md shadow-sky-500/15 border border-sky-400/30">
+                    <i data-lucide="network" class="w-5 h-5 text-white"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white animate-ping"></span>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
                 </div>
                 <div>
-                    <h1 class="text-sm font-bold tracking-tight uppercase">Managing Linux Networking</h1>
-                    <div class="flex items-center gap-2 text-[10px] text-slate-400 uppercase font-semibold">
-                        <span class="text-blue-400 tracking-widest">Active Session</span>
-                        <span class="h-1 w-1 bg-slate-600 rounded-full"></span>
-                        <span>Interactive Lab Mode</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full">
+                            CompTIA Linux+ (XK0-005)
+                        </span>
+                        <span class="text-xs text-slate-500 font-mono hidden sm:inline">Chapter 14: Network Settings</span>
                     </div>
+                    <h1 class="text-sm md:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        Managing Linux Network Settings
+                    </h1>
                 </div>
             </div>
-            <div class="text-right">
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Progress</div>
-                <div id="progress-text" class="text-xs font-mono font-bold text-blue-400">0% COMPLETE</div>
+        </div>
+
+        <!-- Middle Progress & Step Breadcrumb -->
+        <div class="hidden lg:flex items-center gap-3 bg-slate-100/90 border border-slate-200 px-4 py-1.5 rounded-xl">
+            <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <span class="text-sky-700 font-mono font-bold" id="header-module-num">MOD 01</span>
+                <span class="text-slate-400">/</span>
+                <span class="truncate max-w-[200px]" id="header-module-title">System Initialization</span>
+            </div>
+            <div class="w-32 bg-slate-200 h-2 rounded-full overflow-hidden border border-slate-300/60">
+                <div id="header-progress-bar" class="bg-gradient-to-r from-sky-500 to-indigo-600 h-full transition-all duration-500 ease-out" style="width: 10%;"></div>
+            </div>
+            <span id="header-progress-pct" class="text-[11px] font-mono font-bold text-sky-700">10%</span>
+        </div>
+
+        <!-- Right Quick Actions -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button id="toggle-glossary-btn" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all shadow-sm">
+                <i data-lucide="book-marked" class="w-3.5 h-3.5 text-sky-600"></i>
+                <span class="hidden sm:inline">Key Terms</span>
+            </button>
+            <button id="toggle-topology-btn" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all shadow-sm">
+                <i data-lucide="server" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span class="hidden sm:inline">Topology</span>
+            </button>
+            <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+            <div class="flex items-center gap-1.5 text-[11px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>ONLINE</span>
             </div>
         </div>
     </header>
 
-    <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar Assistant -->
-        <aside class="w-80 md:w-96 flex flex-col h-full bg-white border-r border-slate-200 shadow-xl relative z-10 overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0">
-                <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lab Assistant (Gemini)</span>
-            </div>
-            
-            <div id="sidebar-content" class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
-                <!-- Content injected by JS -->
+    <!-- Main Interactive Workspace -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Pane: Lab Assistant & Pedagogical Guide -->
+        <aside class="w-80 md:w-96 flex flex-col h-full bg-white border-r border-slate-200 shadow-md relative z-10 shrink-0">
+            <!-- Assistant Status Header -->
+            <div class="p-3.5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 bg-sky-600 rounded-full animate-pulse"></div>
+                    <span class="text-xs font-extrabold text-slate-700 uppercase tracking-widest flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-sky-600"></i> Lab Assistant
+                    </span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">CompTIA Linux+</span>
             </div>
 
+            <!-- Dynamic Learning Content Area -->
+            <div id="sidebar-content" class="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
+                <!-- Injected via renderApp() -->
+            </div>
+
+            <!-- Navigation Controls -->
             <div class="p-4 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0">
-                <button id="prev-btn" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-tighter bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-30 transition-all">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Previous
+                <button id="prev-btn" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 disabled:opacity-40 disabled:pointer-events-none transition-all shadow-sm">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i> Prev Module
                 </button>
-                <button id="next-btn" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-tighter bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-30 transition-all shadow-lg shadow-blue-200">
-                    Next Module <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                <button id="next-btn" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white shadow-md shadow-sky-600/20 border border-sky-500 disabled:opacity-40 disabled:pointer-events-none transition-all">
+                    Next Module <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </button>
             </div>
         </aside>
 
-        <!-- Main Interaction Area -->
-        <main id="main-area" class="flex-1 p-8 overflow-y-auto bg-slate-50 relative scrollbar-thin">
-            <!-- Tool injected by JS -->
+        <!-- Right Pane: Interactive Canvas / Hands-on Lab Area -->
+        <main id="main-area" class="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-100/70 relative scrollbar-thin flex flex-col justify-start">
+            <!-- Dynamic Module Tools Injected via renderApp() -->
         </main>
+
+        <!-- Slide-out Drawer: Key Terms Glossary -->
+        <div id="glossary-drawer" class="absolute top-0 right-0 w-96 h-full bg-white/98 backdrop-blur-xl border-l border-slate-200 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <i data-lucide="book-open" class="w-4 h-4 text-sky-600"></i>
+                    <span>Chapter 14 Key Terms Glossary</span>
+                </div>
+                <button id="close-glossary-btn" class="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-4 border-b border-slate-200 bg-slate-50/50">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    <input id="glossary-search" type="text" placeholder="Search terminology..." class="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 font-mono">
+                </div>
+            </div>
+            <div id="glossary-items" class="flex-1 overflow-y-auto p-4 space-y-2.5 scrollbar-thin">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Slide-out Drawer: Live Topology Modal -->
+        <div id="topology-drawer" class="absolute top-0 right-0 w-full md:w-[620px] h-full bg-white/98 backdrop-blur-xl border-l border-slate-200 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <i data-lucide="network" class="w-4 h-4 text-emerald-600"></i>
+                    <span>Live Network Segment & Routing Topology</span>
+                </div>
+                <button id="close-topology-btn" class="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto space-y-6 scrollbar-thin" id="topology-diagram-container">
+                <!-- SVG Network Topology Injected Here -->
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // --- State ---
-        let state = {
+        // --- Core Application State Model ---
+        const state = {
             screen: 1,
-            totalScreens: 9,
+            totalScreens: 10,
+            
+            // Interactive Tools State
             activeTermIndex: null,
-            selectedLayerIndex: null,
-            binaryBits: Array(8).fill(0),
+            selectedLayerIndex: 2, // Layer 3 Network by default
+            binaryBits: [0, 0, 0, 0, 0, 0, 0, 0],
+            targetBinaryVal: 179,
             cidr: 24,
+            
+            // Terminal & System Simulation State
+            ifaceUp: true,
             terminalHistory: [],
-            capstoneFaults: { gateway: false, dns: false },
+            commandHistory: [],
+            historyIndex: -1,
+            
+            // Capstone & Challenge Objectives
+            capstoneFaults: {
+                gateway: false,   // true when default route is fixed
+                dns: false        // true when resolv.conf nameserver is added
+            },
             missionComplete: false,
             hintLevel: -1,
-            ifaceUp: true
+            completedScreens: [],
+            
+            // Pre-assessment state
+            preAssessmentScore: null,
+            preAssessmentAnswers: {},
+
+            // Matching activity state
+            portMatches: {}
         };
 
+        // --- Chapter 14 Key Terms Dataset ---
         const KEY_TERMS = [
-            { term: 'IP Address', definition: 'A logical 32-bit (IPv4) address used to identify a host on a network.' },
-            { term: 'Subnet Mask', definition: 'A bitmask that determines which part of an IP address belongs to the network and which part belongs to the host.' },
-            { term: 'Default Gateway', definition: 'The "exit point" for traffic leaving the local network segment for external destinations.' },
-            { term: 'DNS', definition: 'Domain Name System; resolves human-readable hostnames to IP addresses.' },
-            { term: 'MTU', definition: 'Maximum Transmission Unit; the largest packet size that can be sent over a network interface.' },
-            { term: 'Latency', definition: 'The delay between sending a request and receiving a response (ms).' }
+            { term: 'IP Address', cat: 'Addressing', definition: 'A logical Layer 3 32-bit (IPv4) or 128-bit (IPv6) numerical address assigned to each device on a network.' },
+            { term: 'Subnet Mask', cat: 'Addressing', definition: 'A 32-bit bitmask that differentiates the network portion of an IP address from the host portion.' },
+            { term: 'CIDR Notation', cat: 'Addressing', definition: 'Classless Inter-Domain Routing; uses a slash suffix (e.g., /24) to denote the number of contiguous 1 bits in the subnet mask.' },
+            { term: 'Default Gateway', cat: 'Routing', definition: 'The router IP address on the local segment used to forward traffic destined outside the local subnet.' },
+            { term: 'DNS (Domain Name System)', cat: 'Services', definition: 'Resolves human-readable domain names (e.g. google.com) into machine-routable IP addresses (port 53).' },
+            { term: 'DHCP', cat: 'Services', definition: 'Dynamic Host Configuration Protocol; automatically leases IP addresses, subnet masks, gateways, and DNS servers to clients.' },
+            { term: 'Predictable NIC Names', cat: 'Interfaces', definition: 'Modern systemd scheme replacing ethX with hardware-based names: eno (on-board), ens (hotplug slot), enp (PCI bus).' },
+            { term: 'NetworkManager / nmcli', cat: 'Tools', definition: 'The standard daemon and CLI tool in modern enterprise Linux for creating, editing, activating, and managing connections.' },
+            { term: 'MTU (Maximum Transmission Unit)', cat: 'Hardware', definition: 'The largest packet or frame size (usually 1500 bytes for Ethernet) that can be sent without fragmentation.' },
+            { term: 'ss (Socket Statistics)', cat: 'Diagnostics', definition: 'The high-performance, modern replacement for netstat used to inspect listening sockets, TCP states, and ports.' },
+            { term: 'netcat (nc)', cat: 'Diagnostics', definition: 'The "Swiss Army knife" utility for reading and writing network connections across TCP/UDP ports.' },
+            { term: 'Chrony & NTP', cat: 'Services', definition: 'Time synchronization software (chronyd daemon and chronyc tool) ensuring system clocks match standard reference time.' },
+            { term: 'SLAAC (IPv6)', cat: 'IPv6', definition: 'Stateless Address Autoconfiguration; enables IPv6 hosts to configure their own address using router advertisements and EUI-64.' },
+            { term: 'NFS / CIFS', cat: 'Storage', definition: 'Network-based filesystems; Network File System (Linux-native, port 2049) and Common Internet File System (SMB, port 445).' }
         ];
 
+        // --- OSI & TCP/IP Reference Model ---
         const OSI_LAYERS = [
-            { layer: 7, name: 'Application', desc: 'Interfaces with software applications (HTTP, SSH, FTP).', icon: 'globe' },
-            { layer: 6, name: 'Presentation', desc: 'Handles data formatting, encryption, and compression.', icon: 'settings' },
-            { layer: 5, name: 'Session', desc: 'Manages sessions and dialogues between computers.', icon: 'activity' },
-            { layer: 4, name: 'Transport', desc: 'Ensures reliable data transfer (TCP, UDP).', icon: 'zap' },
-            { layer: 3, name: 'Network', desc: 'Handles routing and logical addressing (IP, ICMP).', icon: 'layers' },
-            { layer: 2, name: 'Data Link', desc: 'Transfers data between nodes on a segment (MAC, Ethernet).', icon: 'database' },
-            { layer: 1, name: 'Physical', desc: 'Transmission over a physical medium (Cables, Hubs).', icon: 'cpu' }
+            { 
+                layer: 7, 
+                name: 'Application', 
+                tcpip: 'Application',
+                desc: 'Interfaces directly with applications and services requiring network access.', 
+                icon: 'globe',
+                protocols: 'HTTP (80), HTTPS (443), SSH (22), DNS (53), FTP (20/21), SMTP (25)',
+                tools: 'curl, wget, ssh, dig, nc',
+                pdu: 'Data'
+            },
+            { 
+                layer: 6, 
+                name: 'Presentation', 
+                tcpip: 'Application',
+                desc: 'Formats, encrypts, and compresses data for consistent application interpretation.', 
+                icon: 'lock',
+                protocols: 'TLS/SSL, JPEG, ASCII, UTF-8',
+                tools: 'openssl, gpg',
+                pdu: 'Data'
+            },
+            { 
+                layer: 5, 
+                name: 'Session', 
+                tcpip: 'Application',
+                desc: 'Establishes, manages, and terminates sessions between local and remote endpoints.', 
+                icon: 'radio',
+                protocols: 'RPC, NetBIOS, SOCKS',
+                tools: 'rpcinfo, who, w',
+                pdu: 'Data'
+            },
+            { 
+                layer: 4, 
+                name: 'Transport', 
+                tcpip: 'Transport',
+                desc: 'Provides end-to-end communication services. TCP delivers reliable, sequenced data; UDP provides connectionless speed.', 
+                icon: 'zap',
+                protocols: 'TCP (Transmission Control Protocol), UDP (User Datagram Protocol)',
+                tools: 'ss -tuln, netstat, nc -zv, iperf3',
+                pdu: 'Segment (TCP) / Datagram (UDP)'
+            },
+            { 
+                layer: 3, 
+                name: 'Network', 
+                tcpip: 'Internet',
+                desc: 'Handles logical addressing, path determination, packet routing, and subnet boundary separation.', 
+                icon: 'layers',
+                protocols: 'IPv4, IPv6, ICMP, ARP, IPsec',
+                tools: 'ip addr, ip route, ping, traceroute, tracepath',
+                pdu: 'Packet'
+            },
+            { 
+                layer: 2, 
+                name: 'Data Link', 
+                tcpip: 'Network Access',
+                desc: 'Manages physical node-to-node frame transfer over the physical segment using hardware MAC addresses.', 
+                icon: 'database',
+                protocols: 'Ethernet (802.3), Wi-Fi (802.11), PPP, VLAN (802.1Q)',
+                tools: 'ip link, ethtool, brctl, bridge',
+                pdu: 'Frame'
+            },
+            { 
+                layer: 1, 
+                name: 'Physical', 
+                tcpip: 'Network Access',
+                desc: 'Transmits unstructured raw bit streams over physical copper, fiber-optic, or radio frequency media.', 
+                icon: 'cpu',
+                protocols: 'Cat6a RJ45, 10GBASE-T, Fiber SFP+, Radio Waves',
+                tools: 'ethtool ens32 (Link detected: yes/no), mii-tool',
+                pdu: 'Bits'
+            }
         ];
 
-        const CAPSTONE_HINTS = [
-            { level: "Diagnostic Direction", text: "Start by investigating the current configuration. Use 'ip route show' to check for a default path and 'cat /etc/resolv.conf' to see if any nameservers are listed." },
-            { level: "Technical Analysis", text: "The system can see the local network but lacks an 'exit door' (Gateway) and a 'translator' (DNS). You need to manually add a default route to 10.0.0.1 and a nameserver entry for 8.8.8.8." },
-            { level: "Command Syntax", text: "Run these precisely:\n1. ip route add default via 10.0.0.1\n2. echo \"nameserver 8.8.8.8\" >> /etc/resolv.conf\n3. ping google.com" }
+        // --- Common Ports Dataset ---
+        const COMMON_PORTS = [
+            { service: 'SSH', port: '22', desc: 'Secure Shell remote administration' },
+            { service: 'DNS', port: '53', desc: 'Domain Name System queries' },
+            { service: 'HTTP', port: '80', desc: 'Hypertext Transfer Protocol' },
+            { service: 'HTTPS', port: '443', desc: 'Encrypted Web Traffic (TLS/SSL)' },
+            { service: 'NTP', port: '123', desc: 'Network Time Protocol synchronization' },
+            { service: 'DHCP', port: '67/68', desc: 'Dynamic Host Configuration' },
+            { service: 'NFS', port: '2049', desc: 'Network File System remote storage' },
+            { service: 'SMTP', port: '25', desc: 'Simple Mail Transfer Protocol' }
         ];
 
-        // --- Logic ---
+        // --- Module Contextual Hints Matrix (Diagnostic Ladder) ---
+        const MODULE_HINTS = {
+            6: [
+                { level: "Diagnostic Direction (Layer 2/3)", text: "Begin by identifying all network interfaces recognized by the Linux kernel. Modern systemd assigns predictable names like ens32 or enp0s3." },
+                { level: "Technical Analysis", text: "Look for the ethernet interface state (flags must include UP and RUNNING) and check if an IPv4 address is assigned with its prefix mask." },
+                { level: "Command Syntax", text: "Run: \nip addr show\n# or check link states:\nip link show" }
+            ],
+            7: [
+                { level: "Diagnostic Direction (Routing & DNS)", text: "External communication depends on two settings: a default gateway in the kernel routing table and valid DNS nameservers." },
+                { level: "Technical Analysis", text: "Inspect the routing table to see if a 'default via <IP>' rule exists. Then check /etc/resolv.conf and /etc/nsswitch.conf." },
+                { level: "Command Syntax", text: "Run: \nip route show\ncat /etc/resolv.conf\ncat /etc/nsswitch.conf" }
+            ],
+            8: [
+                { level: "Diagnostic Direction (Troubleshooting Ladder)", text: "Follow the CompTIA ladder: test local loopback (127.0.0.1), then local IP, then default gateway, then external IP (8.8.8.8), and lastly hostname resolution." },
+                { level: "Technical Analysis", text: "Check open listening ports with 'ss' and verify external TCP port accessibility using 'nc'." },
+                { level: "Command Syntax", text: "Run: \nping -c 2 8.8.8.8\nss -tuln\nnc -zv 10.0.0.1 53" }
+            ],
+            9: [
+                { level: "Diagnostic Direction (Capstone Root Cause)", text: "Server-one cannot access the internet. First test Layer 3 connectivity: can you ping 8.8.8.8? If unreachable, the default gateway is missing. If 8.8.8.8 responds but google.com fails, DNS is missing." },
+                { level: "Technical Analysis", text: "You must perform two fixes:\n1. Add the default route pointing to 10.0.0.1 on interface ens32.\n2. Add the nameserver 8.8.8.8 to /etc/resolv.conf." },
+                { level: "Command Syntax", text: "Step 1: ip route add default via 10.0.0.1\nStep 2: echo \"nameserver 8.8.8.8\" >> /etc/resolv.conf\nStep 3: ping google.com" }
+            ]
+        };
 
+        // --- Core Navigation & Render Dispatcher ---
         function renderApp() {
             const sidebar = document.getElementById('sidebar-content');
             const main = document.getElementById('main-area');
-            const progressText = document.getElementById('progress-text');
-            const percent = Math.round((state.screen / state.totalScreens) * 100);
+            const progressNum = document.getElementById('header-module-num');
+            const progressTitle = document.getElementById('header-module-title');
+            const progressBar = document.getElementById('header-progress-bar');
+            const progressPct = document.getElementById('header-progress-pct');
             
-            progressText.innerText = `${percent}% COMPLETE`;
-            sidebar.innerHTML = '';
-            main.innerHTML = '';
+            const pct = Math.round((state.screen / state.totalScreens) * 100);
+            progressBar.style.width = `${pct}%`;
+            progressPct.innerText = `${pct}%`;
+            progressNum.innerText = `MOD ${String(state.screen).padStart(2, '0')}`;
 
             document.getElementById('prev-btn').disabled = state.screen === 1;
             document.getElementById('next-btn').disabled = state.screen === state.totalScreens;
 
+            sidebar.innerHTML = '';
+            main.innerHTML = '';
+
+            const titles = [
+                "Orientation & Objectives",
+                "Protocols, Ports & OSI",
+                "IPv4 & Binary Octet Lab",
+                "Subnetting & CIDR Logic",
+                "IPv6 Addressing & Architecture",
+                "NICs & NetworkManager",
+                "Routing & Name Resolution",
+                "Diagnostics, Sockets & Tools",
+                "Capstone Recovery Mission",
+                "Mastery Review & Exam Report"
+            ];
+            progressTitle.innerText = titles[state.screen - 1];
+
             switch(state.screen) {
-                case 1: renderScreen1(sidebar, main); break;
-                case 2: renderScreen2(sidebar, main); break;
-                case 3: renderScreen3(sidebar, main); break;
-                case 4: renderScreen4(sidebar, main); break;
-                case 5: renderScreen5(sidebar, main); break;
-                case 6: renderScreenTerminal(sidebar, main, "Interface Management", "Inspect interfaces using <code>ip addr</code>."); break;
-                case 7: renderScreenTerminal(sidebar, main, "Routing & Resolvers", "Check <code>/etc/resolv.conf</code> and <code>ip route</code>."); break;
-                case 8: renderScreenTerminal(sidebar, main, "Methodology", "Start at Layer 1 and work up to Layer 7."); break;
-                case 9: renderScreenCapstone(sidebar, main); break;
+                case 1: renderModule1(sidebar, main); break;
+                case 2: renderModule2(sidebar, main); break;
+                case 3: renderModule3(sidebar, main); break;
+                case 4: renderModule4(sidebar, main); break;
+                case 5: renderModule5(sidebar, main); break;
+                case 6: renderModule6(sidebar, main); break;
+                case 7: renderModule7(sidebar, main); break;
+                case 8: renderModule8(sidebar, main); break;
+                case 9: renderModule9(sidebar, main); break;
+                case 10: renderModule10(sidebar, main); break;
             }
+
+            renderGlossary();
+            renderTopologyDiagram();
             lucide.createIcons();
         }
 
-        function renderScreen1(sidebar, main) {
-            sidebar.innerHTML = `
-                <h2 class="text-2xl font-black text-slate-800 leading-tight">System Initialization</h2>
-                <p class="text-sm text-slate-600">Welcome to the Linux Networking Lab. Configure and troubleshooting connectivity in this standardized interactive environment.</p>
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg my-6 text-xs">
-                    <h4 class="font-bold text-blue-900 uppercase mb-2 tracking-widest text-[10px]">Diagnostic Goals</h4>
-                    <ul class="space-y-1 text-blue-800 list-disc pl-4">
-                        <li>Understand the OSI and TCP/IP models</li>
-                        <li>Practice binary IPv4 address construction</li>
-                        <li>Troubleshoot real-world routing and DNS failures</li>
-                    </ul>
+        // --- Helper: Inject Progressive Hints in Sidebar ---
+        function injectHintsUI(container, screenNum) {
+            const hints = MODULE_HINTS[screenNum];
+            if (!hints) return;
+
+            const box = document.createElement('div');
+            box.className = "mt-5 pt-4 border-t border-slate-200 space-y-3";
+            box.innerHTML = `
+                <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <span class="flex items-center gap-1.5"><i data-lucide="help-circle" class="w-3.5 h-3.5 text-amber-600"></i> Diagnostic Hints</span>
+                    <span class="text-[10px] font-mono text-slate-500">${state.hintLevel >= 0 ? `${state.hintLevel + 1}/3` : '0/3'}</span>
                 </div>
             `;
-            main.innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 font-mono italic">Select 'Next Module' to begin.</div>`;
-        }
 
-        function renderScreen2(sidebar, main) {
-            sidebar.innerHTML = `<h2 class="text-2xl font-black text-slate-800 leading-tight">Key Networking Terms</h2><div class="space-y-2 mt-4" id="terms-list"></div>`;
-            const list = sidebar.querySelector('#terms-list');
-            KEY_TERMS.forEach((item, i) => {
-                const active = state.activeTermIndex === i;
-                const div = document.createElement('div');
-                div.className = `p-3 rounded-lg border cursor-pointer transition-all ${active ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100 hover:border-blue-200'}`;
-                div.innerHTML = `
-                    <div class="flex items-center justify-between font-bold text-xs text-slate-800">
-                        <span>${item.term}</span>
-                        <i data-lucide="chevron-right" class="w-3 h-3 transition-transform ${active ? 'rotate-90 text-blue-500' : 'text-slate-300'}"></i>
+            if (state.hintLevel >= 0) {
+                const hint = hints[state.hintLevel];
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-amber-50 border border-amber-200 rounded-xl animate-in text-xs";
+                card.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1.5 text-amber-800 font-bold uppercase text-[10px] tracking-wider">
+                        <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> ${hint.level}
                     </div>
-                    ${active ? `<p class="mt-2 text-[11px] text-blue-700 animate-in">${item.definition}</p>` : ''}
+                    <p class="text-amber-900 leading-relaxed font-mono whitespace-pre-wrap">${hint.text}</p>
                 `;
-                div.onclick = () => { state.activeTermIndex = active ? null : i; renderApp(); };
-                list.appendChild(div);
-            });
+                box.appendChild(card);
+            }
+
+            const btn = document.createElement('button');
+            btn.className = "w-full py-2 px-3 bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 text-xs font-semibold rounded-lg border border-slate-200 hover:border-amber-300 transition-all flex items-center justify-center gap-2";
+            btn.innerHTML = `<i data-lucide="key" class="w-3.5 h-3.5 text-amber-600"></i> ${state.hintLevel === -1 ? 'Reveal Diagnostic Hint' : 'Get Next Level Hint'}`;
+            btn.onclick = () => {
+                state.hintLevel = (state.hintLevel + 1) % 3;
+                renderApp();
+            };
+            box.appendChild(btn);
+            container.appendChild(box);
         }
 
-        function renderScreen3(sidebar, main) {
-            sidebar.innerHTML = `<h2 class="text-2xl font-black text-slate-800 leading-tight">Networking Stack</h2><div class="space-y-1 mt-6" id="stack-list"></div>`;
-            const list = sidebar.querySelector('#stack-list');
-            OSI_LAYERS.forEach((l, i) => {
-                const active = state.selectedLayerIndex === i;
-                const div = document.createElement('div');
-                div.className = `flex items-center gap-3 p-2 rounded cursor-pointer transition-all ${active ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`;
-                div.innerHTML = `
-                    <div class="w-8 h-8 rounded flex items-center justify-center text-[10px] font-black ${active ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}">L${l.layer}</div>
-                    <div class="text-xs font-bold">${l.name}</div>
-                `;
-                div.onclick = () => { state.selectedLayerIndex = i; renderApp(); };
-                list.appendChild(div);
-            });
+        // --- MODULE 1: Orientation & Diagnostic Pre-Assessment ---
+        function renderModule1(sidebar, main) {
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-semibold">
+                        <i data-lucide="compass" class="w-3.5 h-3.5"></i> Module 1: Orientation
+                    </div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">Managing Linux Network Settings</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Linux powers modern enterprise infrastructure, hypervisors, and cloud platforms. Mastering network parameter configuration and methodical troubleshooting is essential for the CompTIA Linux+ (XK0-005) certification.
+                    </p>
+                    
+                    <div class="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-2 text-xs">
+                        <h4 class="font-bold text-sky-700 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Exam Objectives Covered
+                        </h4>
+                        <ul class="space-y-1.5 text-slate-700 text-[11px]">
+                            <li class="flex items-start gap-2"><span class="text-sky-600 font-bold">•</span> Configure IPv4/IPv6 parameters and persistent routes.</li>
+                            <li class="flex items-start gap-2"><span class="text-sky-600 font-bold">•</span> Manage interfaces with iproute2, ethtool & NetworkManager.</li>
+                            <li class="flex items-start gap-2"><span class="text-sky-600 font-bold">•</span> Diagnose reachability with ss, nc, ping, and traceroute.</li>
+                            <li class="flex items-start gap-2"><span class="text-sky-600 font-bold">•</span> Configure resolver settings and network time synchronization.</li>
+                        </ul>
+                    </div>
 
-            if (state.selectedLayerIndex !== null) {
-                const layer = OSI_LAYERS[state.selectedLayerIndex];
-                main.innerHTML = `
-                    <div class="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-xl space-y-4 animate-in max-w-xl mx-auto mt-10">
-                        <div class="flex items-center gap-4">
-                            <div class="p-3 bg-blue-600 text-white rounded-xl shadow-lg"><i data-lucide="${layer.icon}"></i></div>
+                    <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-900 flex items-center justify-between">
+                        <span><strong class="text-indigo-950">Estimated Time:</strong> 45–60 min</span>
+                        <span class="font-mono text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">Intermediate</span>
+                    </div>
+                </div>
+            `;
+
+            main.innerHTML = `
+                <div class="max-w-2xl mx-auto w-full space-y-6">
+                    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
-                                <div class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Layer ${layer.layer}</div>
-                                <h3 class="text-2xl font-black text-slate-800">${layer.name}</h3>
+                                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <i data-lucide="clipboard-check" class="w-5 h-5 text-sky-600"></i> Pre-Assessment Diagnostic
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Test your current knowledge of Linux networking fundamentals before beginning.</p>
+                            </div>
+                            <span class="text-xs font-mono px-2 py-1 bg-slate-100 text-sky-700 rounded-lg border border-slate-200 font-semibold">3 Questions</span>
+                        </div>
+
+                        <div class="space-y-6 mt-6">
+                            <!-- Q1 -->
+                            <div class="space-y-2.5">
+                                <p class="text-xs font-bold text-slate-800">1. Which protocol is primarily utilized by the <code class="text-sky-700 bg-sky-50 px-1 py-0.5 rounded font-mono">ping</code> command to test reachability?</p>
+                                <div class="grid grid-cols-2 gap-2" id="q1-options">
+                                    ${['TCP', 'UDP', 'ICMP', 'ARP'].map(opt => `
+                                        <button onclick="handlePreCheck('q1', '${opt}', 'ICMP')" class="precheck-btn text-left p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-mono text-slate-700 transition-all flex items-center justify-between ${state.preAssessmentAnswers['q1'] === opt ? (opt === 'ICMP' ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold' : 'border-rose-500 bg-rose-50 text-rose-800 font-bold') : ''}">
+                                            <span>${opt}</span>
+                                            ${state.preAssessmentAnswers['q1'] === opt ? (opt === 'ICMP' ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>' : '<i data-lucide="x" class="w-4 h-4 text-rose-600"></i>') : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Q2 -->
+                            <div class="space-y-2.5">
+                                <p class="text-xs font-bold text-slate-800">2. Which configuration file specifies nameservers queried by the Linux resolver library?</p>
+                                <div class="grid grid-cols-2 gap-2" id="q2-options">
+                                    ${['/etc/hosts', '/etc/resolv.conf', '/etc/networks', '/etc/nsswitch.conf'].map(opt => `
+                                        <button onclick="handlePreCheck('q2', '${opt}', '/etc/resolv.conf')" class="precheck-btn text-left p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-mono text-slate-700 transition-all flex items-center justify-between ${state.preAssessmentAnswers['q2'] === opt ? (opt === '/etc/resolv.conf' ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold' : 'border-rose-500 bg-rose-50 text-rose-800 font-bold') : ''}">
+                                            <span>${opt}</span>
+                                            ${state.preAssessmentAnswers['q2'] === opt ? (opt === '/etc/resolv.conf' ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>' : '<i data-lucide="x" class="w-4 h-4 text-rose-600"></i>') : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Q3 -->
+                            <div class="space-y-2.5">
+                                <p class="text-xs font-bold text-slate-800">3. What does <code class="text-sky-700 bg-sky-50 px-1 py-0.5 rounded font-mono">/24</code> signify in CIDR notation?</p>
+                                <div class="grid grid-cols-2 gap-2" id="q3-options">
+                                    ${['24 valid usable hosts', '24 host bits in the address', '24 bits used for the subnet mask', '24 hops to the destination'].map(opt => `
+                                        <button onclick="handlePreCheck('q3', '${opt}', '24 bits used for the subnet mask')" class="precheck-btn text-left p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-mono text-slate-700 transition-all flex items-center justify-between ${state.preAssessmentAnswers['q3'] === opt ? (opt === '24 bits used for the subnet mask' ? 'border-emerald-500 bg-emerald-50 text-emerald-800 font-bold' : 'border-rose-500 bg-rose-50 text-rose-800 font-bold') : ''}">
+                                            <span>${opt}</span>
+                                            ${state.preAssessmentAnswers['q3'] === opt ? (opt === '24 bits used for the subnet mask' ? '<i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>' : '<i data-lucide="x" class="w-4 h-4 text-rose-600"></i>') : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
                             </div>
                         </div>
-                        <p class="text-slate-600 italic border-l-4 border-slate-100 pl-4">"${layer.desc}"</p>
-                        <div class="grid grid-cols-2 gap-4 mt-4 text-[10px] uppercase font-bold text-slate-400">
-                            <div class="bg-slate-50 p-3 rounded">Protocols: ${layer.layer === 7 ? 'HTTP, SSH' : layer.layer === 4 ? 'TCP, UDP' : layer.layer === 3 ? 'IP, ICMP' : 'Varies'}</div>
-                            <div class="bg-slate-50 p-3 rounded">Data Unit: ${layer.layer >= 4 ? 'Segment' : layer.layer === 3 ? 'Packet' : layer.layer === 2 ? 'Frame' : 'Bits'}</div>
-                        </div>
+
+                        ${Object.keys(state.preAssessmentAnswers).length === 3 ? `
+                            <div class="mt-6 p-4 rounded-xl border border-sky-200 bg-sky-50 flex items-center justify-between animate-in">
+                                <div>
+                                    <div class="text-xs font-bold text-sky-900">Diagnostic Complete!</div>
+                                    <div class="text-xs text-slate-600">You are ready to proceed with Module 2. Click "Next Module" below.</div>
+                                </div>
+                                <button onclick="state.screen = 2; renderApp();" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-lg transition-all shadow-sm">
+                                    Continue <i data-lucide="arrow-right" class="w-3.5 h-3.5 inline"></i>
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
-                `;
-            } else {
-                main.innerHTML = `<div class="h-full flex items-center justify-center text-slate-300 italic">Select a layer to explore.</div>`;
-            }
+                </div>
+            `;
         }
 
-        function renderScreen4(sidebar, main) {
+        window.handlePreCheck = function(q, selected, correct) {
+            state.preAssessmentAnswers[q] = selected;
+            renderApp();
+        };
+
+        // --- MODULE 2: Network Protocols, Ports & OSI vs TCP/IP ---
+        function renderModule2(sidebar, main) {
             sidebar.innerHTML = `
-                <h2 class="text-2xl font-black text-slate-800 leading-tight">IPv4 & Binary Logic</h2>
-                <p class="text-sm text-slate-600">Construct the decimal value <strong>179</strong> in the converter tool.</p>
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold">
+                        <i data-lucide="layers" class="w-3.5 h-3.5"></i> Module 2: Protocols & Layers
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">How Linux Networking Works</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        A network protocol defines the rules governing communication. The OSI 7-Layer and TCP/IP 4-Layer models describe which networking tasks happen at each level of the operating system stack.
+                    </p>
+
+                    <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2 text-xs">
+                        <div class="font-bold text-sky-700 uppercase text-[10px] tracking-wider">Protocol Comparison</div>
+                        <div class="text-[11px] text-slate-700">
+                            <span class="text-slate-900 font-bold">TCP:</span> Connection-oriented, sequencing, flow control, 3-way handshake (SYN, SYN-ACK, ACK).<br>
+                            <span class="text-slate-900 font-bold">UDP:</span> Connectionless, low overhead, no verification (DNS, DHCP, streaming).<br>
+                            <span class="text-slate-900 font-bold">ICMP:</span> Control & diagnostic messaging (<code class="text-sky-700 bg-sky-50 px-1 py-0.5 rounded font-mono">ping</code> echo request/reply).
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Layer to Analyze:</div>
+                        <div class="space-y-1">
+                            ${OSI_LAYERS.map((l, i) => `
+                                <button onclick="state.selectedLayerIndex = ${i}; renderApp();" class="w-full text-left p-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-all ${state.selectedLayerIndex === i ? 'bg-sky-600 text-white font-bold shadow-md shadow-sky-500/20' : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'}">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded text-[10px] font-mono flex items-center justify-center ${state.selectedLayerIndex === i ? 'bg-sky-800 text-white' : 'bg-slate-100 text-slate-500'}">L${l.layer}</span>
+                                        <span>${l.name}</span>
+                                    </div>
+                                    <span class="text-[10px] font-mono opacity-80">${l.tcpip}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
             `;
+
+            const currentL = OSI_LAYERS[state.selectedLayerIndex];
+            main.innerHTML = `
+                <div class="max-w-4xl mx-auto w-full space-y-6">
+                    <!-- Layer Deep Dive Card -->
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-sky-600">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="p-3 bg-sky-50 text-sky-700 border border-sky-200 rounded-xl">
+                                    <i data-lucide="${currentL.icon}" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <div class="text-[10px] font-mono uppercase tracking-widest text-sky-700 font-bold">OSI Layer ${currentL.layer} • TCP/IP ${currentL.tcpip} Layer</div>
+                                    <h3 class="text-xl font-black text-slate-900">${currentL.name} Layer</h3>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-mono text-slate-700">PDU: <strong class="text-sky-700">${currentL.pdu}</strong></span>
+                        </div>
+
+                        <p class="text-sm text-slate-600 mt-4 leading-relaxed">${currentL.desc}</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Standard Protocols & Services</div>
+                                <div class="text-xs font-mono text-emerald-700 font-bold">${currentL.protocols}</div>
+                            </div>
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Relevant Linux CLI Utilities</div>
+                                <div class="text-xs font-mono text-sky-700 font-bold">${currentL.tools}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Well-Known Ports Grid -->
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i data-lucide="radio" class="w-4 h-4 text-emerald-600"></i> Well-Known Ports Master Table
+                        </h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            ${COMMON_PORTS.map(p => `
+                                <div class="p-3 bg-white border border-slate-200 rounded-xl hover:border-sky-300 hover:shadow-sm transition-all">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs font-bold text-slate-900">${p.service}</span>
+                                        <span class="text-xs font-mono font-extrabold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">${p.port}</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 leading-tight">${p.desc}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- MODULE 3: Build & Interpret IPv4 Addresses (Binary Lab) ---
+        function renderModule3(sidebar, main) {
             const decVal = state.binaryBits.reduce((acc, bit, idx) => acc + (bit ? Math.pow(2, 7 - idx) : 0), 0);
-            main.innerHTML = `
-                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in max-w-xl mx-auto mt-10">
-                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-widest uppercase text-sm"><i data-lucide="cpu" class="w-4 h-4 text-blue-500"></i> Binary Diagnostic</h3>
-                    <div class="flex justify-between gap-2" id="binary-bits"></div>
-                    <div class="mt-8 pt-8 border-t border-slate-100 flex items-center justify-between">
-                        <div class="text-center flex-1 border-r"><div class="text-[10px] text-slate-400 uppercase">Current</div><div class="text-3xl font-black text-slate-800">${decVal}</div></div>
-                        <div class="text-center flex-1"><div class="text-[10px] text-slate-400 uppercase">Target</div><div class="text-3xl font-black text-blue-600">179</div></div>
-                    </div>
-                    ${decVal === 179 ? '<div class="mt-6 p-3 bg-emerald-50 text-emerald-700 text-center rounded-lg font-bold text-[10px] animate-bounce uppercase tracking-widest">✓ Mission Objective Complete</div>' : ''}
-                </div>
-            `;
-            const bitsContainer = main.querySelector('#binary-bits');
-            state.binaryBits.forEach((bit, i) => {
-                const btn = document.createElement('button');
-                btn.className = `w-10 h-14 rounded-lg font-black text-xl transition-all shadow-sm ${bit ? 'bg-blue-600 text-white scale-105 shadow-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`;
-                btn.innerHTML = `<span class="block text-[8px] absolute top-1 font-mono">${Math.pow(2, 7-i)}</span>${bit}`;
-                btn.onclick = () => { state.binaryBits[i] = state.binaryBits[i] === 0 ? 1 : 0; renderApp(); };
-                bitsContainer.appendChild(btn);
-            });
-        }
+            const isMatch = decVal === state.targetBinaryVal;
 
-        function renderScreen5(sidebar, main) {
             sidebar.innerHTML = `
-                <h2 class="text-2xl font-black text-slate-800 leading-tight">Subnetting & CIDR</h2>
-                <p class="text-sm text-slate-600">Adjust the slider in the tool to see how prefix mask bits change host capacity.</p>
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                        <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Module 3: IPv4 & Binary
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Binary Octet Construction</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        An IPv4 address consists of 32 bits arranged in four 8-bit octets separated by dots (dotted-decimal notation). Each octet ranges from 0 to 255 (2⁸ = 256 possibilities).
+                    </p>
+
+                    <div class="p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2 text-xs">
+                        <div class="font-bold text-sky-700 uppercase text-[10px] tracking-wider">RFC 1918 Private Ranges</div>
+                        <ul class="space-y-1 text-slate-700 font-mono text-[11px]">
+                            <li><strong class="text-slate-900">Class A:</strong> 10.0.0.0 – 10.255.255.255 (/8)</li>
+                            <li><strong class="text-slate-900">Class B:</strong> 172.16.0.0 – 172.31.255.255 (/12)</li>
+                            <li><strong class="text-slate-900">Class C:</strong> 192.168.0.0 – 192.168.255.255 (/16)</li>
+                            <li><strong class="text-amber-700">APIPA:</strong> 169.254.0.0/16 (link-local)</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs text-slate-700">
+                        <strong class="text-sky-800">Challenge:</strong> Toggle the binary bits in the interactive tool to equal the target value <span class="font-mono font-bold text-slate-900">179</span>.
+                    </div>
+                </div>
             `;
-            const hosts = Math.pow(2, 32 - state.cidr) - 2;
+
             main.innerHTML = `
-                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm animate-in max-w-xl mx-auto mt-10">
-                    <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-widest uppercase text-sm"><i data-lucide="database" class="w-4 h-4 text-blue-500"></i> Capacity Analyzer</h3>
-                    <div class="space-y-12">
-                        <div>
-                            <input type="range" min="16" max="30" value="${state.cidr}" id="cidr-slider" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
-                            <div class="flex justify-between text-[10px] font-bold text-slate-400 mt-3 px-1 uppercase tracking-widest"><span>/16</span><span>/24</span><span>/30</span></div>
+                <div class="max-w-2xl mx-auto w-full space-y-6">
+                    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="binary" class="w-5 h-5 text-sky-600"></i> Interactive 8-Bit Binary Converter
+                            </h3>
+                            <span class="text-xs font-mono text-slate-600">Octet Value: <strong class="text-sky-700">${decVal}</strong></span>
                         </div>
-                        <div class="grid grid-cols-3 gap-6">
-                            <div class="bg-slate-50 p-4 rounded-xl text-center"><div class="text-[10px] text-slate-400 uppercase">Prefix</div><div class="text-2xl font-black text-blue-600">/${state.cidr}</div></div>
-                            <div class="bg-slate-50 p-4 rounded-xl text-center"><div class="text-[10px] text-slate-400 uppercase">Mask</div><div class="text-2xl font-black text-slate-800">${state.cidr} bits</div></div>
-                            <div class="bg-slate-50 p-4 rounded-xl text-center"><div class="text-[10px] text-slate-400 uppercase">Hosts</div><div class="text-2xl font-black text-emerald-600">${hosts.toLocaleString()}</div></div>
+
+                        <!-- 8 Bit Gates -->
+                        <div class="grid grid-cols-8 gap-2.5 my-8" id="bit-buttons-container">
+                            ${state.binaryBits.map((b, i) => {
+                                const weight = Math.pow(2, 7 - i);
+                                return `
+                                    <div class="flex flex-col items-center gap-2">
+                                        <span class="text-[10px] font-mono text-slate-500 font-bold">${weight}</span>
+                                        <button onclick="toggleBit(${i})" class="w-full aspect-[3/4] rounded-xl font-mono text-lg font-black transition-all flex flex-col items-center justify-center border ${b === 1 ? 'bg-sky-600 text-white border-sky-700 shadow-md shadow-sky-500/20 scale-105' : 'bg-slate-100 text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-700'}">
+                                            <span>${b}</span>
+                                            <span class="text-[9px] opacity-80">${b ? 'ON' : 'OFF'}</span>
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        <!-- Comparator Display -->
+                        <div class="grid grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <div>
+                                <div class="text-[10px] font-mono uppercase text-slate-500">Current Sum</div>
+                                <div class="text-3xl font-black font-mono ${isMatch ? 'text-emerald-600' : 'text-slate-900'}">${decVal}</div>
+                            </div>
+                            <div class="border-l border-slate-200">
+                                <div class="text-[10px] font-mono uppercase text-slate-500">Target Value</div>
+                                <div class="text-3xl font-black font-mono text-sky-700">${state.targetBinaryVal}</div>
+                            </div>
+                        </div>
+
+                        ${isMatch ? `
+                            <div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center animate-in">
+                                <div class="text-emerald-700 font-bold text-sm flex items-center justify-center gap-2">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i> Objective Complete: 10101011 = 179
+                                </div>
+                                <p class="text-xs text-emerald-800 mt-1">Calculation: 128 + 32 + 8 + 2 + 1 = 179. Proceed to Subnetting.</p>
+                            </div>
+                        ` : `
+                            <div class="mt-4 text-center text-xs text-slate-500 font-mono">
+                                Hint: 179 = 128 + 32 + 8 + 2 + 1
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.toggleBit = function(idx) {
+            state.binaryBits[idx] = state.binaryBits[idx] === 0 ? 1 : 0;
+            renderApp();
+        };
+
+        // --- MODULE 4: Subnet Masks and CIDR Logic ---
+        function renderModule4(sidebar, main) {
+            const hostBits = 32 - state.cidr;
+            const totalHosts = Math.pow(2, hostBits);
+            const usableHosts = Math.max(0, totalHosts - 2);
+
+            function getMaskString(cidr) {
+                let mask = [];
+                for (let i = 0; i < 4; i++) {
+                    const bits = Math.max(0, Math.min(8, cidr - i * 8));
+                    mask.push(256 - Math.pow(2, 8 - bits));
+                }
+                return mask.join('.');
+            }
+            const maskStr = getMaskString(state.cidr);
+
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-semibold">
+                        <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Module 4: Subnetting
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Subnet Masks & CIDR</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        A subnet mask defines which portion of the IP address represents the logical network ID and which represents the individual host. CIDR is shorthand for contiguous mask bits.
+                    </p>
+
+                    <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm space-y-1.5 text-xs font-mono">
+                        <div class="text-[10px] text-sky-700 uppercase font-bold tracking-wider font-sans">Usable Hosts Formula</div>
+                        <div class="text-sm font-black text-slate-900">2<sup>(32 - CIDR)</sup> - 2</div>
+                        <div class="text-[11px] text-slate-500 font-sans mt-1 leading-normal">
+                            We subtract 2 because the lowest address is the <strong>Network ID</strong> and the highest address is the <strong>Directed Broadcast</strong>.
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                        <strong class="text-amber-950">Exam Watch:</strong> Two hosts on the same physical switch cannot communicate without a router if their subnet masks define different logical network boundaries!
+                    </div>
+                </div>
+            `;
+
+            main.innerHTML = `
+                <div class="max-w-3xl mx-auto w-full space-y-6">
+                    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center justify-between pb-4 border-b border-slate-200">
+                            <span class="flex items-center gap-2"><i data-lucide="calculator" class="w-5 h-5 text-sky-600"></i> Dynamic CIDR Capacity Explorer</span>
+                            <span class="font-mono text-sm px-3 py-1 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg font-bold">/${state.cidr}</span>
+                        </h3>
+
+                        <!-- Interactive Range Slider -->
+                        <div class="my-6 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-mono text-slate-500">
+                                <span>/16 (Class B)</span>
+                                <span>/24 (Standard LAN)</span>
+                                <span>/28</span>
+                                <span>/30 (P2P Link)</span>
+                            </div>
+                            <input type="range" min="16" max="30" value="${state.cidr}" oninput="state.cidr = parseInt(this.value); renderApp();" class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- Metrics Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div class="p-4 bg-white border border-slate-200 rounded-xl text-center shadow-sm">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">CIDR Prefix</div>
+                                <div class="text-2xl font-black font-mono text-sky-700 mt-1">/${state.cidr}</div>
+                            </div>
+                            <div class="p-4 bg-white border border-slate-200 rounded-xl text-center shadow-sm">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">Subnet Mask</div>
+                                <div class="text-sm font-black font-mono text-slate-800 mt-2">${maskStr}</div>
+                            </div>
+                            <div class="p-4 bg-white border border-slate-200 rounded-xl text-center shadow-sm">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">Host Bits</div>
+                                <div class="text-2xl font-black font-mono text-indigo-700 mt-1">${hostBits}</div>
+                            </div>
+                            <div class="p-4 bg-white border border-slate-200 rounded-xl text-center shadow-sm">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">Usable Hosts</div>
+                                <div class="text-2xl font-black font-mono text-emerald-600 mt-1">${usableHosts.toLocaleString()}</div>
+                            </div>
+                        </div>
+
+                        <!-- Example Subnet Breakdown Table -->
+                        <div class="mt-6 pt-5 border-t border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-slate-800">Address Space Example for 192.168.1.10/${state.cidr}:</div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                                <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                                    <span class="text-slate-500 block text-[10px]">Network ID</span>
+                                    <span class="text-sky-700 font-bold">192.168.1.0</span>
+                                </div>
+                                <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                                    <span class="text-slate-500 block text-[10px]">First Usable Host</span>
+                                    <span class="text-emerald-700 font-bold">192.168.1.1</span>
+                                </div>
+                                <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                                    <span class="text-slate-500 block text-[10px]">Last Usable Host</span>
+                                    <span class="text-emerald-700 font-bold">192.168.1.${Math.min(254, usableHosts)}</span>
+                                </div>
+                                <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                                    <span class="text-slate-500 block text-[10px]">Broadcast Address</span>
+                                    <span class="text-amber-700 font-bold">192.168.1.${Math.min(255, usableHosts + 1)}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
-            main.querySelector('#cidr-slider').oninput = (e) => { state.cidr = parseInt(e.target.value); renderApp(); };
         }
 
-        function renderScreenTerminal(sidebar, main, title, instr) {
-            sidebar.innerHTML = `<h2 class="text-2xl font-black text-slate-800 leading-tight">${title}</h2><p class="text-sm text-slate-600">${instr}</p><div class="p-3 bg-slate-50 border rounded-lg mt-4"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Try Typing:</p><code class="text-blue-600 font-mono text-[11px] block">ip addr show</code></div>`;
+        // --- MODULE 5: IPv6 Addressing & Architecture ---
+        function renderModule5(sidebar, main) {
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold">
+                        <i data-lucide="globe" class="w-3.5 h-3.5"></i> Module 5: IPv6 Addressing
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">IPv6 Architecture</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        IPv6 provides a 128-bit address space represented as eight 16-bit hexadecimal quartets separated by colons. It eliminates NAT requirements and uses SLAAC and neighbor discovery.
+                    </p>
+
+                    <div class="p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2 text-xs font-mono">
+                        <div class="font-bold text-purple-700 uppercase text-[10px] tracking-wider font-sans">Key Address Types</div>
+                        <ul class="space-y-1.5 text-slate-700 text-[11px]">
+                            <li><strong class="text-slate-900">Loopback:</strong> <code class="text-purple-700 bg-purple-50 px-1 py-0.5 rounded font-bold">::1/128</code></li>
+                            <li><strong class="text-slate-900">Link-Local:</strong> <code class="text-purple-700 bg-purple-50 px-1 py-0.5 rounded font-bold">fe80::/10</code> (non-routable, auto-generated)</li>
+                            <li><strong class="text-slate-900">Global Unicast:</strong> <code class="text-purple-700 bg-purple-50 px-1 py-0.5 rounded font-bold">2000::/3</code> (public internet routable)</li>
+                            <li><strong class="text-slate-900">Multicast:</strong> <code class="text-purple-700 bg-purple-50 px-1 py-0.5 rounded font-bold">ff00::/8</code> (replaces IPv4 broadcast)</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900">
+                        <strong class="text-purple-950">Rule of Zero Compression:</strong> Successive blocks of zeros can be condensed to <code class="font-bold text-purple-800">::</code> exactly <em>once</em> in an address.
+                    </div>
+                </div>
+            `;
+
+            main.innerHTML = `
+                <div class="max-w-3xl mx-auto w-full space-y-6">
+                    <div class="glass-panel p-6 rounded-2xl space-y-5 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 pb-4 border-b border-slate-200">
+                            <i data-lucide="terminal-square" class="w-5 h-5 text-purple-600"></i> IPv6 Zero Compression & Simplification
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div class="text-xs text-slate-500 font-semibold">Original Uncompressed 128-bit Address:</div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-800 break-all">
+                                2001:0db8:0000:0000:0000:0000:0000:0001
+                            </div>
+
+                            <div class="text-xs text-slate-500 font-semibold">Step 1: Omit Leading Zeros in Each Quartet:</div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-amber-800 font-bold break-all">
+                                2001:db8:0:0:0:0:0:1
+                            </div>
+
+                            <div class="text-xs text-slate-500 font-semibold">Step 2: Compress Contiguous Zeros with Double Colon (::):</div>
+                            <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl font-mono text-sm font-bold text-purple-800 break-all">
+                                2001:db8::1
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 mt-4">
+                            <div class="text-xs font-bold text-slate-900">Linux IPv6 Verification Commands</div>
+                            <div class="space-y-1 font-mono text-xs">
+                                <div class="text-sky-700 font-bold">$ ip -6 addr show dev ens32</div>
+                                <div class="text-slate-600 pl-4">inet6 fe80::216:3eff:feab:cdef/64 scope link</div>
+                                <div class="text-sky-700 font-bold mt-2">$ ping6 -c 2 ::1</div>
+                                <div class="text-slate-600 pl-4">64 bytes from ::1: icmp_seq=1 ttl=64 time=0.045 ms</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- MODULE 6: Interfaces & NetworkManager (Exercise 14-1) ---
+        function renderModule6(sidebar, main) {
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-semibold">
+                        <i data-lucide="network" class="w-3.5 h-3.5"></i> Module 6: Interfaces & nmcli
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Interface Management</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Modern Linux utilizes systemd predictable network interface device names (e.g. <code class="text-sky-700 font-mono">ens32</code>). Administrators manage settings using the <code class="text-sky-700 font-mono">ip</code> command or NetworkManager's <code class="text-sky-700 font-mono">nmcli</code>.
+                    </p>
+
+                    <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm space-y-1.5 text-xs">
+                        <div class="font-bold text-sky-700 uppercase text-[10px] tracking-wider">Predictable NIC Naming</div>
+                        <ul class="space-y-1 text-slate-700 text-[11px] font-mono">
+                            <li><strong class="text-slate-900">eno1:</strong> on-board motherboard NIC</li>
+                            <li><strong class="text-slate-900">ens32:</strong> PCI hotplug slot 32</li>
+                            <li><strong class="text-slate-900">enp0s3:</strong> PCI bus 0, slot 3</li>
+                            <li><strong class="text-slate-900">lo:</strong> Loopback (127.0.0.1, ::1)</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase">Suggested Terminal Commands:</div>
+                        <div class="space-y-1 font-mono text-[11px]">
+                            <button onclick="insertCommand('ip addr show')" class="block text-sky-700 hover:text-sky-900 hover:underline">ip addr show</button>
+                            <button onclick="insertCommand('nmcli dev status')" class="block text-sky-700 hover:text-sky-900 hover:underline">nmcli dev status</button>
+                            <button onclick="insertCommand('ip link set ens32 down')" class="block text-sky-700 hover:text-sky-900 hover:underline">ip link set ens32 down</button>
+                            <button onclick="insertCommand('ip link set ens32 up')" class="block text-sky-700 hover:text-sky-900 hover:underline">ip link set ens32 up</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            injectHintsUI(sidebar, 6);
             renderTerminal(main);
         }
 
-        function renderScreenCapstone(sidebar, main) {
+        // --- MODULE 7: Routing & Name Resolution ---
+        function renderModule7(sidebar, main) {
             sidebar.innerHTML = `
-                <h2 class="text-2xl font-black text-slate-800 leading-tight">Capstone Mission</h2>
-                <p class="text-sm text-slate-600">Server-one is isolated. Fix the <strong>Routing</strong> and <strong>DNS</strong> faults using the terminal.</p>
-                <div class="space-y-2 mt-4" id="hints-container"></div>
-                <div class="p-4 bg-rose-50 border border-rose-100 rounded-lg mt-4">
-                    <h4 class="font-bold text-rose-800 text-[10px] uppercase mb-2">Target Objectives</h4>
-                    <ul class="text-[11px] space-y-2">
-                        <li class="flex items-center gap-2 ${state.capstoneFaults.gateway ? 'text-emerald-600 line-through' : 'text-rose-700'}"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Add Default Gateway</li>
-                        <li class="flex items-center gap-2 ${state.capstoneFaults.dns ? 'text-emerald-600 line-through' : 'text-rose-700'}"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Restore DNS Resolver</li>
-                    </ul>
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-semibold">
+                        <i data-lucide="git-branch" class="w-3.5 h-3.5"></i> Module 7: Routing & DNS
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Routing & Resolvers</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        To transmit off-subnet traffic, a host requires a default gateway. Name resolution order is determined by <code class="text-sky-700 font-mono">/etc/nsswitch.conf</code>, and DNS servers are configured in <code class="text-sky-700 font-mono">/etc/resolv.conf</code>.
+                    </p>
+
+                    <div class="p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2 text-xs">
+                        <div class="font-bold text-sky-700 uppercase text-[10px] tracking-wider">Resolver Order Hierarchy</div>
+                        <div class="text-[11px] text-slate-700 font-mono">
+                            /etc/nsswitch.conf:<br>
+                            <span class="text-emerald-700 font-bold">hosts: files dns</span><br>
+                            <span class="text-slate-500 text-[10px] font-sans">1. Check /etc/hosts first<br>2. Query nameservers in /etc/resolv.conf</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase">Suggested Terminal Commands:</div>
+                        <div class="space-y-1 font-mono text-[11px]">
+                            <button onclick="insertCommand('ip route show')" class="block text-sky-700 hover:text-sky-900 hover:underline">ip route show</button>
+                            <button onclick="insertCommand('cat /etc/resolv.conf')" class="block text-sky-700 hover:text-sky-900 hover:underline">cat /etc/resolv.conf</button>
+                            <button onclick="insertCommand('cat /etc/nsswitch.conf')" class="block text-sky-700 hover:text-sky-900 hover:underline">cat /etc/nsswitch.conf</button>
+                            <button onclick="insertCommand('cat /etc/hosts')" class="block text-sky-700 hover:text-sky-900 hover:underline">cat /etc/hosts</button>
+                        </div>
+                    </div>
                 </div>
             `;
-            const hintCont = sidebar.querySelector('#hints-container');
-            if (state.hintLevel >= 0) {
-                const hint = CAPSTONE_HINTS[state.hintLevel];
-                hintCont.innerHTML = `
-                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg animate-in">
-                        <div class="flex items-center gap-2 mb-2 text-amber-800 font-bold text-[10px] uppercase"><i data-lucide="lightbulb" class="w-3 h-3"></i> ${hint.level}</div>
-                        <p class="text-[11px] text-amber-900 leading-normal whitespace-pre-wrap">${hint.text}</p>
-                    </div>
-                `;
-            }
-            const hintBtn = document.createElement('button');
-            hintBtn.className = "w-full py-2 bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-700 text-[10px] font-bold uppercase rounded-lg border border-slate-200 transition-colors mt-2";
-            hintBtn.innerText = state.hintLevel === -1 ? "View Diagnostic Hint" : "Get Next Level Hint";
-            hintBtn.onclick = () => { state.hintLevel = (state.hintLevel + 1) % 3; renderApp(); };
-            hintCont.appendChild(hintBtn);
+            injectHintsUI(sidebar, 7);
+            renderTerminal(main);
+        }
 
+        // --- MODULE 8: Network Diagnostics, Sockets & Tools (Exercise 14-2) ---
+        function renderModule8(sidebar, main) {
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-semibold">
+                        <i data-lucide="activity" class="w-3.5 h-3.5"></i> Module 8: Diagnostics & ss
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Diagnostic Methodology</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Diagnostic success relies on isolating whether the failure exists at the interface (L2), IP route (L3), TCP/UDP socket (L4), or DNS application level (L7).
+                    </p>
+
+                    <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm space-y-1 text-xs">
+                        <div class="font-bold text-sky-700 uppercase text-[10px] tracking-wider">Key Utilities Overview</div>
+                        <ul class="space-y-1 text-[11px] text-slate-700 font-mono">
+                            <li><strong class="text-slate-900">ss -tuln:</strong> Socket statistics (listening TCP/UDP)</li>
+                            <li><strong class="text-slate-900">nc -zv &lt;h&gt; &lt;p&gt;:</strong> Netcat port reachability test</li>
+                            <li><strong class="text-slate-900">chronyc sources:</strong> Time sync source tracking</li>
+                            <li><strong class="text-slate-900">dig / host:</strong> DNS lookup validation</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase">Suggested Terminal Commands:</div>
+                        <div class="space-y-1 font-mono text-[11px]">
+                            <button onclick="insertCommand('ping -c 2 8.8.8.8')" class="block text-sky-700 hover:text-sky-900 hover:underline">ping -c 2 8.8.8.8</button>
+                            <button onclick="insertCommand('ss -tuln')" class="block text-sky-700 hover:text-sky-900 hover:underline">ss -tuln</button>
+                            <button onclick="insertCommand('nc -zv 10.0.0.1 53')" class="block text-sky-700 hover:text-sky-900 hover:underline">nc -zv 10.0.0.1 53</button>
+                            <button onclick="insertCommand('chronyc sources')" class="block text-sky-700 hover:text-sky-900 hover:underline">chronyc sources</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            injectHintsUI(sidebar, 8);
+            renderTerminal(main);
+        }
+
+        // --- MODULE 9: Capstone Mission: Restore server-one ---
+        function renderModule9(sidebar, main) {
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Capstone Incident #402
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Restore server-one</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        <strong class="text-rose-700">Incident Report:</strong> <code>server-one</code> is isolated. Users cannot connect to external web services or resolve domain names. Local intranet segment is reachable.
+                    </p>
+
+                    <!-- Target Objectives Tracker -->
+                    <div class="p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm space-y-2">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mission Objectives</div>
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between p-2 rounded-lg border ${state.capstoneFaults.gateway ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="${state.capstoneFaults.gateway ? 'check-circle-2' : 'circle-dashed'}" class="w-4 h-4"></i>
+                                    Add Default Gateway (10.0.0.1)
+                                </span>
+                                <span class="text-[10px] font-mono font-bold">${state.capstoneFaults.gateway ? 'RESTORED' : 'MISSING'}</span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 rounded-lg border ${state.capstoneFaults.dns ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="${state.capstoneFaults.dns ? 'check-circle-2' : 'circle-dashed'}" class="w-4 h-4"></i>
+                                    Configure DNS Resolver (8.8.8.8)
+                                </span>
+                                <span class="text-[10px] font-mono font-bold">${state.capstoneFaults.dns ? 'RESTORED' : 'MISSING'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            injectHintsUI(sidebar, 9);
             renderTerminal(main);
 
             if (state.missionComplete) {
-                const successDiv = document.createElement('div');
-                successDiv.className = "p-8 bg-emerald-600 rounded-2xl text-white text-center shadow-xl animate-in mt-6";
-                successDiv.innerHTML = `<i data-lucide="check-circle-2" class="w-12 h-12 mx-auto mb-4"></i><h4 class="text-2xl font-black mb-2 uppercase tracking-tighter">System Operational</h4><p class="text-sm opacity-90">Connectivity restored. Lab complete.</p>`;
-                main.appendChild(successDiv);
+                const kudosBanner = document.createElement('div');
+                kudosBanner.className = "mt-4 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl shadow-md flex items-center justify-between animate-in";
+                kudosBanner.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                            <i data-lucide="trophy" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-emerald-950">Capstone Complete: Full Connectivity Restored!</h4>
+                            <p class="text-xs text-emerald-800">Both gateway routing and DNS translation have been verified. Excellent work!</p>
+                        </div>
+                    </div>
+                    <button onclick="state.screen = 10; renderApp();" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5">
+                        View Mastery Report <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                main.appendChild(kudosBanner);
             }
         }
 
+        // --- MODULE 10: Mastery Review & Certification Report ---
+        function renderModule10(sidebar, main) {
+            sidebar.innerHTML = `
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                        <i data-lucide="award" class="w-3.5 h-3.5"></i> Module 10: Mastery Review
+                    </div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Lab Completion Report</h2>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Congratulations! You have completed all hands-on exercises in Chapter 14: Managing Linux Network Settings.
+                    </p>
+
+                    <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3 text-xs">
+                        <div class="font-bold text-sky-700 uppercase text-[10px] tracking-wider">Skills Validated</div>
+                        <ul class="space-y-1.5 text-slate-700 text-[11px]">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> IPv4 Binary Calculation & Subnet Masks</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> CIDR Usable Host Boundary Math</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> IPv6 Simplification & Address Types</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Interface State Management with ip & nmcli</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Gateway Routing & DNS Troubleshooting</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Socket Inspection using ss & nc</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="state.screen = 1; renderApp();" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-sky-600"></i> Restart Interactive Lab
+                    </button>
+                </div>
+            `;
+
+            main.innerHTML = `
+                <div class="max-w-2xl mx-auto w-full space-y-6">
+                    <div class="glass-panel p-8 rounded-2xl text-center space-y-4 border border-emerald-200 shadow-sm">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-sky-600 text-white flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20">
+                            <i data-lucide="shield-check" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-900">CompTIA Linux+ Mastery Confirmed</h3>
+                        <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                            You demonstrated proficiency in configuring Linux interfaces, diagnosing kernel routing tables, setting nameservers, and testing transport sockets.
+                        </p>
+
+                        <div class="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200">
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">Modules Completed</div>
+                                <div class="text-lg font-black text-sky-700 font-mono">10 / 10</div>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">Capstone Status</div>
+                                <div class="text-lg font-black text-emerald-600 font-mono">RESOLVED</div>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div class="text-[10px] uppercase font-bold text-slate-500">Exam Domain</div>
+                                <div class="text-lg font-black text-indigo-700 font-mono">XK0-005 2.1</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Full Terminal Simulator Component ---
         function renderTerminal(main) {
             main.innerHTML = `
-                <div class="flex flex-col h-[400px] bg-slate-950 rounded-xl border border-slate-800 shadow-2xl overflow-hidden font-mono text-sm cursor-text" id="terminal-box">
-                    <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between shrink-0">
-                        <div class="flex items-center gap-2"><i data-lucide="terminal" class="w-3 h-3 text-slate-500"></i><span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Linux Terminal Emulator</span></div>
+                <div class="flex flex-col h-[520px] bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden font-mono text-xs cursor-text" id="terminal-box">
+                    <!-- Top Window Bar -->
+                    <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between shrink-0 select-none">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-rose-500/80 border border-rose-600/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-600/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-emerald-500/80 border border-emerald-600/50"></div>
+                            <span class="ml-2 text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                                <i data-lucide="terminal" class="w-3.5 h-3.5 text-sky-400"></i> student1@server-one: ~ (bash)
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-3 text-[10px] text-slate-400">
+                            <span class="bg-slate-800 px-2 py-0.5 rounded text-slate-300">TTY 1</span>
+                            <span>UTF-8</span>
+                        </div>
                     </div>
-                    <div id="terminal-output" class="flex-1 p-6 overflow-y-auto space-y-4 scroll-smooth scrollbar-thin"></div>
-                    <form id="terminal-form" class="flex gap-2 text-emerald-500 font-bold p-6 pt-0">
-                        <span class="opacity-50 shrink-0">root@linux-lab:~#</span>
-                        <input id="terminal-input" class="bg-transparent border-none outline-none text-white w-full p-0 m-0 focus:ring-0" autocomplete="off" spellcheck="false" autofocus>
+
+                    <!-- Scrollable Output Buffer -->
+                    <div id="terminal-output" class="flex-1 p-4 overflow-y-auto space-y-3.5 scroll-smooth scrollbar-thin"></div>
+
+                    <!-- Active Prompt Input Line -->
+                    <form id="terminal-form" class="flex items-center gap-2 text-emerald-400 font-bold p-3.5 bg-slate-950/60 border-t border-slate-800 shrink-0">
+                        <span class="opacity-80 shrink-0 text-emerald-400 select-none">student1@server-one:~$</span>
+                        <input id="terminal-input" class="bg-transparent border-none outline-none text-white w-full p-0 m-0 focus:ring-0 font-mono text-xs placeholder-slate-600" placeholder="type a command (e.g. 'ip addr', 'ss -tuln', 'help')..." autocomplete="off" spellcheck="false" autofocus>
                     </form>
                 </div>
             `;
+
             const output = main.querySelector('#terminal-output');
             const input = main.querySelector('#terminal-input');
             const box = main.querySelector('#terminal-box');
 
-            state.terminalHistory.forEach(entry => {
-                const div = document.createElement('div');
-                div.className = "animate-in";
-                div.innerHTML = `<div class="flex gap-2 text-emerald-500 font-bold"><span class="opacity-50 shrink-0">root@linux-lab:~#</span><span class="text-white">${entry.input}</span></div><div class="mt-1 text-slate-300 whitespace-pre-wrap">${entry.output}</div>`;
-                output.appendChild(div);
-            });
+            // Render existing history
+            if (state.terminalHistory.length === 0) {
+                output.innerHTML = `
+                    <div class="text-slate-400 space-y-1">
+                        <div>Linux server-one 5.15.0-89-generic #99-Ubuntu SMP x86_64</div>
+                        <div>Type <span class="text-sky-400 font-bold">'help'</span> to view available networking commands or consult the Assistant sidebar.</div>
+                    </div>
+                `;
+            } else {
+                state.terminalHistory.forEach(entry => {
+                    const div = document.createElement('div');
+                    div.className = "space-y-1";
+                    div.innerHTML = `
+                        <div class="flex gap-2 text-emerald-400 font-bold">
+                            <span class="opacity-70 shrink-0">student1@server-one:~$</span>
+                            <span class="text-white">${escapeHtml(entry.input)}</span>
+                        </div>
+                        <div class="text-slate-300 whitespace-pre-wrap leading-relaxed">${entry.output}</div>
+                    `;
+                    output.appendChild(div);
+                });
+            }
 
             box.onclick = () => input.focus();
             main.querySelector('#terminal-form').onsubmit = (e) => {
@@ -349,68 +1235,353 @@
                 const val = input.value.trim();
                 if (val) {
                     processCommand(val);
+                    state.commandHistory.push(val);
+                    state.historyIndex = state.commandHistory.length;
                     input.value = '';
                     renderApp();
                 }
             };
+
+            // Command History Navigation (Up/Down arrow keys)
+            input.onkeydown = (e) => {
+                if (e.key === 'ArrowUp') {
+                    if (state.historyIndex > 0) {
+                        state.historyIndex--;
+                        input.value = state.commandHistory[state.historyIndex];
+                    }
+                    e.preventDefault();
+                } else if (e.key === 'ArrowDown') {
+                    if (state.historyIndex < state.commandHistory.length - 1) {
+                        state.historyIndex++;
+                        input.value = state.commandHistory[state.historyIndex];
+                    } else {
+                        state.historyIndex = state.commandHistory.length;
+                        input.value = '';
+                    }
+                    e.preventDefault();
+                }
+            };
+
             output.scrollTop = output.scrollHeight;
         }
 
-        function processCommand(cmd) {
-            const parts = cmd.toLowerCase().split(/\s+/);
-            const base = parts[0];
-            let out = "";
+        window.insertCommand = function(cmd) {
+            const input = document.getElementById('terminal-input');
+            if (input) {
+                input.value = cmd;
+                input.focus();
+            }
+        };
 
-            if (base === 'help') out = "Available: ip, ping, cat, echo, clear, hostname, ifconfig";
-            else if (base === 'clear') { state.terminalHistory = []; return; }
-            else if (base === 'hostname') out = "server-one";
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        // --- Bash Command Parsing Engine ---
+        function processCommand(cmd) {
+            const cleanCmd = cmd.trim();
+            const parts = cleanCmd.split(/\s+/);
+            const base = parts[0].toLowerCase();
+            let out = "";
+            let kudos = "";
+
+            if (base === 'help') {
+                out = "Available commands: ip, ping, ping6, ss, netstat, nc, dig, host, traceroute, chronyc, nmcli, ethtool, cat, echo, hostnamectl, clear";
+            }
+            else if (base === 'clear') {
+                state.terminalHistory = [];
+                return;
+            }
+            else if (base === 'hostname' || base === 'hostnamectl') {
+                out = "Static hostname: server-one\nIcon name: computer-vm\nChassis: vm\nOperating System: Ubuntu 22.04.3 LTS\nKernel: Linux 5.15.0-89-generic";
+            }
             else if (base === 'ip') {
-                const sub = parts[1];
-                if (sub === 'addr') out = "1: lo: <LOOPBACK,UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n2: ens32: <BROADCAST,MULTICAST,UP> mtu 1500\n    inet 10.0.0.84/24 brd 10.0.0.255 scope global ens32";
-                else if (sub === 'route') {
-                    if (parts[2] === 'add' && parts[3] === 'default' && parts[5] === '10.0.0.1') {
-                        if (state.screen === 9) state.capstoneFaults.gateway = true;
-                        out = "Default gateway 10.0.0.1 added to ens32.";
+                const sub = parts[1]?.toLowerCase();
+                if (sub === 'addr' || sub === 'a') {
+                    out = `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000\n    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00\n    inet 127.0.0.1/8 scope host lo\n    inet6 ::1/128 scope host\n2: ens32: <BROADCAST,MULTICAST,${state.ifaceUp ? 'UP,LOWER_UP' : 'DOWN'}> mtu 1500 qdisc fq_codel state ${state.ifaceUp ? 'UP' : 'DOWN'} group default qlen 1000\n    link/ether 00:16:3e:ab:cd:ef brd ff:ff:ff:ff:ff:ff\n    inet 10.0.0.84/24 brd 10.0.0.255 scope global dynamic ens32\n    inet6 fe80::216:3eff:feab:cdef/64 scope link`;
+                    if (state.screen === 6) {
+                        kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">✨ [KUDOS] Interface inspection verified! You successfully inspected ens32 layer 2/3 parameters.</span>";
+                        if (!state.completedScreens.includes(6)) state.completedScreens.push(6);
+                    }
+                }
+                else if (sub === 'link' || sub === 'l') {
+                    if (parts[2] === 'set' && parts[3] === 'ens32') {
+                        if (parts[4] === 'down') {
+                            state.ifaceUp = false;
+                            out = "Interface ens32 set to DOWN administratively.";
+                        } else if (parts[4] === 'up') {
+                            state.ifaceUp = true;
+                            out = "Interface ens32 set to UP.";
+                        }
                     } else {
-                        if (state.screen === 9 && !state.capstoneFaults.gateway) out = "10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
-                        else out = "default via 10.0.0.1 dev ens32\n10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
+                        out = `1: lo: <LOOPBACK,UP> mtu 65536 qdisc noqueue state UNKNOWN\n2: ens32: <BROADCAST,MULTICAST,${state.ifaceUp ? 'UP' : 'DOWN'}> mtu 1500 state ${state.ifaceUp ? 'UP' : 'DOWN'}`;
+                    }
+                }
+                else if (sub === 'route' || sub === 'r') {
+                    if (parts[2] === 'add' && parts[3] === 'default' && parts[4] === 'via' && parts[5] === '10.0.0.1') {
+                        state.capstoneFaults.gateway = true;
+                        out = "Default route added via 10.0.0.1 dev ens32.";
+                        kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">✨ [KUDOS] Default gateway restored! The kernel now knows how to route external packets.</span>";
+                    } else {
+                        if (state.screen === 9 && !state.capstoneFaults.gateway) {
+                            out = "10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
+                        } else {
+                            out = "default via 10.0.0.1 dev ens32 proto static\n10.0.0.0/24 dev ens32 proto kernel scope link src 10.0.0.84";
+                            if (state.screen === 7) {
+                                kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">✨ [KUDOS] Routing table checked! Notice the 'default via 10.0.0.1' entry.</span>";
+                                if (!state.completedScreens.includes(7)) state.completedScreens.push(7);
+                            }
+                        }
                     }
                 }
             }
+            else if (base === 'nmcli') {
+                if (parts[1] === 'dev') {
+                    out = "DEVICE  TYPE      STATE      CONNECTION\nens32   ethernet  connected  ens32\nlo      loopback  unmanaged  --";
+                } else if (parts[1] === 'con') {
+                    out = "NAME    UUID                                  TYPE      DEVICE\nens32   2f2a1e80-7a1f-44b8-a111-123456789abc  ethernet  ens32";
+                } else {
+                    out = "ens32: connected to ens32\n        \"Intel 82545EM Gigabit Ethernet Controller\"\n        ethernet (e1000), 00:16:3E:AB:CD:EF, hw, mtu 1500\n        inet4 10.0.0.84/24\n        route4 default via 10.0.0.1";
+                }
+            }
             else if (base === 'cat') {
-                if (parts[1]?.includes('resolv.conf')) out = "search mydom.com" + (state.capstoneFaults.dns ? "\nnameserver 8.8.8.8" : "");
-                else if (parts[1]?.includes('hosts')) out = "127.0.0.1 localhost\n10.0.0.84 server-one";
-                else out = `cat: ${parts[1] || ''}: No such file or directory`;
+                const targetFile = parts[1] || '';
+                if (targetFile.includes('resolv.conf')) {
+                    out = "search mydom.com" + (state.capstoneFaults.dns || state.screen !== 9 ? "\nnameserver 8.8.8.8" : "");
+                    if (state.screen === 7) {
+                        kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">✨ [KUDOS] /etc/resolv.conf queried! This defines the system's DNS recursive resolvers.</span>";
+                        if (!state.completedScreens.includes(7)) state.completedScreens.push(7);
+                    }
+                } else if (targetFile.includes('nsswitch.conf')) {
+                    out = "passwd:         files systemd\ngroup:          files systemd\nhosts:          files dns myhostname\nnetworks:       files";
+                } else if (targetFile.includes('hosts')) {
+                    out = "127.0.0.1 localhost\n10.0.0.84 server-one\n::1       localhost ip6-localhost ip6-loopback";
+                } else {
+                    out = `cat: ${targetFile}: No such file or directory`;
+                }
             }
             else if (base === 'echo') {
-                if (cmd.includes('nameserver') && cmd.includes('resolv.conf')) {
-                    if (state.screen === 9) state.capstoneFaults.dns = true;
-                    out = "Configuration updated successfully.";
-                } else out = cmd.replace(/echo\s+['"]?|['"]?\s+>>.*$/g, '');
+                if (cleanCmd.includes('nameserver') && cleanCmd.includes('resolv.conf')) {
+                    state.capstoneFaults.dns = true;
+                    out = "nameserver 8.8.8.8 appended to /etc/resolv.conf";
+                    kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">✨ [KUDOS] DNS Resolver restored! Hostnames can now be resolved to IP addresses.</span>";
+                } else {
+                    out = cleanCmd.replace(/echo\s+['"]?|['"]?\s+>>.*$/g, '');
+                }
             }
-            else if (base === 'ping') {
-                const target = parts[1];
-                if (target === '8.8.8.8') {
-                    if (state.screen === 9 && !state.capstoneFaults.gateway) out = "connect: Network is unreachable";
-                    else out = "64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=24ms";
-                } else if (target === 'google.com') {
+            else if (base === 'ping' || base === 'ping6') {
+                const target = parts[parts.length - 1];
+                if (!state.ifaceUp) {
+                    out = "ping: connect: Network is down";
+                } else if (target === '127.0.0.1' || target === '::1') {
+                    out = `64 bytes from ${target}: icmp_seq=1 ttl=64 time=0.035 ms\n64 bytes from ${target}: icmp_seq=2 ttl=64 time=0.038 ms\n--- ${target} ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss`;
+                } else if (target === '8.8.8.8') {
+                    if (state.screen === 9 && !state.capstoneFaults.gateway) {
+                        out = "connect: Network is unreachable";
+                    } else {
+                        out = "64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=14.2 ms\n64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=14.1 ms\n--- 8.8.8.8 ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss";
+                        if (state.screen === 8) {
+                            kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">✨ [KUDOS] Layer 3 Internet reachability verified! Your gateway path is working.</span>";
+                            if (!state.completedScreens.includes(8)) state.completedScreens.push(8);
+                        }
+                    }
+                } else if (target === 'google.com' || target === 'example.com') {
                     if (state.screen === 9) {
-                        if (!state.capstoneFaults.gateway) out = "connect: Network is unreachable";
-                        else if (!state.capstoneFaults.dns) out = "ping: google.com: Temporary failure in name resolution";
-                        else { out = "64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15ms\nMISSION COMPLETE!"; state.missionComplete = true; }
-                    } else out = "64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15ms";
-                } else out = `ping: ${target || ''}: Name or service not known`;
+                        if (!state.capstoneFaults.gateway) {
+                            out = "connect: Network is unreachable";
+                        } else if (!state.capstoneFaults.dns) {
+                            out = "ping: google.com: Temporary failure in name resolution";
+                        } else {
+                            out = "PING google.com (142.250.190.14) 56(84) bytes of data.\n64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15.2 ms\n64 bytes from 142.250.190.14: icmp_seq=2 ttl=117 time=15.1 ms\n--- google.com ping statistics ---\n2 packets transmitted, 2 received, 0% packet loss";
+                            state.missionComplete = true;
+                            kudos = "\n\n<span class=\"kudos-text font-bold text-emerald-400\">🎉 MISSION COMPLETE! Both Layer 3 Routing and Layer 7 DNS are fully operational!</span>";
+                        }
+                    } else {
+                        out = "PING google.com (142.250.190.14) 56(84) bytes of data.\n64 bytes from 142.250.190.14: icmp_seq=1 ttl=117 time=15.2 ms";
+                    }
+                } else {
+                    out = `ping: ${target}: Name or service not known`;
+                }
             }
-            else out = `-bash: ${base}: command not found`;
+            else if (base === 'ss' || base === 'netstat') {
+                out = "Netid  State   Recv-Q  Send-Q   Local Address:Port   Peer Address:Port  Process\ntcp    LISTEN  0       128            0.0.0.0:22          0.0.0.0:*      users:((\"sshd\",pid=812,fd=3))\ntcp    LISTEN  0       511            0.0.0.0:80          0.0.0.0:*      users:((\"nginx\",pid=944,fd=6))\ntcp    LISTEN  0       128               [::]:22             [::]:*      users:((\"sshd\",pid=812,fd=4))\nudp    UNCONN  0       0            127.0.0.1:323         0.0.0.0:*      users:((\"chronyd\",pid=650,fd=5))";
+            }
+            else if (base === 'nc') {
+                out = "Connection to 10.0.0.1 53 port [tcp/domain] succeeded!";
+            }
+            else if (base === 'chronyc') {
+                out = "MS Name/IP address         Stratum Poll Reach LastRx Last sample               \n===============================================================================\n^* time.cloudflare.com           3   6   377    24   -120us[ -140us] +/-   12ms\n^+ time.google.com               1   6   377    25   +340us[ +320us] +/-   18ms";
+            }
+            else if (base === 'ethtool') {
+                out = `Settings for ens32:\n\tSupported ports: [ TP ]\n\tSpeed: 1000Mb/s\n\tDuplex: Full\n\tPort: Twisted Pair\n\tAuto-negotiation: on\n\tLink detected: ${state.ifaceUp ? 'yes' : 'no'}`;
+            }
+            else if (base === 'traceroute' || base === 'tracepath') {
+                out = "traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets\n 1  10.0.0.1 (10.0.0.1)  1.214 ms  1.198 ms  1.185 ms\n 2  96.120.40.1 (96.120.40.1)  9.421 ms  9.405 ms  9.389 ms\n 3  8.8.8.8 (8.8.8.8)  14.215 ms  14.180 ms  14.162 ms";
+            }
+            else if (base === 'dig' || base === 'host') {
+                out = ";; ANSWER SECTION:\nexample.com.\t\t300\tIN\tA\t93.184.216.34\n\n;; Query time: 14 msec\n;; SERVER: 8.8.8.8#53(8.8.8.8)";
+            }
+            else {
+                out = `-bash: ${base}: command not found. Type 'help' for available commands.`;
+            }
 
-            state.terminalHistory.push({ input: cmd, output: out });
+            state.terminalHistory.push({ input: cmd, output: out + kudos });
         }
 
-        // --- Init ---
-        document.getElementById('prev-btn').onclick = () => { if(state.screen > 1) { state.screen--; renderApp(); } };
-        document.getElementById('next-btn').onclick = () => { if(state.screen < state.totalScreens) { state.screen++; renderApp(); } };
+        // --- Live Network Topology SVG Renderer ---
+        function renderTopologyDiagram() {
+            const container = document.getElementById('topology-diagram-container');
+            if (!container) return;
 
-        renderApp();
+            const isGwActive = state.capstoneFaults.gateway || state.screen !== 9;
+            const isDnsActive = state.capstoneFaults.dns || state.screen !== 9;
+
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <p class="text-xs text-slate-600">
+                        Visualizing active link states, ARP boundaries, routing path, and external name resolution hops for <span class="font-mono text-sky-700 font-bold">server-one</span>.
+                    </p>
+
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 relative overflow-hidden shadow-inner">
+                        <svg viewBox="0 0 540 280" class="w-full h-auto">
+                            <!-- Cables / Paths -->
+                            <!-- Host to Switch -->
+                            <line x1="90" y1="140" x2="210" y2="140" stroke="#0284c7" stroke-width="2.5" class="packet-cable"/>
+                            
+                            <!-- Switch to Gateway -->
+                            <line x1="250" y1="140" x2="350" y2="140" stroke="${isGwActive ? '#059669' : '#e11d48'}" stroke-width="2.5" class="${isGwActive ? 'packet-cable' : ''}"/>
+                            
+                            <!-- Gateway to Internet -->
+                            <line x1="390" y1="140" x2="470" y2="140" stroke="${isGwActive ? '#059669' : '#94a3b8'}" stroke-width="2"/>
+                            
+                            <!-- Gateway to DNS -->
+                            <path d="M 370 115 L 370 65 L 450 65" fill="none" stroke="${isDnsActive ? '#7c3aed' : '#94a3b8'}" stroke-width="2" class="${isDnsActive ? 'packet-cable' : ''}"/>
+
+                            <!-- Node 1: Host server-one -->
+                            <g transform="translate(40, 105)">
+                                <rect width="70" height="70" rx="14" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
+                                <text x="35" y="32" fill="#0369a1" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">server-one</text>
+                                <text x="35" y="48" fill="#64748b" font-size="8" font-family="monospace" text-anchor="middle">10.0.0.84</text>
+                                <circle cx="35" cy="58" r="3" fill="#059669"/>
+                            </g>
+
+                            <!-- Node 2: Layer 2 Switch -->
+                            <g transform="translate(200, 115)">
+                                <rect width="60" height="50" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+                                <text x="30" y="28" fill="#1e293b" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">Switch</text>
+                                <text x="30" y="40" fill="#64748b" font-size="7" font-family="monospace" text-anchor="middle">Layer 2 LAN</text>
+                            </g>
+
+                            <!-- Node 3: Default Gateway -->
+                            <g transform="translate(340, 110)">
+                                <rect width="70" height="60" rx="12" fill="#ffffff" stroke="${isGwActive ? '#059669' : '#e11d48'}" stroke-width="2"/>
+                                <text x="35" y="28" fill="${isGwActive ? '#059669' : '#e11d48'}" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">Gateway</text>
+                                <text x="35" y="42" fill="#64748b" font-size="8" font-family="monospace" text-anchor="middle">10.0.0.1</text>
+                                <text x="35" y="52" fill="${isGwActive ? '#059669' : '#e11d48'}" font-size="7" font-family="monospace" font-weight="bold" text-anchor="middle">${isGwActive ? 'ACTIVE' : 'NO ROUTE'}</text>
+                            </g>
+
+                            <!-- Node 4: DNS Server -->
+                            <g transform="translate(440, 35)">
+                                <rect width="75" height="55" rx="10" fill="#ffffff" stroke="${isDnsActive ? '#7c3aed' : '#94a3b8'}" stroke-width="1.5"/>
+                                <text x="37" y="26" fill="${isDnsActive ? '#6d28d9' : '#64748b'}" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">DNS Server</text>
+                                <text x="37" y="40" fill="#64748b" font-size="8" font-family="monospace" text-anchor="middle">8.8.8.8:53</text>
+                            </g>
+
+                            <!-- Node 5: Internet Cloud -->
+                            <g transform="translate(460, 115)">
+                                <rect width="70" height="50" rx="12" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5"/>
+                                <text x="35" y="28" fill="#0284c7" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">WAN / Web</text>
+                                <text x="35" y="40" fill="#64748b" font-size="7" font-family="monospace" text-anchor="middle">google.com</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="text-slate-500 block text-[10px] uppercase font-bold">Default Route (L3)</span>
+                            <span class="font-mono font-bold ${isGwActive ? 'text-emerald-700' : 'text-rose-700'}">${isGwActive ? '10.0.0.1 (Configured)' : 'Missing from table'}</span>
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                            <span class="text-slate-500 block text-[10px] uppercase font-bold">DNS Resolver (L7)</span>
+                            <span class="font-mono font-bold ${isDnsActive ? 'text-purple-700' : 'text-rose-700'}">${isDnsActive ? '8.8.8.8 (Resolving)' : 'Not in resolv.conf'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- Key Terms Glossary Renderer & Filter ---
+        function renderGlossary(filterText = '') {
+            const container = document.getElementById('glossary-items');
+            if (!container) return;
+
+            const query = filterText.toLowerCase();
+            const filtered = KEY_TERMS.filter(item => 
+                item.term.toLowerCase().includes(query) || 
+                item.definition.toLowerCase().includes(query) ||
+                item.cat.toLowerCase().includes(query)
+            );
+
+            container.innerHTML = filtered.map(item => `
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-sky-300 transition-all">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-bold text-slate-900">${item.term}</span>
+                        <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-sky-50 border border-sky-200 text-sky-700 uppercase font-semibold">${item.cat}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${item.definition}</p>
+                </div>
+            `).join('');
+        }
+
+        // Search Input Listener
+        document.getElementById('glossary-search').oninput = function(e) {
+            renderGlossary(e.target.value);
+        };
+
+        // --- Drawer Toggle Listeners ---
+        const glossaryDrawer = document.getElementById('glossary-drawer');
+        const topologyDrawer = document.getElementById('topology-drawer');
+
+        document.getElementById('toggle-glossary-btn').onclick = () => {
+            glossaryDrawer.classList.toggle('translate-x-full');
+            topologyDrawer.classList.add('translate-x-full');
+        };
+        document.getElementById('close-glossary-btn').onclick = () => {
+            glossaryDrawer.classList.add('translate-x-full');
+        };
+
+        document.getElementById('toggle-topology-btn').onclick = () => {
+            topologyDrawer.classList.toggle('translate-x-full');
+            glossaryDrawer.classList.add('translate-x-full');
+            renderTopologyDiagram();
+        };
+        document.getElementById('close-topology-btn').onclick = () => {
+            topologyDrawer.classList.add('translate-x-full');
+        };
+
+        // Navigation Button Listeners
+        document.getElementById('prev-btn').onclick = () => {
+            if (state.screen > 1) {
+                state.screen--;
+                state.hintLevel = -1;
+                renderApp();
+            }
+        };
+
+        document.getElementById('next-btn').onclick = () => {
+            if (state.screen < state.totalScreens) {
+                state.screen++;
+                state.hintLevel = -1;
+                renderApp();
+            }
+        };
+
+        // Initial App Mount
+        window.onload = function() {
+            renderApp();
+        };
     </script>
 </body>
 </html>
