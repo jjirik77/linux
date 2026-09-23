@@ -1,670 +1,1923 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Writing Shell Scripts – Interactive Lab</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            900: '#134e4a',
+                        },
+                        terminal: {
+                            bg: '#121820',
+                            bar: '#1a222d',
+                            border: '#2a3649',
+                            text: '#e2e8f0',
+                            green: '#4ade80',
+                            cyan: '#38bdf8',
+                            amber: '#fbbf24',
+                            red: '#f87171'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Consolas', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --linux-blue: #2c3e50;
-            --linux-accent: #3498db;
-            --linux-bg: #f4f7f6;
-            --linux-border: #dcdde1;
-            --linux-text: #2f3640;
-            --note-bg: #e8f4fd;
-            --note-border: #3498db;
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.04);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--linux-bg);
-            color: var(--linux-text);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        /* Glass and elevation */
+        .lab-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .lab-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
 
-        .top-nav {
-            background-color: var(--linux-blue);
-            color: white;
-            padding: 10px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
-
-        .breadcrumb {
-            background: #fff;
-            padding: 8px 25px;
-            border-bottom: 1px solid var(--linux-border);
-            font-size: 0.85rem;
-            color: #7f8c8d;
-        }
-
-        .breadcrumb span { color: var(--linux-accent); font-weight: 600; }
-
-        .layout-container {
-            display: flex;
-            flex: 1;
+        /* Terminal styling */
+        .terminal-window {
+            background-color: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 0.625rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            font-family: 'JetBrains Mono', monospace;
             overflow: hidden;
         }
-
-        #sidebar {
-            width: 300px;
-            background: #fff;
-            border-right: 1px solid var(--linux-border);
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .nav-header {
-            padding: 15px 20px;
-            font-weight: bold;
-            background: #f8f9fa;
-            border-bottom: 1px solid var(--linux-border);
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-        }
-
-        .nav-item {
-            padding: 12px 20px;
-            border-bottom: 1px solid #f1f2f6;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: 0.2s;
+        .terminal-header {
+            background: #1f2937;
+            padding: 0.5rem 0.875rem;
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #374151;
         }
-
-        .nav-item:hover { background: #f1f2f6; }
-        .nav-item.active {
-            background: var(--note-bg);
-            color: var(--linux-accent);
-            font-weight: 600;
-            border-left: 4px solid var(--linux-accent);
-        }
-
-        #content-window {
-            flex: 1;
-            padding: 40px;
+        .terminal-body {
+            padding: 1rem;
+            font-size: 0.86rem;
+            color: #e5e7eb;
+            min-height: 150px;
+            max-height: 280px;
             overflow-y: auto;
-            background: #fff;
+            line-height: 1.5;
+        }
+        .term-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.1em;
+            background-color: #38bdf8;
+            vertical-align: text-bottom;
+            animation: pulse-cursor 1s infinite;
+        }
+        @keyframes pulse-cursor {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
 
-        .page-content {
-            max-width: 850px;
-            margin: 0 auto;
-        }
-
-        h1 { font-size: 2rem; font-weight: 700; margin-bottom: 10px; color: var(--linux-blue); }
-        h2 { font-size: 1.5rem; font-weight: 600; margin-top: 25px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-
-        .objective-box {
-            background: #fafafa;
-            border: 1px solid var(--linux-border);
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-
-        .note-box {
-            background: var(--note-bg);
-            border-left: 5px solid var(--note-border);
-            padding: 15px 20px;
-            margin: 20px 0;
-            font-size: 0.95rem;
-        }
-
-        .terminal {
-            background: #1e1e1e;
-            color: #dcdcdc;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 20px 0;
-            font-size: 0.9rem;
-            min-height: 180px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #333;
-        }
-
-        .terminal-prompt { color: #50fa7b; font-weight: bold; }
-
-        .btn-primary {
-            background-color: var(--linux-accent);
-            color: white;
-            padding: 10px 25px;
-            border-radius: 4px;
-            font-weight: 600;
-            transition: 0.2s;
+        /* Custom buttons and interactive components */
+        .cmd-chip {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 0.375rem;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
             cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .cmd-chip:hover {
+            background: #f1f5f9;
+            border-color: #0d9488;
+            color: #0f766e;
+            transform: translateY(-1px);
+        }
+        .cmd-chip:active {
+            transform: translateY(0);
         }
 
-        .btn-primary:hover { background-color: #2980b9; }
-
-        .btn-terminal {
-            background-color: #444;
-            color: white;
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            border-radius: 3px;
-            margin-right: 5px;
-            cursor: pointer;
+        .screen-anim {
+            animation: screenFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
-        .btn-terminal:hover { background-color: #555; }
-
-        .code-block {
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            cursor: pointer;
-            margin-bottom: 10px;
+        @keyframes screenFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        .code-block.selected {
-            background: #d1e7dd;
-            border-color: #198754;
-        }
-
-        .quiz-option {
-            width: 100%;
-            text-align: left;
-            padding: 12px;
-            border: 1px solid var(--linux-border);
-            border-radius: 4px;
-            margin-bottom: 8px;
-            transition: 0.2s;
-            background: white;
-        }
-
-        .quiz-option:hover { background: #f8f9fa; border-color: var(--linux-accent); }
-        .quiz-option.correct { background: #dcfce7; border-color: #22c55e; }
-        .quiz-option.incorrect { background: #fee2e2; border-color: #ef4444; }
-
-        .feedback-area {
-            min-height: 20px;
-            margin-top: 10px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .hidden { display: none; }
     </style>
 </head>
-<body>
+<body class="h-full bg-slate-50 text-slate-800 flex flex-col font-sans antialiased overflow-hidden">
 
-    <div class="top-nav">
-        <div><i class="fas fa-terminal mr-2"></i> Linux+ Certification Lab</div>
-        <div class="text-sm">User: Student_Lab_User</div>
-    </div>
-
-    <div class="breadcrumb">
-        Courses / CompTIA Linux+ / <span>Writing Shell Scripts</span>
-    </div>
-
-    <div class="layout-container">
-        <div id="sidebar">
-            <div class="nav-header">Modules</div>
-            <div id="nav-items"></div>
-            
-            <div class="mt-auto p-4 border-t">
-                <button onclick="toggleGlossary()" class="w-full py-2 bg-gray-100 border text-xs font-bold uppercase tracking-tighter">
-                    <i class="fas fa-book mr-2"></i> Key Terms Glossary
+    <!-- Top Universal Navigation Bar -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 flex-none z-30 shadow-sm">
+        <div class="px-4 py-2.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSidebar()" aria-label="Toggle navigation" class="md:hidden text-slate-400 hover:text-white focus:outline-none p-1.5 rounded-md hover:bg-slate-800">
+                    <i class="fas fa-bars text-lg"></i>
                 </button>
+                <div class="flex items-center space-x-2.5">
+                    <span class="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white font-mono font-bold text-sm shadow-inner">
+                        <i class="fas fa-terminal"></i>
+                    </span>
+                    <div>
+                        <div class="text-xs font-semibold tracking-wider text-teal-400 uppercase">CompTIA Linux+ Lab</div>
+                        <h1 class="text-sm md:text-base font-bold text-white tracking-tight leading-none">Writing Shell Scripts</h1>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Action Controls -->
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleGlossary()" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 transition">
+                    <i class="fas fa-book-bookmark text-teal-400"></i>
+                    <span class="hidden sm:inline">Glossary</span>
+                </button>
+                <div class="hidden lg:flex items-center space-x-2 pl-3 border-l border-slate-800 text-xs text-slate-400">
+                    <span>User: <strong class="text-slate-200">student@xk0-005</strong></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                </div>
             </div>
         </div>
 
-        <div id="content-window">
-            <div id="screen-container" class="page-content"></div>
+        <!-- Sticky Progress Track -->
+        <div class="w-full bg-slate-800 h-1 relative overflow-hidden">
+            <div id="moduleProgressBar" class="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-300 ease-out" style="width: 10%;"></div>
+        </div>
+    </header>
 
-            <div class="page-content mt-12 pt-8 border-t flex justify-between">
-                <button id="btnPrev" onclick="changeScreen(-1)" class="px-6 py-2 border rounded hover:bg-gray-50 invisible">Previous</button>
-                <button id="btnNext" onclick="changeScreen(1)" class="btn-primary">Next Section <i class="fas fa-chevron-right ml-2"></i></button>
+    <!-- Main Workspace Container -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Mobile Drawer Backdrop -->
+        <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-20 md:hidden"></div>
+
+        <!-- Left Navigation Sidebar -->
+        <aside id="mainSidebar" class="fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out w-72 bg-white border-r border-slate-200 flex flex-col z-30 h-full shadow-lg md:shadow-none">
+            <div class="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Curriculum Modules</span>
+                <span id="moduleCounter" class="text-xs font-semibold px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">1 / 10</span>
+            </div>
+
+            <!-- Scrollable Nav List -->
+            <nav id="moduleNavList" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Nav items generated dynamically by JS -->
+            </nav>
+
+            <!-- Bottom Study Quick Info -->
+            <div class="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-600">
+                <div class="flex items-center justify-between mb-1.5 font-medium">
+                    <span class="flex items-center text-slate-700">
+                        <i class="fas fa-shield-halved text-teal-600 mr-1.5"></i> Exam XK0-005
+                    </span>
+                    <span class="text-[11px] text-teal-700 font-semibold" id="scoreIndicatorBadge">Score: 0</span>
+                </div>
+                <p class="text-[11px] text-slate-500 leading-tight">Mastery in syntax, stream tools, and task execution pipelines.</p>
+            </div>
+        </aside>
+
+        <!-- Center Interactive Content Viewport -->
+        <main class="flex-1 overflow-y-auto flex flex-col bg-slate-100/60 p-3 sm:p-6 lg:p-8" id="viewportMain">
+            <div class="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-between">
+                
+                <!-- Dynamic Content Insertion Point -->
+                <div id="screenStage" class="screen-anim">
+                    <!-- Screens are dynamically rendered here -->
+                </div>
+
+                <!-- Footer Navigation Buttons -->
+                <footer class="mt-8 pt-5 border-t border-slate-200 flex items-center justify-between">
+                    <button id="btnPrevScreen" onclick="navigateScreen(-1)" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 focus:outline-none transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm">
+                        <i class="fas fa-chevron-left mr-2"></i> Previous
+                    </button>
+                    <div class="hidden sm:flex items-center space-x-1.5" id="stepPillsContainer">
+                        <!-- Step pills injected via JS -->
+                    </div>
+                    <button id="btnNextScreen" onclick="navigateScreen(1)" class="inline-flex items-center px-5 py-2 text-sm font-semibold rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none transition shadow-sm hover:shadow">
+                        Next Section <i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                </footer>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Glossary Slide-over Drawer -->
+    <div id="glossaryModal" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity" onclick="toggleGlossary(false)"></div>
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col">
+                
+                <!-- Glossary Header -->
+                <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-book-open text-teal-400"></i>
+                        <h2 class="text-sm font-bold tracking-wide uppercase">Linux+ Scripting Key Terms</h2>
+                    </div>
+                    <button onclick="toggleGlossary(false)" class="text-slate-400 hover:text-white p-1 rounded">
+                        <i class="fas fa-times text-base"></i>
+                    </button>
+                </div>
+
+                <!-- Glossary Search Bar -->
+                <div class="p-3 border-b border-slate-200 bg-slate-50">
+                    <div class="relative">
+                        <i class="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="glossarySearchInput" oninput="filterGlossary()" placeholder="Search terms (e.g. sed, glob, declare)..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                </div>
+
+                <!-- Terms List -->
+                <div id="glossaryItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-3 divide-y divide-slate-100">
+                    <!-- Terms rendered by JS -->
+                </div>
+
+                <!-- Drawer Footer -->
+                <div class="p-3 bg-slate-50 border-t border-slate-200 text-center text-xs text-slate-500">
+                    Aligned with CompTIA Linux+ Certification Guide (XK0-005)
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="glossary-panel" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[200] flex justify-end">
-        <div class="w-80 bg-white h-full p-6 shadow-xl overflow-y-auto">
-            <div class="flex justify-between items-center mb-6 border-b pb-2">
-                <h3 class="font-bold uppercase text-sm">Key Terms</h3>
-                <button onclick="toggleGlossary()"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="glossary-content" class="space-y-4"></div>
-        </div>
+    <!-- Feedback Toast Notification Container -->
+    <div id="toastNotification" class="fixed bottom-4 right-4 z-50 transform translate-y-16 opacity-0 transition-all duration-200 flex items-center p-3 rounded-lg shadow-lg text-xs font-medium text-white max-w-sm pointer-events-none">
+        <i id="toastIcon" class="mr-2.5 text-sm"></i>
+        <span id="toastMsg">Notification message</span>
     </div>
 
+    <!-- Application Script Block -->
     <script>
         const state = {
             currentScreen: 0,
-            scriptOrder: [],
-            isExecutable: false,
             score: 0,
-            variables: { total: 0 }
+            maxScore: 12,
+            hasExecutablePermission: false,
+            assembledBlocks: [],
+            testedGlobs: {},
+            activeReadName: "",
+            declareIntegerVal: 100,
+            loopExecutions: {},
+            masteryAnswers: {},
+            earnedBadges: new Set()
         };
 
-        const screens = [
-            {
-                title: "Launch / Lesson Intro",
-                content: `
-                    <h1>Introduction to Bash Scripting</h1>
-                    <p>This module defines shell scripts as text files that automate tasks and process information. While manual commands are useful for one-off tasks, scripts allow for reproducibility and complex automation.</p>
-                    
-                    <div class="objective-box">
-                        <h4 class="font-bold mb-2"><i class="fas fa-bullseye text-blue-500 mr-2"></i> Learning Objectives</h4>
-                        <ul class="list-disc pl-5 text-sm space-y-1">
-                            <li>Create and execute scripts using source, ., and bash.</li>
-                            <li>Understand shebangs, variables, and positional parameters.</li>
-                            <li>Apply branching (if/case) and loops (for/while).</li>
-                            <li>Process text streams using sed, awk, and tr.</li>
-                        </ul>
-                    </div>
+        const glossaryTerms = [
+            { term: "Shebang ( #! )", category: "Syntax", definition: "The two-character sequence ( #! ) on the first line of an executable script pointing to the path of the interpreter binary (e.g., #!/bin/bash)." },
+            { term: "source or . (dot)", category: "Execution", definition: "A shell built-in command that reads and executes commands from a file in the current shell context without spawning a child subshell." },
+            { term: "bash scriptname", category: "Execution", definition: "Spawns a new non-login child subshell to execute the script without requiring execute (+x) permissions." },
+            { term: "chmod +x", category: "Permissions", definition: "Grants execute permission to a script file, permitting execution as a direct command (e.g., ./myscript.bash)." },
+            { term: "Globbing", category: "Shell Expansion", definition: "Filename expansion using shell wildcards (*, ?, [a-z]) evaluated by the shell BEFORE the command executes." },
+            { term: "Command Substitution", category: "Shell Expansion", definition: "Syntax $(command) or `command` that runs a command in a subshell and replaces the syntax with standard output." },
+            { term: "Exit Status ( $? )", category: "Control Flow", definition: "A numeric code (0 to 255) returned by every executed command. 0 indicates success; any nonzero value indicates an error." },
+            { term: "declare", category: "Variables", definition: "A built-in utility used to declare variables with specific attributes, such as integer arithmetic enforcement (-i) or read-only (-r)." },
+            { term: "read", category: "Input", definition: "Reads a single line of input from standard input. If no variable name is provided, the input is placed into the default $REPLY variable." },
+            { term: "Positional Parameters", category: "Variables", definition: "Variables ($0 to $9, $*, $@, $#) populated with arguments passed to the script or function on the command line." },
+            { term: "test or [ ]", category: "Conditionals", definition: "Evaluates conditional expressions. In bracket notation, whitespace is mandatory after the opening '[' and before the closing ']'." },
+            { term: "case", category: "Conditionals", definition: "A multi-way branching statement evaluated against patterns; more efficient and readable than deeply nested if/elif statements for menus." },
+            { term: "while", category: "Loops", definition: "A looping structure that repeats its block as long as the condition evaluates to TRUE (exit status 0)." },
+            { term: "until", category: "Loops", definition: "A looping structure that repeats its block as long as the condition evaluates to FALSE (nonzero exit status), terminating once true." },
+            { term: "tr", category: "Text Processing", definition: "Translate tool that translates, squeezes (-s), or deletes (-d) characters from standard input to standard output." },
+            { term: "cut", category: "Text Processing", definition: "Extracts sections or columns from each line of input using delimiters (-d) and field numbers (-f) or byte/character positions (-c)." },
+            { term: "nl", category: "Text Processing", definition: "Line numbering utility that prepends line numbers to files with support for distinct header, body, and footer formatting." },
+            { term: "od", category: "Text Processing", definition: "Octal dump tool used to inspect binary data, unwanted line endings, or hidden control characters in diverse formats (-c, -x, -b)." },
+            { term: "sed", category: "Stream Editing", definition: "Stream editor for filtering and transforming text lines sequentially using regular expressions and substitution syntax ('s/find/replace/g')." },
+            { term: "awk", category: "Text Processing", definition: "A pattern-scanning and text-processing language that treats lines as records and columns as fields ($1, $2, etc.)." },
+            { term: "sort & uniq", category: "Text Processing", definition: "Utilities often chained together: sort organizes lines alphanumerically, enabling uniq to detect and remove adjacent duplicate lines." },
+            { term: "wc", category: "Text Processing", definition: "Counts newlines (-l), words (-w), and byte counts (-c) from files or standard input pipelines." }
+        ];
 
-                    <h2>Choose Your Motivation</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-4 border rounded hover:border-blue-400 cursor-pointer text-center text-sm bg-white shadow-sm" onclick="showIntroFeedback('Scripts excel at daily automation!')">
-                            <i class="fas fa-redo-alt mb-2 text-blue-500"></i><br>I run the same 5 commands daily.
-                        </div>
-                        <div class="p-4 border rounded hover:border-blue-400 cursor-pointer text-center text-sm bg-white shadow-sm" onclick="showIntroFeedback('Scripts can handle complex branching logic!')">
-                            <i class="fas fa-sitemap mb-2 text-blue-500"></i><br>I need user input & outcomes.
-                        </div>
-                        <div class="p-4 border rounded hover:border-blue-400 cursor-pointer text-center text-sm bg-white shadow-sm" onclick="showIntroFeedback('Text tools in Bash are industry standard!')">
-                            <i class="fas fa-file-invoice mb-2 text-blue-500"></i><br>I need to turn messy logs to reports.
-                        </div>
-                    </div>
-                    <div id="introFeedback" class="mt-4 text-center font-bold text-blue-600 h-4"></div>
-                `
+        const modules = [
+            {
+                id: "intro",
+                title: "Launch & Lesson Intro",
+                icon: "fa-compass",
+                render: renderScreen1
             },
             {
+                id: "first_script",
                 title: "Build Your First Script",
-                content: `
-                    <h2>Exercise: Create 'myscript.bash'</h2>
-                    <p class="text-sm mb-4">A script requires a <strong>Shebang</strong> and commands. Assemble the script below in the correct order.</p>
-                    
-                    <div id="blocks" class="space-y-2">
-                        <div class="code-block" data-id="1" onclick="toggleBlock(this)">echo "Hello from Bash"</div>
-                        <div class="code-block" data-id="2" onclick="toggleBlock(this)">#!/bin/bash</div>
-                        <div class="code-block" data-id="3" onclick="toggleBlock(this)"># My first script</div>
-                    </div>
-
-                    <div class="terminal mt-6" id="term-lab1">
-                        <span class="terminal-prompt">$</span> <span id="term-content-lab1">_</span>
-                    </div>
-
-                    <div class="flex gap-2 mt-4">
-                        <button onclick="runLab1('bash')" class="btn-terminal">bash myscript.bash</button>
-                        <button onclick="makeExecutable()" class="btn-terminal">chmod +x myscript.bash</button>
-                        <button onclick="runLab1('dot')" class="btn-terminal">./myscript.bash</button>
-                    </div>
-                    <div id="lab1-feedback" class="mt-4 text-xs font-bold h-4"></div>
-                `
+                icon: "fa-code",
+                render: renderScreen2
             },
             {
+                id: "adv_shell",
                 title: "Advanced Shell Concepts",
-                content: `
-                    <h2>Globbing & Sequencing</h2>
-                    <p class="text-sm mb-4">The shell expands globs before commands run. Predict the output for the patterns below.</p>
-                    
-                    <div class="p-4 bg-gray-100 rounded mb-4 font-mono text-xs">
-                        Files in current directory:<br>
-                        file1 file2 note10 note11 note12 note13 note14
-                    </div>
-
-                    <p class="font-bold text-sm mb-2">Question: Which pattern matches only 'note12' through 'note14'?</p>
-                    <div class="space-y-2">
-                        <button class="quiz-option" onclick="checkGlob(this, false)">note1*</button>
-                        <button class="quiz-option" onclick="checkGlob(this, true)">note1[2-4]</button>
-                        <button class="quiz-option" onclick="checkGlob(this, false)">note??</button>
-                        <button class="quiz-option" onclick="checkGlob(this, false)">note1[2-5]</button>
-                    </div>
-                    <div id="globFeedback" class="feedback-area text-blue-600"></div>
-
-                    <h2 class="mt-8">Logic Sequencing</h2>
-                    <p class="text-sm mb-4">Predict the outcome of: <code class="bg-gray-100 p-1">ls report.txt || echo "Missing"</code></p>
-                    <div class="space-y-2">
-                        <button class="quiz-option" onclick="checkSeq(this, true)">Prints "Missing" if report.txt does not exist.</button>
-                        <button class="quiz-option" onclick="checkSeq(this, false)">Prints "Missing" only if report.txt is found.</button>
-                    </div>
-                `
+                icon: "fa-layer-group",
+                render: renderScreen3
             },
             {
+                id: "components",
                 title: "Script Components",
-                content: `
-                    <h2>Variables, Input, & Params</h2>
-                    <p class="text-sm mb-4">Practice using <code>declare</code> and <code>read</code>. See how Bash handles types and defaults.</p>
-                    
-                    <div class="terminal" id="term-components">
-                        <span class="terminal-prompt">$</span> <span id="comp-output"># Practice area</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 mt-4">
-                        <div class="border p-4 rounded bg-white">
-                            <h4 class="font-bold text-xs uppercase mb-2">1. The 'read' Command</h4>
-                            <p class="text-xs mb-4">If no variable is specified, input goes to <code>$REPLY</code>.</p>
-                            <button onclick="runCompLab('read')" class="btn-terminal">Run: read -p "Name?"</button>
-                        </div>
-                        <div class="border p-4 rounded bg-white">
-                            <h4 class="font-bold text-xs uppercase mb-2">2. The 'declare' Command</h4>
-                            <p class="text-xs mb-4"><code>declare -i</code> forces integer math.</p>
-                            <button onclick="runCompLab('declare')" class="btn-terminal">Run: declare -i num</button>
-                        </div>
-                    </div>
-                    
-                    <div class="note-box text-xs">
-                        <strong>Positional Params:</strong> $1 is the first argument, $# is the count, and $* is all arguments.
-                    </div>
-                `
+                icon: "fa-cubes",
+                render: renderScreen4
             },
             {
-                title: "Branching & Testing",
-                content: `
-                    <h2>Decisions: if & case</h2>
-                    <p class="text-sm mb-4">Bash evaluation uses <code>[ ]</code> or <code>test</code>. Use the terminal to simulate a menu logic choice.</p>
-                    
-                    <div class="terminal" id="term-branch">
-                        <span class="terminal-prompt">$</span> <span id="branch-output"># Control Flow Simulation</span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="border p-4 rounded bg-white">
-                            <h4 class="font-bold text-xs mb-2">Integer Testing</h4>
-                            <p class="text-xs mb-4">Compare 10 vs 5 using <code>-gt</code> (Greater Than).</p>
-                            <button onclick="runBranchLab('test')" class="btn-terminal">[ 10 -gt 5 ] && echo "Pass"</button>
-                        </div>
-                        <div class="border p-4 rounded bg-white">
-                            <h4 class="font-bold text-xs mb-2">Menu Selection</h4>
-                            <p class="text-xs mb-4">Select 'case' for multiple menu options (efficiency).</p>
-                            <button onclick="runBranchLab('case')" class="btn-terminal">Simulate Case Menu</button>
-                        </div>
-                    </div>
-                `
+                id: "branching",
+                title: "Branching and Testing",
+                icon: "fa-code-branch",
+                render: renderScreen5
             },
             {
-                title: "Loops",
-                content: `
-                    <h2>Repetition: while, until, for</h2>
-                    <p class="text-sm mb-4">Loops execute code repeatedly based on a condition. Choose a loop type to execute in the terminal.</p>
-                    
-                    <div class="terminal" id="term-loops">
-                        <span class="terminal-prompt">$</span> <span id="loop-output">_</span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="runLoopLab('while')" class="btn-terminal">Run 'while' loop (1..3)</button>
-                        <button onclick="runLoopLab('until')" class="btn-terminal">Run 'until' loop (1..3)</button>
-                        <button onclick="runLoopLab('for')" class="btn-terminal">Run 'for' loop ({1..3})</button>
-                    </div>
-
-                    <div class="note-box text-xs mt-6">
-                        <strong>Tip:</strong> Use <code>bash -x scriptname</code> to debug loops line-by-line.
-                    </div>
-                `
+                id: "loops",
+                title: "Loops & Iterations",
+                icon: "fa-rotate",
+                render: renderScreen6
             },
             {
-                title: "Text Tools I",
-                content: `
-                    <h2>Transformation: tr & cut</h2>
-                    <p class="text-sm mb-4">These tools transform streams of text. Use the 'who' output simulation below.</p>
-                    
-                    <div class="p-3 bg-gray-100 font-mono text-[10px] border mb-2">
-                        Dataset:<br>
-                        student1 tty1 2023-10-01 09:00<br>
-                        admin pts/0 2023-10-01 10:30
-                    </div>
-
-                    <div class="terminal" id="term-text1">
-                        <span class="terminal-prompt">$</span> <span id="text1-output">_</span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="runText1('tr')" class="btn-terminal">tr a-z A-Z (Uppercase)</button>
-                        <button onclick="runText1('cut')" class="btn-terminal">cut -d ' ' -f1 (Usernames)</button>
-                        <button onclick="runText1('tr-d')" class="btn-terminal">tr -d ' ' (Remove spaces)</button>
-                    </div>
-                `
+                id: "text_tools_1",
+                title: "Text Tools I (tr, cut, nl, od)",
+                icon: "fa-filter",
+                render: renderScreen7
             },
             {
-                title: "Text Tools II",
-                content: `
-                    <h2>Stream Processing: sed & awk</h2>
-                    <p class="text-sm mb-4">Master complex pattern matching and reporting.</p>
-                    
-                    <div class="p-3 bg-gray-100 font-mono text-[10px] border mb-2">
-                        Dataset (labfile):<br>
-                        student1 wheel 1024 data.txt<br>
-                        root root 2048 secret.key
-                    </div>
-
-                    <div class="terminal" id="term-text2">
-                        <span class="terminal-prompt">$</span> <span id="text2-output">_</span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="runText2('sed')" class="btn-terminal">sed -n 's/root/fred/p'</button>
-                        <button onclick="runText2('awk')" class="btn-terminal">awk '{print "File: " $4}'</button>
-                    </div>
-                    
-                    <div class="callout-info p-4 border rounded bg-blue-50 text-xs mt-6">
-                        <strong>awk</strong> treats each line as a <em>record</em> and each column as a <em>field</em>.
-                    </div>
-                `
+                id: "text_tools_2",
+                title: "Text Tools II (sed, awk, sort)",
+                icon: "fa-wand-magic-sparkles",
+                render: renderScreen8
             },
             {
+                id: "mastery",
                 title: "Mastery Check",
-                content: `
-                    <h2>Module Review</h2>
-                    <p class="text-sm mb-6">Test your knowledge for Exam XK0-005.</p>
-                    <div class="space-y-6">
-                        <div class="border-b pb-4">
-                            <p class="text-sm font-bold mb-2">1. Which command identifies the interpreter in a script?</p>
-                            <button class="quiz-option" onclick="checkMastery(this, true)">Shebang (#!)</button>
-                            <button class="quiz-option" onclick="checkMastery(this, false)">Include (&lt;&gt;)</button>
-                        </div>
-                        <div class="border-b pb-4">
-                            <p class="text-sm font-bold mb-2">2. What operator redirects output but appends instead of overwriting?</p>
-                            <button class="quiz-option" onclick="checkMastery(this, false)">&gt;</button>
-                            <button class="quiz-option" onclick="checkMastery(this, true)">&gt;&gt;</button>
-                        </div>
-                    </div>
-                `
+                icon: "fa-graduation-cap",
+                render: renderScreen9
             },
             {
-                title: "Completion",
-                content: `
-                    <div class="text-center py-12">
-                        <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
-                        <h1>Lab Complete</h1>
-                        <p class="text-gray-600">You have completed the Writing Shell Scripts module.</p>
-                        <div class="mt-10 p-4 border rounded bg-white max-w-sm mx-auto text-left">
-                            <h4 class="font-bold text-sm mb-2">Performance Summary</h4>
-                            <ul class="text-xs space-y-2">
-                                <li><i class="fas fa-check text-green-500 mr-2"></i> Script Creation & Permissions</li>
-                                <li><i class="fas fa-check text-green-500 mr-2"></i> Flow Control & Branching</li>
-                                <li><i class="fas fa-check text-green-500 mr-2"></i> Text Stream Processing</li>
-                            </ul>
+                id: "completion",
+                title: "Completion Dashboard",
+                icon: "fa-circle-check",
+                render: renderScreen10
+            }
+        ];
+
+        function renderScreen1() {
+            return `
+                <div class="space-y-6">
+                    <!-- Hero Header -->
+                    <div class="lab-card p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border-slate-200">
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-semibold mb-4 border border-teal-200">
+                            <i class="fas fa-book-open text-teal-600"></i>
+                            <span>CompTIA Linux+ Certification Lab</span>
                         </div>
-                        <button onclick="location.reload()" class="btn-primary mt-8">Restart Course</button>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Writing Shell Scripts</h2>
+                        <p class="text-slate-600 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
+                            Shell scripts are executable text files that automate multi-step system administration tasks, eliminate manual repetition, and transform raw diagnostic output into structured system reports.
+                        </p>
+
+                        <!-- Learning Goals Grid -->
+                        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div class="flex items-start space-x-3 p-3 rounded-lg bg-white border border-slate-200/80">
+                                <span class="text-teal-600 mt-0.5"><i class="fas fa-circle-check"></i></span>
+                                <span class="text-xs text-slate-700"><strong>Execute Scripts:</strong> Master execution with <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">source</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">.</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">bash</code>, and direct execution via <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">chmod +x</code>.</span>
+                            </div>
+                            <div class="flex items-start space-x-3 p-3 rounded-lg bg-white border border-slate-200/80">
+                                <span class="text-teal-600 mt-0.5"><i class="fas fa-circle-check"></i></span>
+                                <span class="text-xs text-slate-700"><strong>Variables & Parameters:</strong> Harness <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">declare</code>, user prompts via <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">read</code>, positional variables (<code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">$1</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">$#</code>), and reusable functions.</span>
+                            </div>
+                            <div class="flex items-start space-x-3 p-3 rounded-lg bg-white border border-slate-200/80">
+                                <span class="text-teal-600 mt-0.5"><i class="fas fa-circle-check"></i></span>
+                                <span class="text-xs text-slate-700"><strong>Branching & Loops:</strong> Correctly apply <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">test</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">[ ]</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">case</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">while</code>, and <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">for</code> loops.</span>
+                            </div>
+                            <div class="flex items-start space-x-3 p-3 rounded-lg bg-white border border-slate-200/80">
+                                <span class="text-teal-600 mt-0.5"><i class="fas fa-circle-check"></i></span>
+                                <span class="text-xs text-slate-700"><strong>Text Processing:</strong> Transform and filter text streams using <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">tr</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">cut</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">sed</code>, <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">awk</code>, and <code class="bg-slate-100 px-1 py-0.5 rounded text-teal-700 font-mono">sort</code>.</span>
+                            </div>
+                        </div>
                     </div>
-                `
-            }
-        ];
 
-        const terms = [
-            { t: "Shebang", d: "First line of script (#!) pointing to the interpreter." },
-            { t: "source", d: "Runs a script in the current shell session." },
-            { t: "sed", d: "Stream editor for filtering and transforming text." },
-            { t: "awk", d: "Pattern scanning and processing language." },
-            { t: "tr", d: "Translate tool to replace/delete characters." },
-            { t: "Positionals", d: "Arguments ($1, $2) passed to a script." },
-            { t: "test", d: "Command to evaluate conditional expressions." },
-            { t: "Globbing", d: "Shell pattern matching using wildcards (*, ?, [])." }
-        ];
+                    <!-- Scenario Explorer -->
+                    <div class="lab-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center">
+                                <i class="fas fa-lightbulb text-amber-500 mr-2"></i> Practical Administration Scenarios
+                            </h3>
+                            <span class="text-xs text-slate-500">Select any scenario</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                            <button onclick="selectIntroScenario('daily')" id="scen-daily" class="text-left p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition group">
+                                <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-sm mb-2 group-hover:scale-105 transition">
+                                    <i class="fas fa-rotate"></i>
+                                </div>
+                                <h4 class="font-bold text-xs text-slate-900 mb-1">Repetitive Workloads</h4>
+                                <p class="text-xs text-slate-600">"I run the same five diagnostic commands every morning across 20 servers."</p>
+                            </button>
+                            <button onclick="selectIntroScenario('interactive')" id="scen-interactive" class="text-left p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition group">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-sm mb-2 group-hover:scale-105 transition">
+                                    <i class="fas fa-users-gear"></i>
+                                </div>
+                                <h4 class="font-bold text-xs text-slate-900 mb-1">User-Driven Decisions</h4>
+                                <p class="text-xs text-slate-600">"I need an interactive installer menu that validates inputs and branches safely."</p>
+                            </button>
+                            <button onclick="selectIntroScenario('reports')" id="scen-reports" class="text-left p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 transition group">
+                                <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-sm mb-2 group-hover:scale-105 transition">
+                                    <i class="fas fa-file-waveform"></i>
+                                </div>
+                                <h4 class="font-bold text-xs text-slate-900 mb-1">Data Pipeline & Reports</h4>
+                                <p class="text-xs text-slate-600">"I need to extract, sanitize, and format messy audit logs for security reviews."</p>
+                            </button>
+                        </div>
+                        <div id="introFeedbackBox" class="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 hidden">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-        function init() {
-            renderNav();
-            renderScreen();
+        function renderScreen2() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Exercise 1</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Build Your First Script (myscript.bash)</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            A Bash script requires an interpreter designation (shebang), optional commentary, and commands. Arrange the lines, then test different execution methods.
+                        </p>
+                    </div>
+
+                    <!-- Interactive Assembly Layout -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Left: Code Blocks -->
+                        <div class="space-y-4">
+                            <div class="lab-card p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-700">1. Click Blocks in Order</span>
+                                    <button onclick="resetAssembly()" class="text-xs text-slate-500 hover:text-slate-800 underline">Reset Order</button>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mb-3">Click each statement in the required order of execution:</p>
+                                
+                                <div class="space-y-2">
+                                    <div id="block-shebang" onclick="toggleScriptBlock('shebang', '#!/bin/bash')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
+                                        <span>#!/bin/bash</span>
+                                        <span class="text-[10px] text-slate-400 font-sans block-status">Click to add</span>
+                                    </div>
+                                    <div id="block-comment" onclick="toggleScriptBlock('comment', '# My first Bash script')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
+                                        <span># My first Bash script</span>
+                                        <span class="text-[10px] text-slate-400 font-sans block-status">Click to add</span>
+                                    </div>
+                                    <div id="block-echo" onclick="toggleScriptBlock('echo', 'echo \"Hello from Bash\"')" class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 font-mono text-xs cursor-pointer flex items-center justify-between transition">
+                                        <span>echo "Hello from Bash"</span>
+                                        <span class="text-[10px] text-slate-400 font-sans block-status">Click to add</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Script File Preview -->
+                            <div class="lab-card p-3.5 bg-slate-900 text-slate-100">
+                                <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2 border-b border-slate-800 pb-1.5 font-mono">
+                                    <span><i class="fas fa-file-code text-teal-400 mr-1.5"></i>myscript.bash</span>
+                                    <span id="scriptFilePermsBadge" class="text-amber-400 font-sans">Permissions: -rw-r--r--</span>
+                                </div>
+                                <pre id="scriptLiveFileContent" class="font-mono text-xs text-teal-300 min-h-[70px] whitespace-pre-wrap"># (Select blocks above to assemble file)</pre>
+                            </div>
+                        </div>
+
+                        <!-- Right: Terminal & Execution Actions -->
+                        <div class="space-y-4">
+                            <div class="terminal-window">
+                                <div class="terminal-header">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                        <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">bash terminal</span>
+                                    <button onclick="clearTerminal('term1')" class="text-xs text-slate-400 hover:text-white" title="Clear terminal"><i class="fas fa-eraser"></i></button>
+                                </div>
+                                <div id="term1" class="terminal-body">
+                                    <div class="text-slate-400 text-xs">Linux shell environment ready. Execute your script using one of the actions below.</div>
+                                    <div class="mt-2 text-teal-400 font-semibold">$ <span class="term-cursor"></span></div>
+                                </div>
+                            </div>
+
+                            <!-- Execution Buttons -->
+                            <div class="lab-card p-3.5">
+                                <div class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5">Execution Methods</div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <button onclick="runLab1Execution('bash')" class="p-2 rounded bg-slate-800 hover:bg-slate-700 text-white font-mono text-center transition">
+                                        bash myscript.bash
+                                    </button>
+                                    <button onclick="runLab1Execution('chmod')" class="p-2 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-mono text-center transition">
+                                        chmod +x myscript.bash
+                                    </button>
+                                    <button onclick="runLab1Execution('dot_slash')" class="p-2 rounded bg-teal-600 hover:bg-teal-700 text-white font-mono text-center transition">
+                                        ./myscript.bash
+                                    </button>
+                                    <button onclick="runLab1Execution('source')" class="p-2 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-mono text-center transition">
+                                        source myscript.bash
+                                    </button>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                                    <button onclick="showPathSecurityWarning()" class="text-teal-600 hover:text-teal-800 font-medium flex items-center">
+                                        <i class="fas fa-triangle-exclamation mr-1 text-amber-500"></i> Why isn't "." in $PATH by default?
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen3() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Module 3</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Advanced Shell Concepts</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            Shell scripting efficiency relies on pattern expansion (globbing), conditional command chaining (<code class="bg-slate-100 px-1 font-mono">&&</code>, <code class="bg-slate-100 px-1 font-mono">||</code>), and embedding dynamic output with command substitution.
+                        </p>
+                    </div>
+
+                    <!-- 3A. Globbing Interactive Tester -->
+                    <div class="lab-card p-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-sm text-slate-800 flex items-center">
+                                <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs flex items-center justify-center mr-2">3A</span>
+                                Wildcard Pattern Matching (Globbing)
+                            </h3>
+                            <span class="text-xs text-slate-500">Pre-execution expansion</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-3">
+                            The shell evaluates globs <em>before</em> calling the utility. Given this working directory:
+                        </p>
+                        <div class="p-3 bg-slate-900 text-slate-200 rounded-lg font-mono text-xs flex flex-wrap gap-2 mb-4 border border-slate-800" id="globDirectoryFileList">
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">file0</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">file1</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">note10</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">note11</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">note12</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">note13</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">note14</span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">new0</span>
+                        </div>
+
+                        <p class="text-xs font-semibold text-slate-700 mb-2">Task: Select the pattern that matches <strong>only</strong> <code class="text-teal-700 font-mono">note12</code>, <code class="text-teal-700 font-mono">note13</code>, and <code class="text-teal-700 font-mono">note14</code>:</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <button onclick="testGlobPattern('note1*')" class="p-2 border border-slate-300 rounded font-mono hover:bg-slate-50 text-left transition">
+                                ls note1*
+                            </button>
+                            <button onclick="testGlobPattern('note1[2-4]')" class="p-2 border border-slate-300 rounded font-mono hover:bg-slate-50 text-left transition">
+                                ls note1[2-4]
+                            </button>
+                            <button onclick="testGlobPattern('note??')" class="p-2 border border-slate-300 rounded font-mono hover:bg-slate-50 text-left transition">
+                                ls note??
+                            </button>
+                            <button onclick="testGlobPattern('note1[2-5]')" class="p-2 border border-slate-300 rounded font-mono hover:bg-slate-50 text-left transition">
+                                ls note1[2-5]
+                            </button>
+                        </div>
+                        <div id="globFeedbackBox" class="mt-3 text-xs min-h-[22px]"></div>
+                    </div>
+
+                    <!-- 3B & 3C: Sequencing and Command Substitution -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Sequencing -->
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center">
+                                <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs flex items-center justify-center mr-2">3B</span>
+                                Command Sequencing Operators
+                            </h3>
+                            <p class="text-xs text-slate-600 mb-3">Test what executes based on exit codes (<code class="font-mono text-teal-700">$?</code>):</p>
+                            
+                            <div class="space-y-2">
+                                <button onclick="runSeqDemo('and')" class="w-full text-left p-2.5 rounded border border-slate-200 hover:border-teal-500 bg-slate-50 text-xs transition">
+                                    <div class="font-mono font-semibold text-slate-800">mkdir reports && cd reports</div>
+                                    <div class="text-[11px] text-slate-500 mt-0.5">Executes 2nd command only if 1st succeeds ($? = 0).</div>
+                                </button>
+                                <button onclick="runSeqDemo('or')" class="w-full text-left p-2.5 rounded border border-slate-200 hover:border-teal-500 bg-slate-50 text-xs transition">
+                                    <div class="font-mono font-semibold text-slate-800">ls report.txt || echo "Missing"</div>
+                                    <div class="text-[11px] text-slate-500 mt-0.5">Executes 2nd command only if 1st fails ($? != 0).</div>
+                                </button>
+                                <button onclick="runSeqDemo('semi')" class="w-full text-left p-2.5 rounded border border-slate-200 hover:border-teal-500 bg-slate-50 text-xs transition">
+                                    <div class="font-mono font-semibold text-slate-800">date ; whoami</div>
+                                    <div class="text-[11px] text-slate-500 mt-0.5">Executes sequentially regardless of exit status.</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Command Substitution Live Box -->
+                        <div class="lab-card p-5 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center">
+                                    <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs flex items-center justify-center mr-2">3C</span>
+                                    Command Substitution $(...)
+                                </h3>
+                                <p class="text-xs text-slate-600 mb-3">
+                                    Embed command standard output directly into strings or variables using <code class="font-mono text-teal-700">$(command)</code> or backticks <code class="font-mono text-teal-700">\`command\`</code>.
+                                </p>
+                                <div class="bg-slate-900 p-3 rounded-lg font-mono text-xs text-teal-300 mb-3">
+                                    echo "Report generated on: $(date +%F)"
+                                </div>
+                            </div>
+                            <div class="p-2.5 bg-teal-50 border border-teal-200 rounded text-xs text-teal-900">
+                                <strong>Exam Tip:</strong> Modern Bash prefers <code class="font-mono font-semibold">$()</code> over backticks because it supports clean nesting without messy escaping (e.g. <code class="font-mono">echo $(cat $(find . -name file))</code>).
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Output for Module 3 -->
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="text-xs text-slate-400">Simulation Console</span>
+                            <span class="text-xs text-slate-400 font-mono">exit status: <span id="term3ExitStatus" class="text-emerald-400">0</span></span>
+                        </div>
+                        <div id="term3" class="terminal-body">
+                            <div class="text-slate-400 text-xs">Click any pattern or sequencing command above to observe how Bash parses it.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen4() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Module 4</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Script Components</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            A complete Bash script utilizes typed variables (<code class="font-mono">declare</code>), interactive input (<code class="font-mono">read</code>), command-line positional parameters, and modular functions.
+                        </p>
+                    </div>
+
+                    <!-- 4A: Variables & declare -i -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center">
+                                <i class="fas fa-calculator text-teal-600 mr-2"></i> 4A. Integer Variables (declare -i)
+                            </h3>
+                            <p class="text-xs text-slate-600 mb-3">
+                                By default, Bash treats variables as strings. Declaring with <code class="bg-slate-100 px-1 font-mono text-teal-700">declare -i</code> enforces integer arithmetic.
+                            </p>
+                            <div class="bg-slate-900 p-3 rounded font-mono text-xs text-slate-200 space-y-1 mb-3">
+                                <div class="text-slate-400"># Enforce integer typing:</div>
+                                <div class="text-teal-400">declare -i sum=100</div>
+                                <div class="text-teal-400">sum=sum+15</div>
+                                <div class="text-amber-300">sum="Fred"</div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="testDeclareInt()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold">
+                                    Simulate & inspect $sum
+                                </button>
+                                <button onclick="inspectDeclareAttributes()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-xs font-semibold">
+                                    declare -p sum
+                                </button>
+                            </div>
+                            <div id="declareFeedback" class="mt-3 text-xs text-slate-700 min-h-[30px] p-2 bg-slate-50 rounded border border-slate-200">
+                                Click simulate to see how Bash handles assigning the string "Fred" to an integer.
+                            </div>
+                        </div>
+
+                        <!-- 4B: read interactive input -->
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center">
+                                <i class="fas fa-keyboard text-teal-600 mr-2"></i> 4B. User Input with read
+                            </h3>
+                            <p class="text-xs text-slate-600 mb-3">
+                                Prompts users for interactive input. If no variable name is supplied, Bash automatically saves the value in <code class="bg-slate-100 px-1 font-mono text-teal-700">$REPLY</code>.
+                            </p>
+                            <div class="flex space-x-2 mb-3">
+                                <input type="text" id="readSimInput" placeholder="Type a name (e.g., Alex)..." class="flex-1 px-3 py-1.5 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+                                <button onclick="simulateReadCommand(false)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono rounded">
+                                    read username
+                                </button>
+                                <button onclick="simulateReadCommand(true)" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-mono rounded" title="Runs read without naming a variable">
+                                    read (default)
+                                </button>
+                            </div>
+                            <div id="readFeedback" class="text-xs text-slate-600 p-2.5 bg-slate-50 rounded border border-slate-200 font-mono">
+                                $ # Awaiting read execution...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4C & 4D: Positional Parameters & Functions -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Positional Parameters Visualization -->
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center">
+                                <i class="fas fa-list-ol text-teal-600 mr-2"></i> 4C. Positional Parameters
+                            </h3>
+                            <p class="text-xs text-slate-600 mb-2">When running a script with arguments:</p>
+                            <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-200 mb-3">
+                                ./name_script.bash <span class="text-teal-400">fred</span> <span class="text-sky-400">george</span> <span class="text-amber-400">andrew</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono mb-2">
+                                <div class="p-1.5 bg-teal-50 border border-teal-200 rounded">
+                                    <div class="text-[10px] text-slate-500">$1 (First)</div>
+                                    <div class="font-bold text-teal-700">fred</div>
+                                </div>
+                                <div class="p-1.5 bg-sky-50 border border-sky-200 rounded">
+                                    <div class="text-[10px] text-slate-500">$2 (Second)</div>
+                                    <div class="font-bold text-sky-700">george</div>
+                                </div>
+                                <div class="p-1.5 bg-amber-50 border border-amber-200 rounded">
+                                    <div class="text-[10px] text-slate-500">$3 (Third)</div>
+                                    <div class="font-bold text-amber-700">andrew</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-[11px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-200 font-mono">
+                                <span><strong class="text-slate-800">$#</strong> (count) = 3</span>
+                                <span><strong class="text-slate-800">$*</strong> (all) = "fred george andrew"</span>
+                            </div>
+                        </div>
+
+                        <!-- Functions -->
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center">
+                                <i class="fas fa-code text-teal-600 mr-2"></i> 4D. Modular Functions
+                            </h3>
+                            <p class="text-xs text-slate-600 mb-2">Named blocks invoked identically to standard commands:</p>
+                            <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-teal-300 mb-3 space-y-0.5">
+                                <div>timestamp() {</div>
+                                <div>&nbsp;&nbsp;date +"%m/%d/%y %R"</div>
+                                <div>}</div>
+                                <div class="text-slate-400"># Call the function:</div>
+                                <div class="text-amber-300">echo "Current time: $(timestamp)"</div>
+                            </div>
+                            <button onclick="runFunctionDemo()" class="w-full py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold transition">
+                                Execute timestamp() function demo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen5() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Module 5</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Branching and Testing</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            Linux scripts make decisions via the <code class="font-mono">test</code> command or bracket syntax <code class="font-mono">[ ]</code>. Choose the right control structures and comparison operators for system verification.
+                        </p>
+                    </div>
+
+                    <!-- 5A: test vs [ ] syntax rules -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2">5A. Syntax Rule: Brackets Require Spaces</h3>
+                            <p class="text-xs text-slate-600 mb-3">
+                                In Bash, <code class="font-mono font-bold text-teal-700">[</code> is actually a command! Hence, spaces immediately following <code class="font-mono">[</code> and preceding <code class="font-mono">]</code> are mandatory.
+                            </p>
+                            
+                            <div class="space-y-2 text-xs">
+                                <div onclick="validateBracketSyntax(true)" class="p-2.5 border rounded bg-emerald-50/60 border-emerald-300 hover:bg-emerald-100 cursor-pointer flex items-center justify-between transition">
+                                    <code class="font-mono font-bold text-emerald-900">if [ $EUID -eq 0 ]; then</code>
+                                    <span class="text-[11px] text-emerald-700 font-sans font-semibold">Valid (Spaces present)</span>
+                                </div>
+                                <div onclick="validateBracketSyntax(false)" class="p-2.5 border rounded bg-rose-50/60 border-rose-300 hover:bg-rose-100 cursor-pointer flex items-center justify-between transition">
+                                    <code class="font-mono font-bold text-rose-900">if [$EUID -eq 0]; then</code>
+                                    <span class="text-[11px] text-rose-700 font-sans font-semibold">Syntax Error!</span>
+                                </div>
+                            </div>
+                            <div id="bracketFeedback" class="mt-3 text-xs text-slate-600 min-h-[24px]"></div>
+                        </div>
+
+                        <!-- 5B: Operator Matcher -->
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-800 mb-2">5B. Relationship & File Test Operators</h3>
+                            <p class="text-xs text-slate-600 mb-3">Match the evaluation need with the correct flag:</p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <button onclick="showOperatorExplanation('-lt')" class="p-2 border rounded bg-slate-50 font-mono hover:bg-teal-50 text-left">
+                                    <strong>-lt</strong> : Less than (integer)
+                                </button>
+                                <button onclick="showOperatorExplanation('-eq')" class="p-2 border rounded bg-slate-50 font-mono hover:bg-teal-50 text-left">
+                                    <strong>-eq</strong> : Equal (integer)
+                                </button>
+                                <button onclick="showOperatorExplanation('-f')" class="p-2 border rounded bg-slate-50 font-mono hover:bg-teal-50 text-left">
+                                    <strong>-f</strong> : Is regular file
+                                </button>
+                                <button onclick="showOperatorExplanation('-d')" class="p-2 border rounded bg-slate-50 font-mono hover:bg-teal-50 text-left">
+                                    <strong>-d</strong> : Is directory
+                                </button>
+                            </div>
+                            <div id="operatorDetailBox" class="mt-3 text-xs p-2 bg-slate-50 rounded border border-slate-200 text-slate-700">
+                                Click an operator above to see its syntax example.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5C & 5D: if/elif vs case Statement -->
+                    <div class="lab-card p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-sm text-slate-800">5C. Multi-Option Menus: if/elif vs case</h3>
+                            <span class="text-xs px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-semibold">CompTIA XK0-005 Standard</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-4">
+                            <strong>Problem:</strong> You are coding a 6-option interactive administration menu. Which control structure is best?
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-3.5 border rounded-lg bg-slate-50 border-slate-200">
+                                <h4 class="font-bold text-xs text-slate-700 mb-1">Nested if / elif / else</h4>
+                                <pre class="font-mono text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200 mb-2">
+if [ "$c" = "1" ]; then
+  df -h
+elif [ "$c" = "2" ]; then
+  free -m
+fi</pre>
+                                <p class="text-[11px] text-slate-500">Cluttered with repetition, harder to maintain, less optimal for multi-choice branching.</p>
+                            </div>
+                            <div class="p-3.5 border-2 border-teal-500 rounded-lg bg-teal-50/40">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="font-bold text-xs text-teal-900">case $choice in ... esac</h4>
+                                    <span class="text-[10px] font-bold uppercase bg-teal-600 text-white px-1.5 py-0.5 rounded">Preferred</span>
+                                </div>
+                                <pre class="font-mono text-[11px] text-slate-800 bg-white p-2 rounded border border-teal-200 mb-2">
+case $choice in
+  1) df -h ;;
+  2) free -m ;;
+  q|Q) exit 0 ;;
+  *) echo "Invalid" ;;
+esac</pre>
+                                <p class="text-[11px] text-teal-800 font-medium">Chapter 13 explicitly states <code class="font-mono">case</code> is more concise and efficient for multiple options.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen6() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Module 6</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Loops: while, until, and for</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            Repetition structures allow scripts to poll hardware, iterate through file arrays, or run tasks until completion.
+                        </p>
+                    </div>
+
+                    <!-- 6A: while vs until condition comparison -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="lab-card p-5 border-l-4 border-l-teal-600">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-sm text-slate-900 font-mono">while [ condition ]</h3>
+                                <span class="text-xs px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-medium">Repeats while TRUE</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mb-3">Executes statements as long as the condition returns exit status <strong>0 (success)</strong>.</p>
+                            <div class="bg-slate-900 p-3 rounded font-mono text-xs text-teal-300 mb-3">
+                                count=1<br>
+                                while [ $count -le 3 ]; do<br>
+                                &nbsp;&nbsp;echo "Num: $count"<br>
+                                &nbsp;&nbsp;count=$((count+1))<br>
+                                done
+                            </div>
+                            <button onclick="runLoopSimulation('while')" class="w-full py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-semibold">
+                                Simulate 'while' execution
+                            </button>
+                        </div>
+
+                        <div class="lab-card p-5 border-l-4 border-l-indigo-600">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-sm text-slate-900 font-mono">until [ condition ]</h3>
+                                <span class="text-xs px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-medium">Repeats while FALSE</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mb-3">Executes statements as long as the test condition is <strong>nonzero (fails)</strong>.</p>
+                            <div class="bg-slate-900 p-3 rounded font-mono text-xs text-indigo-300 mb-3">
+                                count=1<br>
+                                until [ $count -gt 3 ]; do<br>
+                                &nbsp;&nbsp;echo "Num: $count"<br>
+                                &nbsp;&nbsp;count=$((count+1))<br>
+                                done
+                            </div>
+                            <button onclick="runLoopSimulation('until')" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold">
+                                Simulate 'until' execution
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 6B & 6C: for loop builder & Debug Mode Tip -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="lab-card p-5">
+                            <h3 class="font-bold text-sm text-slate-900 mb-2">6B. for Loops: Brace Expansion vs seq</h3>
+                            <p class="text-xs text-slate-600 mb-2">
+                                Bash provides built-in brace expansion <code class="font-mono text-teal-700">{1..3}</code> which avoids calling the external binary <code class="font-mono">seq</code>:
+                            </p>
+                            <div class="space-y-2 mb-3">
+                                <div class="bg-slate-900 p-2.5 rounded font-mono text-xs text-slate-200">
+                                    for i in {1..3}; do echo "Server: $i"; done
+                                </div>
+                            </div>
+                            <button onclick="runLoopSimulation('for')" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-semibold font-mono">
+                                Run for loop simulation
+                            </button>
+                        </div>
+
+                        <div class="lab-card p-5 bg-amber-50/60 border-amber-200">
+                            <div class="flex items-center space-x-2 text-amber-800 font-bold text-xs uppercase mb-1">
+                                <i class="fas fa-bug"></i>
+                                <span>Exam Diagnostic Tip: bash -x</span>
+                            </div>
+                            <h4 class="text-xs font-bold text-slate-900 mb-1">Interactive Script Debugging</h4>
+                            <p class="text-xs text-slate-700 leading-relaxed mb-3">
+                                Start any script in debug mode using <code class="bg-amber-100 font-mono text-amber-900 px-1 py-0.5 rounded font-bold">bash -x scriptname</code>. It prints each command and its expanded arguments preceded by a <code class="font-mono font-bold">+</code> character as it runs.
+                            </p>
+                            <button onclick="runLoopSimulation('debug')" class="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded text-xs font-semibold">
+                                Simulate bash -x on loop
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Module 6 Terminal Display -->
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="text-xs text-slate-400">Loop Output Terminal</span>
+                            <button onclick="clearTerminal('term6')" class="text-xs text-slate-400 hover:text-white"><i class="fas fa-eraser"></i></button>
+                        </div>
+                        <div id="term6" class="terminal-body font-mono text-xs">
+                            <div class="text-slate-400">Select a loop simulation above to watch execution steps in real time.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen7() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Module 7</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Text Tools I: Transform & Extract</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            Learn the character-level transformation tools emphasized in Chapter 13: <code class="font-mono">tr</code>, <code class="font-mono">cut</code>, <code class="font-mono">nl</code>, and <code class="font-mono">od</code>.
+                        </p>
+                    </div>
+
+                    <!-- Dataset Reference Banner -->
+                    <div class="p-3 bg-slate-900 rounded-lg text-slate-200 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between border border-slate-800">
+                        <div>
+                            <span class="text-slate-400 text-[10px] block uppercase font-sans font-bold">Standard 'who' login stream</span>
+                            <span>student1&nbsp;&nbsp;tty1&nbsp;&nbsp;&nbsp;2026-09-23 09:30</span><br>
+                            <span>admin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pts/0&nbsp;&nbsp;2026-09-23 10:15</span>
+                        </div>
+                        <span class="text-[11px] text-teal-400 mt-2 sm:mt-0 font-sans"><i class="fas fa-database mr-1"></i> Practice Stream</span>
+                    </div>
+
+                    <!-- Grid of 4 Tools -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- tr Card -->
+                        <div class="lab-card p-4 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 mb-1 flex items-center justify-between">
+                                    <span>tr (Translate / Delete)</span>
+                                    <span class="text-[10px] text-teal-600 font-mono">Stream character filter</span>
+                                </h3>
+                                <p class="text-xs text-slate-600 mb-2">Replaces or strips specified characters from stdin.</p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <button onclick="runText1Tool('tr_upper')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                    echo "linux" | tr a-z A-Z
+                                </button>
+                                <button onclick="runText1Tool('tr_del')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                    tr -d '\\r' &lt; winfile.txt &gt; linux.txt
+                                </button>
+                                <button onclick="runText1Tool('tr_squeeze')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                    who | tr -s " " " "
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- cut Card -->
+                        <div class="lab-card p-4 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 mb-1 flex items-center justify-between">
+                                    <span>cut (Extract Fields/Columns)</span>
+                                    <span class="text-[10px] text-teal-600 font-mono">Delimiter extraction</span>
+                                </h3>
+                                <p class="text-xs text-slate-600 mb-2">Isolates specific fields (<code class="font-mono">-f</code>) using delimiters (<code class="font-mono">-d</code>).</p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <button onclick="runText1Tool('cut_users')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                    who | tr -s " " | cut -d " " -f1
+                                </button>
+                                <button onclick="runText1Tool('cut_multi')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                    cut -d ":" -f1,7 /etc/passwd
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- nl Card -->
+                        <div class="lab-card p-4 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 mb-1">nl (Number Lines)</h3>
+                                <p class="text-xs text-slate-600 mb-2">Prepends sequential line numbers; supports body, header, and footer sections.</p>
+                            </div>
+                            <button onclick="runText1Tool('nl')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                nl -b a script.bash
+                            </button>
+                        </div>
+
+                        <!-- od Card -->
+                        <div class="lab-card p-4 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 mb-1">od (Octal Dump)</h3>
+                                <p class="text-xs text-slate-600 mb-2">Chapter 13 notes <code class="font-mono">od</code> is ideal for locating unwanted hidden characters or carriage returns.</p>
+                            </div>
+                            <button onclick="runText1Tool('od')" class="w-full text-left p-1.5 bg-slate-50 border rounded hover:border-teal-500 text-xs font-mono">
+                                od -c textfile.txt
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Module 7 Terminal Output -->
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="text-xs text-slate-400">Stream Output Terminal</span>
+                            <button onclick="clearTerminal('term7')" class="text-xs text-slate-400 hover:text-white"><i class="fas fa-eraser"></i></button>
+                        </div>
+                        <div id="term7" class="terminal-body font-mono text-xs">
+                            <div class="text-slate-400">Select any command above to view the processed stream output.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen8() {
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3">
+                        <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Module 8</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Text Tools II: Filters & Reports</h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1">
+                            Master the core text processing powerhouses of Chapter 13: <code class="font-mono">sed</code> (stream editor), <code class="font-mono">awk</code> (report generator), and line utilities (<code class="font-mono">sort</code>, <code class="font-mono">uniq</code>, <code class="font-mono">wc</code>).
+                        </p>
+                    </div>
+
+                    <!-- Live Dataset Representation -->
+                    <div class="lab-card p-4 bg-slate-900 text-slate-200 font-mono text-xs border border-slate-800">
+                        <div class="text-[10px] text-slate-400 uppercase font-sans font-bold mb-1">Target Dataset: student_records.csv</div>
+                        <div class="space-y-0.5 text-teal-300">
+                            <div>Jane,F,Math,14,88</div>
+                            <div>Bruce,M,Algebra,15,72</div>
+                            <div>Amy,F,Algebra,14,91</div>
+                            <div>Ben,M,Science,16,84</div>
+                        </div>
+                    </div>
+
+                    <!-- 8A: sed and 8B: awk Interactive Workstations -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- sed Workstation -->
+                        <div class="lab-card p-5 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold text-sm text-slate-900 font-mono">sed (Stream Editor)</h3>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-800 font-medium">Non-destructive</span>
+                                </div>
+                                <p class="text-xs text-slate-600 mb-3">
+                                    Processes text line by line. Does <strong>not</strong> alter the source file unless output is redirected.
+                                </p>
+                            </div>
+                            <div class="space-y-2 text-xs">
+                                <button onclick="runText2Tool('sed_sub')" class="w-full text-left p-2 border rounded bg-slate-50 hover:bg-teal-50 font-mono transition">
+                                    sed 's/Jane/Margaret/' student_records.csv
+                                </button>
+                                <button onclick="runText2Tool('sed_print')" class="w-full text-left p-2 border rounded bg-slate-50 hover:bg-teal-50 font-mono transition">
+                                    sed -n 's/Algebra/German/p' student_records.csv
+                                </button>
+                                <p class="text-[11px] text-slate-500 italic mt-1">
+                                    *With <code class="font-mono">-n</code>, sed only prints lines where replacement occurred.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- awk Workstation -->
+                        <div class="lab-card p-5 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-bold text-sm text-slate-900 font-mono">awk (Column / Record Processor)</h3>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Records & Fields</span>
+                                </div>
+                                <p class="text-xs text-slate-600 mb-3">
+                                    Treats each line as a record and each column as a field (<code class="font-mono">$1</code>, <code class="font-mono">$2</code>). Uses <code class="font-mono">-F</code> to set custom separators.
+                                </p>
+                            </div>
+                            <div class="space-y-2 text-xs">
+                                <button onclick="runText2Tool('awk_fields')" class="w-full text-left p-2 border rounded bg-slate-50 hover:bg-blue-50 font-mono transition">
+                                    awk -F "," '{print $1 " scored " $5}' student_records.csv
+                                </button>
+                                <button onclick="runText2Tool('awk_filter')" class="w-full text-left p-2 border rounded bg-slate-50 hover:bg-blue-50 font-mono transition">
+                                    awk -F "," '$5 > 85 {print "Honor: " $1}' student_records.csv
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8C: sort + uniq and Utilities -->
+                    <div class="lab-card p-5">
+                        <h3 class="font-bold text-sm text-slate-900 mb-2">8C. Crucial Sequence: sort Before uniq</h3>
+                        <p class="text-xs text-slate-600 mb-3">
+                            <code class="font-mono font-bold text-teal-700">uniq</code> only detects duplicate lines that are <strong>immediately adjacent</strong>! You must pipe to <code class="font-mono font-bold text-teal-700">sort</code> first:
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <button onclick="runText2Tool('sort_uniq')" class="p-2.5 bg-slate-50 border rounded hover:border-teal-500 font-mono text-left">
+                                <strong class="text-teal-700">sort logfile | uniq</strong><br>
+                                <span class="text-[11px] text-slate-500 font-sans">Guarantees all duplicates removed</span>
+                            </button>
+                            <button onclick="runText2Tool('wc_demo')" class="p-2.5 bg-slate-50 border rounded hover:border-teal-500 font-mono text-left">
+                                <strong class="text-teal-700">wc -l student_records.csv</strong><br>
+                                <span class="text-[11px] text-slate-500 font-sans">Counts total records (lines)</span>
+                            </button>
+                            <button onclick="runText2Tool('head_tail')" class="p-2.5 bg-slate-50 border rounded hover:border-teal-500 font-mono text-left">
+                                <strong class="text-teal-700">head -n 2 & tail -n 1</strong><br>
+                                <span class="text-[11px] text-slate-500 font-sans">Extracts top/bottom slice</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Module 8 Output Terminal -->
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="text-xs text-slate-400">Stream Processing Console</span>
+                            <button onclick="clearTerminal('term8')" class="text-xs text-slate-400 hover:text-white"><i class="fas fa-eraser"></i></button>
+                        </div>
+                        <div id="term8" class="terminal-body font-mono text-xs">
+                            <div class="text-slate-400">Click any sed, awk, or sort pipeline to preview stream transformations.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen9() {
+            const questions = [
+                {
+                    id: "q1",
+                    text: "1. Which line MUST appear as the very first line of a Bash script to designate the interpreter?",
+                    options: [
+                        { text: "#!/bin/bash", correct: true, exp: "The shebang ( #! ) on line 1 points the kernel to the Bash interpreter." },
+                        { text: "source /bin/bash", correct: false, exp: "source executes commands in an existing shell, not as a script interpreter line." },
+                        { text: "# /bin/bash", correct: false, exp: "Without the exclamation mark (!), this is treated as a regular comment." },
+                        { text: "<bash>", correct: false, exp: "This is XML/HTML syntax, not valid shell scripting syntax." }
+                    ]
+                },
+                {
+                    id: "q2",
+                    text: "2. A script named 'deploy.sh' has permissions '-rw-r--r--'. Which command executes it without changing permissions?",
+                    options: [
+                        { text: "./deploy.sh", correct: false, exp: "Direct path execution requires execute (+x) permission, resulting in 'Permission denied'." },
+                        { text: "bash deploy.sh", correct: true, exp: "Calling the interpreter directly (bash scriptname) reads the file without needing execute permission." },
+                        { text: "run deploy.sh", correct: false, exp: "'run' is not a standard Linux command." },
+                        { text: "exec deploy.sh", correct: false, exp: "'exec' still requires execute permissions." }
+                    ]
+                },
+                {
+                    id: "q3",
+                    text: "3. What is the value of $TOTAL after executing: 'declare -i TOTAL=50; TOTAL=\"Server\"'?",
+                    options: [
+                        { text: "Server", correct: false, exp: "declare -i strictly enforces integer values." },
+                        { text: "50", correct: false, exp: "The assignment does overwrite the value." },
+                        { text: "0", correct: true, exp: "In Bash, assigning a non-numeric string to an integer-declared variable evaluates to 0." },
+                        { text: "An unhandled syntax error", correct: false, exp: "Bash does not throw a syntax error; it silently converts the string to 0." }
+                    ]
+                },
+                {
+                    id: "q4",
+                    text: "4. If the 'read' command is executed with NO variable arguments, where is user input stored?",
+                    options: [
+                        { text: "$INPUT", correct: false, exp: "Bash does not define an automatic $INPUT variable." },
+                        { text: "$REPLY", correct: true, exp: "By default, read stores responses in the built-in $REPLY variable." },
+                        { text: "$1", correct: false, exp: "$1 represents positional parameters passed to the script, not interactive read input." },
+                        { text: "Standard input is discarded", correct: false, exp: "Input is captured into $REPLY." }
+                    ]
+                },
+                {
+                    id: "q5",
+                    text: "5. Which conditional test checks if the integer in $score is less than 70?",
+                    options: [
+                        { text: "[ $score < 70 ]", correct: false, exp: "< in single brackets is treated as stream redirection!" },
+                        { text: "[ $score -lt 70 ]", correct: true, exp: "-lt is the integer relational operator for 'Less Than' in test and brackets." },
+                        { text: "[ $score -le 70 ]", correct: false, exp: "-le represents Less Than OR Equal." },
+                        { text: "test $score .lt 70", correct: false, exp: "The dot operator syntax does not exist in standard test." }
+                    ]
+                },
+                {
+                    id: "q6",
+                    text: "6. You are building an 8-option interactive console menu. According to Chapter 13, which structure is best?",
+                    options: [
+                        { text: "Nested if / elif / else", correct: false, exp: "Nested if statements are harder to read and evaluate less cleanly for menus." },
+                        { text: "case structure", correct: true, exp: "The case statement evaluates patterns concisely and is the recommended menu structure in Chapter 13." },
+                        { text: "A series of sequential test commands", correct: false, exp: "Sequential test commands lack clean control flow." },
+                        { text: "while [ 1 -eq 1 ] only", correct: false, exp: "A loop alone doesn't branch on option inputs." }
+                    ]
+                },
+                {
+                    id: "q7",
+                    text: "7. Which statement accurately describes the difference between while and until loops?",
+                    options: [
+                        { text: "while repeats while false; until repeats while true.", correct: false, exp: "This is inverted." },
+                        { text: "while repeats while true; until repeats while false.", correct: true, exp: "while continues as long as exit code is 0 (true); until continues as long as exit code is nonzero (false)." },
+                        { text: "for loops must always be used instead of until.", correct: false, exp: "until is specifically designed for polling until a condition succeeds." },
+                        { text: "There is no functional difference.", correct: false, exp: "They evaluate opposite truth states." }
+                    ]
+                },
+                {
+                    id: "q8",
+                    text: "8. Which command removes Windows carriage return (\\r) line endings from 'data.txt'?",
+                    options: [
+                        { text: "cut -d '\\r' data.txt", correct: false, exp: "cut extracts fields; it does not delete characters across a stream." },
+                        { text: "tr -d '\\r' < data.txt > fixed.txt", correct: true, exp: "tr -d deletes the specified character from the stream." },
+                        { text: "sed -d '\\r' data.txt", correct: false, exp: "The -d flag is not the delete argument in sed." },
+                        { text: "od -c data.txt", correct: false, exp: "od displays octal/characters for diagnostic inspection but does not modify the stream." }
+                    ]
+                },
+                {
+                    id: "q9",
+                    text: "9. Why must 'sort' be executed BEFORE 'uniq' when removing non-adjacent duplicate lines?",
+                    options: [
+                        { text: "uniq only compares immediately adjacent lines.", correct: true, exp: "uniq reads sequentially; if identical lines are separated, uniq will not remove them unless sorted together." },
+                        { text: "sort assigns hash tables to uniq.", correct: false, exp: "uniq does not use hash tables." },
+                        { text: "sort compresses the stream.", correct: false, exp: "sort orders records without compression." },
+                        { text: "It is an arbitrary Linux convention.", correct: false, exp: "It is a strict algorithmic requirement of uniq." }
+                    ]
+                },
+                {
+                    id: "q10",
+                    text: "10. In 'awk -F \":\" '{print $1, $3}' /etc/passwd', what does the -F flag specify?",
+                    options: [
+                        { text: "File destination", correct: false, exp: "The file is given at the end of the command." },
+                        { text: "Field separator / delimiter", correct: true, exp: "-F overrides the default whitespace field separator with a custom character (here, colon)." },
+                        { text: "Filter criteria", correct: false, exp: "Filtering expressions are written inside the awk program block." },
+                        { text: "Format specification", correct: false, exp: "The print statement handles formatting." }
+                    ]
+                }
+            ];
+
+            let questionsHtml = questions.map((q, idx) => `
+                <div class="lab-card p-5 space-y-3" id="qcard-${q.id}">
+                    <p class="font-bold text-sm text-slate-800">${q.text}</p>
+                    <div class="space-y-2">
+                        ${q.options.map((opt, oIdx) => `
+                            <button onclick="handleMasteryChoice('${q.id}', ${oIdx}, ${opt.correct}, '${escapeHtml(opt.exp)}')" class="quiz-btn w-full text-left p-2.5 rounded-lg border border-slate-200 text-xs hover:bg-slate-50 transition flex items-center justify-between" id="${q.id}-opt-${oIdx}">
+                                <span>${opt.text}</span>
+                                <span class="badge-icon text-sm hidden"></span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="${q.id}-feedback" class="text-xs p-2.5 rounded hidden"></div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="space-y-6">
+                    <div class="border-b border-slate-200 pb-3 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Exam Readiness</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Mastery Check</h2>
+                            <p class="text-xs sm:text-sm text-slate-600 mt-1">Answer these 10 exam-aligned review questions covering the full scope of Chapter 13.</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500 font-medium">Answered</div>
+                            <div class="text-lg font-bold text-teal-700 font-mono" id="quizAnsweredCount">0 / 10</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${questionsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScreen10() {
+            const pct = Math.round((state.score / state.maxScore) * 100);
+            return `
+                <div class="space-y-6 animate-fade">
+                    <div class="lab-card p-6 sm:p-8 text-center bg-gradient-to-b from-white to-slate-50">
+                        <div class="w-16 h-16 rounded-2xl bg-teal-100 text-teal-600 flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Lab Complete!</h2>
+                        <p class="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto mt-1">
+                            You have completed the interactive laboratory courseware for CompTIA Linux+ (XK0-005) Shell Scripting.
+                        </p>
+
+                        <!-- Score Banner -->
+                        <div class="mt-6 inline-flex items-center space-x-4 p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
+                            <div class="text-left px-2">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Mastery Score</span>
+                                <span class="text-2xl font-extrabold text-teal-700 font-mono">${state.score} / ${state.maxScore}</span>
+                            </div>
+                            <div class="h-8 w-px bg-slate-200"></div>
+                            <div class="text-left px-2">
+                                <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Proficiency</span>
+                                <span class="text-sm font-bold text-slate-800">${pct >= 80 ? 'Certified Ready' : 'Review Recommended'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned Section -->
+                    <div class="lab-card p-6">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-700 mb-4 flex items-center">
+                            <i class="fas fa-medal text-amber-500 mr-2"></i> Earned Skill Badges
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                                <i class="fas fa-file-code text-teal-600 text-xl mb-1.5"></i>
+                                <h4 class="font-bold text-xs text-slate-800">Script Starter</h4>
+                                <p class="text-[10px] text-slate-500 mt-0.5">Shebang & permissions</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                                <i class="fas fa-code-branch text-blue-600 text-xl mb-1.5"></i>
+                                <h4 class="font-bold text-xs text-slate-800">Flow Master</h4>
+                                <p class="text-[10px] text-slate-500 mt-0.5">Test, if/else & case</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                                <i class="fas fa-rotate text-purple-600 text-xl mb-1.5"></i>
+                                <h4 class="font-bold text-xs text-slate-800">Loop Logic</h4>
+                                <p class="text-[10px] text-slate-500 mt-0.5">while, until, & for</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                                <i class="fas fa-wand-magic-sparkles text-emerald-600 text-xl mb-1.5"></i>
+                                <h4 class="font-bold text-xs text-slate-800">Stream Analyst</h4>
+                                <p class="text-[10px] text-slate-500 mt-0.5">sed, awk, tr, cut</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Domain Review Checklist -->
+                    <div class="lab-card p-6">
+                        <h3 class="font-bold text-xs uppercase tracking-wider text-slate-700 mb-3">CompTIA XK0-005 Objective Alignment</h3>
+                        <ul class="space-y-2 text-xs text-slate-600">
+                            <li class="flex items-center"><i class="fas fa-check text-emerald-600 mr-2"></i> Created and directly ran scripts with relative and absolute paths.</li>
+                            <li class="flex items-center"><i class="fas fa-check text-emerald-600 mr-2"></i> Applied variable substitution, arithmetic typing (<code class="font-mono text-teal-700">declare -i</code>), and input traps.</li>
+                            <li class="flex items-center"><i class="fas fa-check text-emerald-600 mr-2"></i> Built decision-making loops with <code class="font-mono text-teal-700">while</code> (true) and <code class="font-mono text-teal-700">until</code> (false).</li>
+                            <li class="flex items-center"><i class="fas fa-check text-emerald-600 mr-2"></i> Formatted complex text streams using <code class="font-mono text-teal-700">sed</code> and columnar <code class="font-mono text-teal-700">awk</code> reports.</li>
+                        </ul>
+                        <div class="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between">
+                            <button onclick="restartCourse()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold">
+                                <i class="fas fa-arrow-rotate-left mr-1.5"></i> Restart Course
+                            </button>
+                            <button onclick="window.print()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-print mr-1.5"></i> Print Summary
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initApp() {
+            renderSidebarNavigation();
+            renderStepPills();
             renderGlossary();
+            goToScreen(0);
         }
 
-        function renderNav() {
-            const nav = document.getElementById('nav-items');
-            nav.innerHTML = screens.map((s, i) => `
-                <div class="nav-item ${i === state.currentScreen ? 'active' : ''}" onclick="goTo(${i})">
-                    ${s.title}
-                </div>
+        function renderSidebarNavigation() {
+            const nav = document.getElementById('moduleNavList');
+            nav.innerHTML = modules.map((m, idx) => `
+                <button onclick="goToScreen(${idx})" id="sidebar-item-${idx}" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center space-x-2.5 transition ${idx === state.currentScreen ? 'bg-teal-50 text-teal-700 font-semibold border-l-4 border-teal-600' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}">
+                    <span class="w-5 text-center text-slate-400 ${idx === state.currentScreen ? 'text-teal-600' : ''}">
+                        <i class="fas ${m.icon}"></i>
+                    </span>
+                    <span class="truncate">${idx + 1}. ${m.title}</span>
+                </button>
             `).join('');
         }
 
-        function renderScreen() {
-            const container = document.getElementById('screen-container');
-            container.innerHTML = screens[state.currentScreen].content;
-            document.getElementById('btnPrev').className = state.currentScreen === 0 ? "px-6 py-2 border rounded invisible" : "px-6 py-2 border rounded hover:bg-gray-50";
-            document.getElementById('btnNext').innerHTML = state.currentScreen === screens.length - 1 ? "Finish Lab" : "Next Section <i class='fas fa-chevron-right ml-2'></i>";
-            window.scrollTo(0,0);
-        }
-
-        function renderGlossary() {
-            const glossary = document.getElementById('glossary-content');
-            glossary.innerHTML = terms.map(item => `
-                <div>
-                    <h5 class="font-bold text-blue-600 text-xs">${item.t}</h5>
-                    <p class="text-xs text-gray-500">${item.d}</p>
-                </div>
+        function renderStepPills() {
+            const container = document.getElementById('stepPillsContainer');
+            container.innerHTML = modules.map((_, i) => `
+                <div class="w-2 h-2 rounded-full transition-all ${i === state.currentScreen ? 'w-5 bg-teal-600' : 'bg-slate-300'}" title="Module ${i+1}"></div>
             `).join('');
         }
 
-        function goTo(i) {
-            state.currentScreen = i;
-            renderNav();
-            renderScreen();
-        }
-
-        function changeScreen(dir) {
-            const next = state.currentScreen + dir;
-            if (next >= 0 && next < screens.length) { goTo(next); }
-        }
-
-        function toggleGlossary() {
-            document.getElementById('glossary-panel').classList.toggle('hidden');
-        }
-
-        function showIntroFeedback(msg) {
-            document.getElementById('introFeedback').innerText = msg;
-        }
-
-        // Screen 2 Logic
-        function toggleBlock(el) {
-            const id = el.getAttribute('data-id');
-            if (el.classList.contains('selected')) {
-                el.classList.remove('selected');
-                state.scriptOrder = state.scriptOrder.filter(x => x !== id);
+        function goToScreen(idx) {
+            if (idx < 0 || idx >= modules.length) return;
+            state.currentScreen = idx;
+            
+            // Render screen HTML
+            const stage = document.getElementById('screenStage');
+            stage.className = 'screen-anim';
+            stage.innerHTML = modules[idx].render();
+            
+            // Update progress bar
+            const progress = ((idx) / (modules.length - 1)) * 100;
+            document.getElementById('moduleProgressBar').style.width = `${progress}%`;
+            document.getElementById('moduleCounter').innerText = `${idx + 1} / ${modules.length}`;
+            
+            // Update navigation buttons
+            const prevBtn = document.getElementById('btnPrevScreen');
+            const nextBtn = document.getElementById('btnNextScreen');
+            prevBtn.disabled = (idx === 0);
+            
+            if (idx === modules.length - 1) {
+                nextBtn.innerHTML = `Finish Lab <i class="fas fa-check ml-1.5"></i>`;
+                nextBtn.className = "inline-flex items-center px-5 py-2 text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none transition shadow-sm";
             } else {
-                el.classList.add('selected');
-                state.scriptOrder.push(id);
+                nextBtn.innerHTML = `Next Section <i class="fas fa-chevron-right ml-1.5"></i>`;
+                nextBtn.className = "inline-flex items-center px-5 py-2 text-sm font-semibold rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none transition shadow-sm hover:shadow";
             }
-            document.getElementById('term-content-lab1').innerText = state.scriptOrder.length ? "Script file modified..." : "_";
+
+            // Sync sidebar and pills
+            renderSidebarNavigation();
+            renderStepPills();
+            
+            // Scroll viewport to top
+            document.getElementById('viewportMain').scrollTo({ top: 0, behavior: 'smooth' });
+            toggleSidebar(false);
         }
 
-        function makeExecutable() {
-            state.isExecutable = true;
-            document.getElementById('lab1-feedback').innerText = "chmod +x applied. Permissions updated.";
+        function navigateScreen(dir) {
+            goToScreen(state.currentScreen + dir);
         }
 
-        function runLab1(type) {
-            const order = state.scriptOrder.join('');
-            const term = document.getElementById('term-content-lab1');
-            if (type === 'dot' && !state.isExecutable) {
-                term.innerText = "bash: ./myscript.bash: Permission denied";
+        function toggleSidebar(forceState) {
+            const sb = document.getElementById('mainSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const isCurrentlyOpen = !sb.classList.contains('-translate-x-full');
+            const shouldOpen = (forceState !== undefined) ? forceState : !isCurrentlyOpen;
+
+            if (shouldOpen) {
+                sb.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function showToast(msg, icon = 'fa-info-circle', bgColor = 'bg-slate-900') {
+            const toast = document.getElementById('toastNotification');
+            const iconEl = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMsg');
+
+            iconEl.className = `fas ${icon} mr-2.5 text-sm`;
+            msgEl.innerText = msg;
+            toast.className = `fixed bottom-4 right-4 z-50 transform translate-y-0 opacity-100 transition-all duration-200 flex items-center p-3 rounded-lg shadow-lg text-xs font-medium text-white max-w-sm ${bgColor}`;
+
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                toast.className = `fixed bottom-4 right-4 z-50 transform translate-y-16 opacity-0 transition-all duration-200 flex items-center p-3 rounded-lg shadow-lg text-xs font-medium text-white max-w-sm pointer-events-none`;
+            }, 3200);
+        }
+
+        function renderGlossary(filter = "") {
+            const container = document.getElementById('glossaryItemsContainer');
+            const filtered = glossaryTerms.filter(item => 
+                item.term.toLowerCase().includes(filter.toLowerCase()) ||
+                item.definition.toLowerCase().includes(filter.toLowerCase()) ||
+                item.category.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">No matching terms found.</div>`;
                 return;
             }
-            if (order === "231") {
-                term.innerHTML = "Hello from Bash";
-                document.getElementById('lab1-feedback').innerText = "SUCCESS! Script executed correctly.";
+
+            container.innerHTML = filtered.map(t => `
+                <div class="pt-3 first:pt-0">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-xs text-teal-800 font-mono">${t.term}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${t.category}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${t.definition}</p>
+                </div>
+            `).join('');
+        }
+
+        function filterGlossary() {
+            const val = document.getElementById('glossarySearchInput').value;
+            renderGlossary(val);
+        }
+
+        function toggleGlossary(forceState) {
+            const modal = document.getElementById('glossaryModal');
+            const isOpen = !modal.classList.contains('hidden');
+            const shouldOpen = (forceState !== undefined) ? forceState : !isOpen;
+
+            if (shouldOpen) {
+                modal.classList.remove('hidden');
+                document.getElementById('glossarySearchInput').focus();
             } else {
-                term.innerText = "bash: ./myscript.bash: line 1: syntax error near unexpected token...";
-                document.getElementById('lab1-feedback').innerText = "FAIL: Check shebang placement.";
+                modal.classList.add('hidden');
             }
         }
 
-        // Screen 3 Logic
-        function checkGlob(btn, isCorrect) {
-            clearQuizOptions(btn);
-            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
-            document.getElementById('globFeedback').innerText = isCorrect ? "✅ Correct! Brackets [2-4] define a specific range." : "❌ Incorrect. Try again.";
+        /* Helper string sanitizer */
+        function escapeHtml(str) {
+            return str.replace(/'/g, "\\'");
         }
 
-        function checkSeq(btn, isCorrect) {
-            clearQuizOptions(btn);
-            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        function selectIntroScenario(type) {
+            const box = document.getElementById('introFeedbackBox');
+            box.classList.remove('hidden');
+            if (type === 'daily') {
+                box.innerHTML = `<strong>Repetitive Tasks:</strong> Shell scripts shine when stringing together repetitive commands. A script written once can be scheduled via <code>cron</code> or executed with a single keystroke.`;
+            } else if (type === 'interactive') {
+                box.innerHTML = `<strong>Interactive Scripting:</strong> Using <code>read</code>, <code>case</code>, and parameter checking enables robust user-facing administrative scripts with input validation.`;
+            } else if (type === 'reports') {
+                box.innerHTML = `<strong>Log & Data Pipelines:</strong> The chapter highlights combining <code>sed</code>, <code>awk</code>, <code>cut</code>, and <code>tr</code> to convert unformatted logs into polished executive reports.`;
+            }
+            showToast("Excellent use case for shell scripting!", "fa-lightbulb", "bg-teal-700");
         }
 
-        function clearQuizOptions(btn) {
-            Array.from(btn.parentNode.children).forEach(b => b.classList.remove('correct', 'incorrect'));
-        }
+        function toggleScriptBlock(id, code) {
+            const el = document.getElementById(`block-${id}`);
+            const preview = document.getElementById('scriptLiveFileContent');
+            const index = state.assembledBlocks.indexOf(id);
 
-        // Screen 4 - Components
-        function runCompLab(type) {
-            const out = document.getElementById('comp-output');
-            if (type === 'read') {
-                out.innerHTML = "read -p \"Name? \"<br>Name? Student1<br>echo $REPLY<br>Student1";
+            if (index > -1) {
+                state.assembledBlocks.splice(index, 1);
+                el.classList.remove('bg-teal-50', 'border-teal-500', 'text-teal-900');
+                el.querySelector('.block-status').innerText = 'Click to add';
             } else {
-                out.innerHTML = "declare -i num<br>num=10<br>num=\"Text\"<br>echo $num<br>0 (Strings become 0 in integer vars)";
+                state.assembledBlocks.push(id);
+                el.classList.add('bg-teal-50', 'border-teal-500', 'text-teal-900');
+                el.querySelector('.block-status').innerText = `Line ${state.assembledBlocks.length}`;
+            }
+
+            // Update live code preview
+            const lineMap = {
+                'shebang': '#!/bin/bash',
+                'comment': '# My first Bash script',
+                'echo': 'echo "Hello from Bash"'
+            };
+
+            if (state.assembledBlocks.length === 0) {
+                preview.innerText = "# (Select blocks above to assemble file)";
+            } else {
+                preview.innerText = state.assembledBlocks.map(b => lineMap[b]).join('\n');
             }
         }
 
-        // Screen 5 - Branching
-        function runBranchLab(type) {
-            const out = document.getElementById('branch-output');
-            if (type === 'test') {
-                out.innerHTML = "[ 10 -gt 5 ] && echo \"Pass\"<br>Pass";
-            } else {
-                out.innerHTML = "case $choice in<br>&nbsp;&nbsp;1) echo \"Disk\" ;;<br>&nbsp;&nbsp;2) echo \"CPU\" ;;<br>&nbsp;&nbsp;*) echo \"Invalid\" ;;<br>esac";
+        function resetAssembly() {
+            state.assembledBlocks = [];
+            ['shebang', 'comment', 'echo'].forEach(id => {
+                const el = document.getElementById(`block-${id}`);
+                if (el) {
+                    el.classList.remove('bg-teal-50', 'border-teal-500', 'text-teal-900');
+                    el.querySelector('.block-status').innerText = 'Click to add';
+                }
+            });
+            document.getElementById('scriptLiveFileContent').innerText = "# (Select blocks above to assemble file)";
+            showToast("Script workspace cleared.", "fa-arrow-rotate-left");
+        }
+
+        function writeToTerminal(termId, text, isCmd = false, color = "text-slate-200") {
+            const term = document.getElementById(termId);
+            if (!term) return;
+            const line = document.createElement('div');
+            line.className = `mt-1 font-mono text-xs ${color}`;
+            line.innerHTML = isCmd ? `<span class="text-teal-400 font-semibold">$</span> ${text}` : text;
+            term.appendChild(line);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearTerminal(termId) {
+            const term = document.getElementById(termId);
+            if (term) term.innerHTML = `<div class="text-slate-400 text-xs font-mono">Terminal cleared.</div>`;
+        }
+
+        function runLab1Execution(type) {
+            const orderStr = state.assembledBlocks.join('-');
+
+            if (type === 'bash') {
+                writeToTerminal('term1', 'bash myscript.bash', true);
+                if (orderStr === 'shebang-comment-echo' || orderStr === 'shebang-echo') {
+                    writeToTerminal('term1', 'Hello from Bash', false, 'text-emerald-400');
+                    showToast("Success! 'bash myscript.bash' reads the file directly.", "fa-check", "bg-emerald-700");
+                } else if (!state.assembledBlocks.includes('shebang')) {
+                    writeToTerminal('term1', 'myscript.bash: line 1: Warning: Missing shebang interpreter designation.', false, 'text-amber-400');
+                } else {
+                    writeToTerminal('term1', 'Hello from Bash (Executed, but check line ordering)', false, 'text-amber-300');
+                }
+            } else if (type === 'chmod') {
+                writeToTerminal('term1', 'chmod +x myscript.bash', true);
+                state.hasExecutablePermission = true;
+                document.getElementById('scriptFilePermsBadge').innerText = "Permissions: -rwxr-xr-x";
+                document.getElementById('scriptFilePermsBadge').className = "text-emerald-400 font-sans font-semibold";
+                writeToTerminal('term1', 'Permissions changed to -rwxr-xr-x (executable bit set).', false, 'text-slate-300');
+                showToast("Permissions updated! Execute with ./myscript.bash", "fa-lock-open", "bg-teal-700");
+            } else if (type === 'dot_slash') {
+                writeToTerminal('term1', './myscript.bash', true);
+                if (!state.hasExecutablePermission) {
+                    writeToTerminal('term1', 'bash: ./myscript.bash: Permission denied', false, 'text-rose-400');
+                    showToast("Error: Direct execution requires chmod +x first!", "fa-circle-xmark", "bg-rose-700");
+                } else if (orderStr.startsWith('shebang')) {
+                    writeToTerminal('term1', 'Hello from Bash', false, 'text-emerald-400');
+                    showToast("Executed successfully via direct path!", "fa-circle-check", "bg-emerald-700");
+                } else {
+                    writeToTerminal('term1', 'bash: exec format error or missing shebang on line 1', false, 'text-rose-400');
+                }
+            } else if (type === 'source') {
+                writeToTerminal('term1', 'source myscript.bash', true);
+                writeToTerminal('term1', 'Hello from Bash', false, 'text-emerald-400');
+                writeToTerminal('term1', '(Note: source runs commands inside the CURRENT shell context.)', false, 'text-sky-300');
+                showToast("Ran in current shell session using source.", "fa-bolt", "bg-sky-700");
             }
         }
 
-        // Screen 6 - Loops
-        function runLoopLab(type) {
-            const out = document.getElementById('loop-output');
-            let res = "";
-            if (type === 'while') res = "count=1; while [ $count -le 3 ]; do echo $count; count=$((count+1)); done<br>1<br>2<br>3";
-            if (type === 'until') res = "count=1; until [ $count -gt 3 ]; do echo $count; count=$((count+1)); done<br>1<br>2<br>3";
-            if (type === 'for') res = "for i in {1..3}; do echo $i; done<br>1<br>2<br>3";
-            out.innerHTML = res;
+        function showPathSecurityWarning() {
+            showToast("Security Risk: Adding '.' to PATH allows accidental execution of malicious binaries in the current directory!", "fa-triangle-exclamation", "bg-amber-700");
         }
 
-        // Screen 7 - Text Tools I
-        function runText1(type) {
-            const out = document.getElementById('text1-output');
-            if (type === 'tr') out.innerHTML = "echo \"student1\" | tr a-z A-Z<br>STUDENT1";
-            if (type === 'cut') out.innerHTML = "who | cut -d ' ' -f1<br>student1<br>admin";
-            if (type === 'tr-d') out.innerHTML = "echo \"s p a c e s\" | tr -d ' '<br>spaces";
+        function testGlobPattern(pattern) {
+            const out = document.getElementById('globFeedbackBox');
+            writeToTerminal('term3', `ls -d ${pattern}`, true);
+            
+            if (pattern === 'note1[2-4]') {
+                writeToTerminal('term3', 'note12  note13  note14', false, 'text-emerald-400');
+                out.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fas fa-check-circle mr-1"></i> Correct!</span> The range [2-4] matches single characters 2, 3, or 4.`;
+                showToast("Correct pattern matched!", "fa-check", "bg-emerald-700");
+            } else if (pattern === 'note1*') {
+                writeToTerminal('term3', 'note10  note11  note12  note13  note14', false, 'text-amber-300');
+                out.innerHTML = `<span class="text-amber-700 font-bold"><i class="fas fa-circle-exclamation mr-1"></i> Matches too many files:</span> note1* includes note10 and note11.`;
+            } else if (pattern === 'note??') {
+                writeToTerminal('term3', 'note10  note11  note12  note13  note14', false, 'text-amber-300');
+                out.innerHTML = `<span class="text-amber-700 font-bold"><i class="fas fa-circle-exclamation mr-1"></i> note?? matches any two characters</span> after 'note' (matches 10 through 14).`;
+            } else {
+                writeToTerminal('term3', 'note12  note13  note14', false, 'text-amber-300');
+                out.innerHTML = `<span class="text-amber-700 font-bold"><i class="fas fa-circle-exclamation mr-1"></i> Close!</span> But [2-5] would also match note15 if it existed.`;
+            }
         }
 
-        // Screen 8 - Text Tools II
-        function runText2(type) {
-            const out = document.getElementById('text2-output');
-            if (type === 'sed') out.innerHTML = "sed -n 's/root/fred/p' labfile<br>fred fred 2048 secret.key";
-            if (type === 'awk') out.innerHTML = "awk '{print \"File: \" $4}' labfile<br>File: data.txt<br>File: secret.key";
+        function runSeqDemo(type) {
+            const exitBadge = document.getElementById('term3ExitStatus');
+            if (type === 'and') {
+                writeToTerminal('term3', 'mkdir reports && cd reports', true);
+                writeToTerminal('term3', 'reports/ directory created ($? = 0), cd reports executed.', false, 'text-emerald-400');
+                exitBadge.innerText = '0';
+                exitBadge.className = 'text-emerald-400';
+            } else if (type === 'or') {
+                writeToTerminal('term3', 'ls report.txt || echo "Missing"', true);
+                writeToTerminal('term3', 'ls: cannot access \'report.txt\': No such file or directory', false, 'text-rose-300');
+                writeToTerminal('term3', 'Missing', false, 'text-amber-300');
+                exitBadge.innerText = '0 (from echo)';
+                exitBadge.className = 'text-amber-400';
+            } else if (type === 'semi') {
+                writeToTerminal('term3', 'date ; whoami', true);
+                writeToTerminal('term3', new Date().toUTCString(), false, 'text-slate-200');
+                writeToTerminal('term3', 'student', false, 'text-slate-200');
+                exitBadge.innerText = '0';
+                exitBadge.className = 'text-emerald-400';
+            }
         }
 
-        // Screen 9 - Mastery
-        function checkMastery(btn, isCorrect) {
-            clearQuizOptions(btn);
-            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        function testDeclareInt() {
+            const fb = document.getElementById('declareFeedback');
+            fb.innerHTML = `
+                <div><strong>Execution Log:</strong></div>
+                <div class="font-mono text-teal-800">sum=100 &rarr; sum=115 &rarr; sum="Fred"</div>
+                <div class="text-emerald-700 font-bold mt-1">Result: echo $sum yields '0'</div>
+                <p class="text-slate-600 mt-0.5">Because sum was defined with <code class="font-mono">declare -i</code>, assigning string "Fred" forces conversion to integer 0.</p>
+            `;
+            showToast("Integer enforced: string converted to 0", "fa-calculator", "bg-teal-700");
         }
 
-        init();
+        function inspectDeclareAttributes() {
+            const fb = document.getElementById('declareFeedback');
+            fb.innerHTML = `
+                <div class="font-mono bg-slate-900 text-teal-300 p-2 rounded text-[11px]">
+                    $ declare -p sum<br>
+                    declare -i sum="0"
+                </div>
+                <p class="text-xs text-slate-600 mt-1"><strong>declare -p</strong> displays the attributes (-i) and currently assigned value of any variable.</p>
+            `;
+        }
+
+        function simulateReadCommand(isDefault) {
+            const val = document.getElementById('readSimInput').value.trim() || "Student1";
+            const fb = document.getElementById('readFeedback');
+
+            if (isDefault) {
+                fb.innerHTML = `
+                    <div class="text-slate-300">$ read (no variable supplied)</div>
+                    <div class="text-teal-400">Input entered: "${val}"</div>
+                    <div class="text-emerald-400 font-bold mt-1">$ echo $REPLY &rarr; "${val}"</div>
+                    <div class="text-slate-400 text-[10px]">Stored in default variable $REPLY.</div>
+                `;
+            } else {
+                fb.innerHTML = `
+                    <div class="text-slate-300">$ read username</div>
+                    <div class="text-teal-400">Input entered: "${val}"</div>
+                    <div class="text-emerald-400 font-bold mt-1">$ echo $username &rarr; "${val}"</div>
+                    <div class="text-slate-400 text-[10px]">Stored in user variable $username.</div>
+                `;
+            }
+            showToast("read input simulated successfully", "fa-check", "bg-teal-700");
+        }
+
+        function runFunctionDemo() {
+            showToast("Function timestamp() returned current date & time", "fa-clock", "bg-teal-700");
+        }
+
+        function validateBracketSyntax(isValid) {
+            const fb = document.getElementById('bracketFeedback');
+            if (isValid) {
+                fb.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fas fa-check-circle"></i> Correct:</span> The shell recognizes '[' as a command and evaluates the arguments properly with spaces.`;
+            } else {
+                fb.innerHTML = `<span class="text-rose-700 font-bold"><i class="fas fa-circle-xmark"></i> Syntax Error:</span> Without spaces, Bash attempts to find an executable named '[0' instead of the test command '['.`;
+            }
+        }
+
+        function showOperatorExplanation(op) {
+            const box = document.getElementById('operatorDetailBox');
+            const map = {
+                '-lt': "<strong>-lt (Less Than):</strong> [ $RAM -lt 4096 ] &mdash; returns 0 if RAM is strictly less than 4096.",
+                '-eq': "<strong>-eq (Equal):</strong> [ $EUID -eq 0 ] &mdash; verifies if the current user ID equals 0 (root).",
+                '-f': "<strong>-f (Regular File):</strong> [ -f /etc/hosts ] &mdash; verifies the path exists AND is a regular file (not directory).",
+                '-d': "<strong>-d (Directory):</strong> [ -d /var/log ] &mdash; returns true only if the directory exists."
+            };
+            box.innerHTML = map[op] || "";
+        }
+
+        function runLoopSimulation(type) {
+            clearTerminal('term6');
+            if (type === 'while') {
+                writeToTerminal('term6', 'count=1; while [ $count -le 3 ]; do echo "Num: $count"; count=$((count+1)); done', true);
+                writeToTerminal('term6', 'Num: 1');
+                writeToTerminal('term6', 'Num: 2');
+                writeToTerminal('term6', 'Num: 3');
+                writeToTerminal('term6', 'Loop ended when count became 4 (condition returned false).', false, 'text-teal-400');
+            } else if (type === 'until') {
+                writeToTerminal('term6', 'count=1; until [ $count -gt 3 ]; do echo "Num: $count"; count=$((count+1)); done', true);
+                writeToTerminal('term6', 'Num: 1');
+                writeToTerminal('term6', 'Num: 2');
+                writeToTerminal('term6', 'Num: 3');
+                writeToTerminal('term6', 'Loop ended when count became 4 (condition returned true).', false, 'text-indigo-400');
+            } else if (type === 'for') {
+                writeToTerminal('term6', 'for i in {1..3}; do echo "Server: $i"; done', true);
+                writeToTerminal('term6', 'Server: 1');
+                writeToTerminal('term6', 'Server: 2');
+                writeToTerminal('term6', 'Server: 3');
+            } else if (type === 'debug') {
+                writeToTerminal('term6', 'bash -x loop_test.sh', true);
+                writeToTerminal('term6', '+ count=1', false, 'text-amber-300');
+                writeToTerminal('term6', '+ \'[\' 1 -le 3 \']\'', false, 'text-amber-300');
+                writeToTerminal('term6', '+ echo Num: 1', false, 'text-amber-300');
+                writeToTerminal('term6', 'Num: 1', false, 'text-slate-200');
+                writeToTerminal('term6', '+ count=2', false, 'text-amber-300');
+                writeToTerminal('term6', '+ \'[\' 2 -le 3 \']\'', false, 'text-amber-300');
+                writeToTerminal('term6', 'Num: 2', false, 'text-slate-200');
+                writeToTerminal('term6', '+ count=3', false, 'text-amber-300');
+                writeToTerminal('term6', '+ \'[\' 3 -le 3 \']\'', false, 'text-amber-300');
+                writeToTerminal('term6', 'Num: 3', false, 'text-slate-200');
+                writeToTerminal('term6', '+ count=4', false, 'text-amber-300');
+                writeToTerminal('term6', '+ \'[\' 4 -le 3 \']\'', false, 'text-amber-300');
+            }
+        }
+
+        function runText1Tool(action) {
+            clearTerminal('term7');
+            if (action === 'tr_upper') {
+                writeToTerminal('term7', 'echo "linux bash" | tr a-z A-Z', true);
+                writeToTerminal('term7', 'LINUX BASH', false, 'text-emerald-400');
+            } else if (action === 'tr_del') {
+                writeToTerminal('term7', 'tr -d \'\\r\' < winfile.txt > linux.txt', true);
+                writeToTerminal('term7', 'Stripped carriage return (CR) characters from file stream.', false, 'text-teal-400');
+            } else if (action === 'tr_squeeze') {
+                writeToTerminal('term7', 'who | tr -s " " " "', true);
+                writeToTerminal('term7', 'student1 tty1 2026-09-23 09:30');
+                writeToTerminal('term7', 'admin pts/0 2026-09-23 10:15');
+            } else if (action === 'cut_users') {
+                writeToTerminal('term7', 'who | tr -s " " | cut -d " " -f1', true);
+                writeToTerminal('term7', 'student1', false, 'text-sky-300');
+                writeToTerminal('term7', 'admin', false, 'text-sky-300');
+            } else if (action === 'cut_multi') {
+                writeToTerminal('term7', 'cut -d ":" -f1,7 /etc/passwd | head -n 2', true);
+                writeToTerminal('term7', 'root:/bin/bash');
+                writeToTerminal('term7', 'bin:/sbin/nologin');
+            } else if (action === 'nl') {
+                writeToTerminal('term7', 'nl -b a script.bash', true);
+                writeToTerminal('term7', '     1  #!/bin/bash');
+                writeToTerminal('term7', '     2  # Automated healthcheck');
+                writeToTerminal('term7', '     3  df -h');
+            } else if (action === 'od') {
+                writeToTerminal('term7', 'od -c textfile.txt', true);
+                writeToTerminal('term7', '0000000   l   i   n   u   x  \\r  \\n');
+                writeToTerminal('term7', '(Notice the hidden Windows \\r return identified!)', false, 'text-amber-300');
+            }
+        }
+
+        function runText2Tool(action) {
+            clearTerminal('term8');
+            if (action === 'sed_sub') {
+                writeToTerminal('term8', "sed 's/Jane/Margaret/' student_records.csv", true);
+                writeToTerminal('term8', 'Margaret,F,Math,14,88', false, 'text-emerald-300');
+                writeToTerminal('term8', 'Bruce,M,Algebra,15,72');
+                writeToTerminal('term8', 'Amy,F,Algebra,14,91');
+                writeToTerminal('term8', 'Ben,M,Science,16,84');
+            } else if (action === 'sed_print') {
+                writeToTerminal('term8', "sed -n 's/Algebra/German/p' student_records.csv", true);
+                writeToTerminal('term8', 'Bruce,M,German,15,72', false, 'text-emerald-400');
+                writeToTerminal('term8', 'Amy,F,German,14,91', false, 'text-emerald-400');
+                writeToTerminal('term8', '(-n suppressed unchanged lines)', false, 'text-slate-400');
+            } else if (action === 'awk_fields') {
+                writeToTerminal('term8', "awk -F \",\" '{print $1 \" scored \" $5}' student_records.csv", true);
+                writeToTerminal('term8', 'Jane scored 88');
+                writeToTerminal('term8', 'Bruce scored 72');
+                writeToTerminal('term8', 'Amy scored 91');
+                writeToTerminal('term8', 'Ben scored 84');
+            } else if (action === 'awk_filter') {
+                writeToTerminal('term8', "awk -F \",\" '$5 > 85 {print \"Honor: \" $1}' student_records.csv", true);
+                writeToTerminal('term8', 'Honor: Jane', false, 'text-teal-400');
+                writeToTerminal('term8', 'Honor: Amy', false, 'text-teal-400');
+            } else if (action === 'sort_uniq') {
+                writeToTerminal('term8', 'sort raw_ips.log | uniq -c', true);
+                writeToTerminal('term8', '      3 10.0.0.1');
+                writeToTerminal('term8', '      1 10.0.0.5');
+                writeToTerminal('term8', '      8 192.168.1.100');
+            } else if (action === 'wc_demo') {
+                writeToTerminal('term8', 'wc -l student_records.csv', true);
+                writeToTerminal('term8', '4 student_records.csv', false, 'text-teal-300');
+            } else if (action === 'head_tail') {
+                writeToTerminal('term8', 'head -n 2 student_records.csv', true);
+                writeToTerminal('term8', 'Jane,F,Math,14,88');
+                writeToTerminal('term8', 'Bruce,M,Algebra,15,72');
+            }
+        }
+
+        function handleMasteryChoice(qId, optIdx, isCorrect, explanation) {
+            if (state.masteryAnswers[qId] !== undefined) return; // Prevent re-answering
+            state.masteryAnswers[qId] = isCorrect;
+
+            if (isCorrect) state.score++;
+            document.getElementById('scoreIndicatorBadge').innerText = `Score: ${state.score}`;
+
+            const qCard = document.getElementById(`qcard-${qId}`);
+            const buttons = qCard.querySelectorAll('.quiz-btn');
+            
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === optIdx) {
+                    if (isCorrect) {
+                        btn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-900', 'font-semibold');
+                        btn.querySelector('.badge-icon').innerHTML = `<i class="fas fa-check text-emerald-600"></i>`;
+                    } else {
+                        btn.classList.add('bg-rose-100', 'border-rose-500', 'text-rose-900', 'font-semibold');
+                        btn.querySelector('.badge-icon').innerHTML = `<i class="fas fa-xmark text-rose-600"></i>`;
+                    }
+                    btn.querySelector('.badge-icon').classList.remove('hidden');
+                }
+            });
+
+            const fb = document.getElementById(`${qId}-feedback`);
+            fb.classList.remove('hidden');
+            fb.className = `text-xs p-2.5 rounded ${isCorrect ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'bg-rose-50 text-rose-900 border border-rose-200'}`;
+            fb.innerHTML = `<strong>${isCorrect ? 'Correct!' : 'Incorrect.'}</strong> ${explanation}`;
+
+            // Update counter
+            const answeredCount = Object.keys(state.masteryAnswers).length;
+            const counter = document.getElementById('quizAnsweredCount');
+            if (counter) counter.innerText = `${answeredCount} / 10`;
+
+            showToast(isCorrect ? "Correct answer!" : "Review the rationale note.", isCorrect ? "fa-check" : "fa-circle-info", isCorrect ? "bg-emerald-700" : "bg-slate-800");
+        }
+
+        function restartCourse() {
+            state.score = 0;
+            state.masteryAnswers = {};
+            document.getElementById('scoreIndicatorBadge').innerText = `Score: 0`;
+            goToScreen(0);
+        }
+
+        // Initialize on window load
+        window.addEventListener('load', initApp);
     </script>
 </body>
 </html>
