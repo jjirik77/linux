@@ -219,14 +219,14 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900">Interactive Linux Terminal Simulator (nano & vim practice)</h3>
-                    <p class="text-xs text-slate-500">Try opening files with <code class="text-blue-600 font-mono-code font-bold">nano filename.txt</code> or <code class="text-blue-600 font-mono-code font-bold">vim filename.txt</code>. Run guided demos below!</p>
+                    <p class="text-xs text-slate-500">Practice text editors with persistent reference steps below so you don't lose terminal focus.</p>
                 </div>
                 <div class="flex items-center space-x-2 flex-wrap gap-2">
-                    <button onclick="runNanoDemo()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-lg transition border border-emerald-300 flex items-center space-x-1">
-                        <span>▶ Nano Demo</span>
+                    <button onclick="toggleLabPanel('nano')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-lg transition border border-emerald-300 flex items-center space-x-1">
+                        <span>📖 Nano Lab Guide</span>
                     </button>
-                    <button onclick="runVimDemo()" class="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-2 rounded-lg transition border border-purple-300 flex items-center space-x-1">
-                        <span>▶ Vim Demo</span>
+                    <button onclick="toggleLabPanel('vim')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-2 rounded-lg transition border border-purple-300 flex items-center space-x-1">
+                        <span>📖 Vim Lab Guide</span>
                     </button>
                     <button onclick="resetTerminalState()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-300">
                         Reset Terminal
@@ -234,91 +234,151 @@
                 </div>
             </div>
 
+            <!-- Persistent Nano Guided Lab Panel (Hidden by default, toggleable) -->
+            <div id="nano-lab-card" class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm hidden space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-md">GNU nano Practice Lab</span>
+                        <h4 class="font-bold text-slate-900 text-sm">Step-by-Step Exercise Checklist</h4>
+                    </div>
+                    <button onclick="toggleLabPanel('nano')" class="text-xs text-slate-500 hover:text-slate-800 font-bold">&times; Close</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-700">
+                    <div class="bg-white p-3 rounded-lg border border-emerald-100 space-y-1">
+                        <div class="font-bold text-emerald-800">1. Open a file:</div>
+                        <code class="bg-emerald-50 px-2 py-0.5 rounded font-mono-code text-emerald-900 block">nano config.txt</code>
+                        <p class="text-slate-500">Launches nano editor for the specified file.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-emerald-100 space-y-1">
+                        <div class="font-bold text-emerald-800">2. Type content (Insert Text):</div>
+                        <p class="text-slate-600">Type directly using keyboard: <code class="bg-emerald-50 px-1 rounded text-emerald-900 font-mono-code">SERVER_NAME=web01</code>. Use arrow keys to navigate.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-emerald-100 space-y-1">
+                        <div class="font-bold text-emerald-800">3. Save changes:</div>
+                        <code class="bg-emerald-50 px-2 py-0.5 rounded font-mono-code text-emerald-900 block">Ctrl + O</code>
+                        <p class="text-slate-500">Writes out changes (Press Enter to confirm filename).</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-emerald-100 space-y-1">
+                        <div class="font-bold text-emerald-800">4. Exit editor:</div>
+                        <code class="bg-emerald-50 px-2 py-0.5 rounded font-mono-code text-emerald-900 block">Ctrl + X</code>
+                        <p class="text-slate-500">Returns to the bash prompt.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Persistent Vim Guided Lab Panel (Hidden by default, toggleable) -->
+            <div id="vim-lab-card" class="bg-purple-50 border border-purple-200 rounded-2xl p-5 shadow-sm hidden space-y-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-purple-600 text-white text-xs font-bold px-2.5 py-1 rounded-md">Vim Modal Practice Lab</span>
+                        <h4 class="font-bold text-slate-900 text-sm">Step-by-Step Exercise Checklist</h4>
+                    </div>
+                    <button onclick="toggleLabPanel('vim')" class="text-xs text-slate-500 hover:text-slate-800 font-bold">&times; Close</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs text-slate-700">
+                    <div class="bg-white p-3 rounded-lg border border-purple-100 space-y-1">
+                        <div class="font-bold text-purple-800">1. Open file:</div>
+                        <code class="bg-purple-50 px-2 py-0.5 rounded font-mono-code text-purple-900 block">vim practice.txt</code>
+                        <p class="text-slate-500">Opens file in Normal Mode with pre-loaded lines.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-purple-100 space-y-1">
+                        <div class="font-bold text-purple-800">2. Insert Mode & Typing Text:</div>
+                        <code class="bg-purple-50 px-2 py-0.5 rounded font-mono-code text-purple-900 block">Press 'i' then type text</code>
+                        <p class="text-slate-500">Insert text: <code class="bg-purple-100 text-purple-900 px-1 rounded">Maintenance Window Scheduled</code>. Press <span class="font-bold">Esc</span> to return to Normal Mode.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-purple-100 space-y-1">
+                        <div class="font-bold text-purple-800">3. Navigation & Movement:</div>
+                        <code class="bg-purple-50 px-2 py-0.5 rounded font-mono-code text-purple-900 block">h (left), j (down), k (up), l (right)</code>
+                        <p class="text-slate-500">In Normal mode, move the cursor over specific characters and words in your text.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-purple-100 space-y-1">
+                        <div class="font-bold text-purple-800">4. Delete & Yank Text:</div>
+                        <code class="bg-purple-50 px-2 py-0.5 rounded font-mono-code text-purple-900 block">dd (delete line) / yy (yank line)</code>
+                        <p class="text-slate-500">Position cursor on target line, type <span class="font-bold">dd</span> to delete or <span class="font-bold">yy</span> to copy, then press <span class="font-bold">p</span> to paste.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-purple-100 space-y-1">
+                        <div class="font-bold text-purple-800">5. Search String:</div>
+                        <code class="bg-purple-50 px-2 py-0.5 rounded font-mono-code text-purple-900 block">/Chapter 2</code>
+                        <p class="text-slate-500">Type <span class="font-bold">/Chapter 2</span> and press Enter to instantly locate and jump to that string in the text.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-purple-100 space-y-1">
+                        <div class="font-bold text-purple-800">6. Save & Quit:</div>
+                        <code class="bg-purple-50 px-2 py-0.5 rounded font-mono-code text-purple-900 block">:wq</code>
+                        <p class="text-slate-500">Type colon, <span class="font-bold">wq</span>, and press Enter to save file changes and exit back to bash.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Terminal Box -->
-            <div class="bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 flex flex-col h-[500px] relative">
-                <!-- Terminal Header Bar -->
+            <div id="terminal-window" class="bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-800 flex flex-col h-[520px] font-mono-code text-sm relative">
+                <!-- Terminal Titlebar -->
                 <div class="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
                     <div class="flex items-center space-x-2">
-                        <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
                         <div class="w-3 h-3 rounded-full bg-amber-500"></div>
                         <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span class="ml-2 text-xs text-slate-400 font-mono-code">bash - student@linuxplus: 80x24</span>
+                        <span class="ml-2 text-xs text-slate-400 font-semibold" id="terminal-title">student@linux-server: ~</span>
                     </div>
-                    <div class="text-xs text-slate-400 font-mono-code hidden sm:block">
-                        Type <span class="text-emerald-400">help</span> for command list
+                    <div class="text-xs text-slate-400 flex items-center space-x-3">
+                        <span id="editor-mode-indicator" class="hidden px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">NORMAL MODE</span>
+                        <span>Bash 5.2</span>
                     </div>
                 </div>
 
-                <!-- Interactive Fullscreen Editor Overlay (Nano / Vim Simulator) -->
-                <div id="editor-overlay" class="absolute inset-0 top-[49px] bg-slate-950 z-20 flex flex-col hidden font-mono-code text-slate-100 text-sm">
+                <!-- Terminal Output Area -->
+                <div id="terminal-output" class="flex-1 p-4 overflow-y-auto space-y-2 text-slate-200">
+                    <div class="text-slate-400 text-xs">
+                        Welcome to Linux+ Interactive Terminal (CompTIA XK0-05 Chapter 2).<br>
+                        Type <code class="text-blue-400">help</code> for available commands. Try opening <code class="text-emerald-400">nano config.txt</code> or <code class="text-purple-400">vim practice.txt</code>.
+                    </div>
+                </div>
+
+                <!-- Fullscreen Embedded Text Editor Overlay (Nano / Vim) -->
+                <div id="fullscreen-editor" class="absolute inset-0 bg-slate-950 z-20 flex flex-col hidden">
+                    <!-- Editor Top Bar -->
                     <div id="editor-header" class="bg-slate-800 text-slate-300 px-4 py-2 text-xs flex justify-between items-center border-b border-slate-700">
-                        <span id="editor-title">GNU nano 6.2 - New File</span>
-                        <span id="editor-mode-indicator" class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px]">EDITING</span>
+                        <span id="editor-file-name" class="font-bold text-white">File: --</span>
+                        <span id="editor-help-shortcut" class="text-slate-400">Ctrl+O to Save | Ctrl+X to Exit</span>
                     </div>
-                    <div id="editor-textarea-container" class="flex-1 p-4 bg-slate-900 flex flex-col">
-                        <textarea id="editor-textarea" class="w-full h-full bg-transparent text-slate-100 font-mono-code resize-none focus:outline-none" spellcheck="false"></textarea>
+                    <!-- Editor Textarea / View -->
+                    <div class="flex-1 p-4 bg-slate-950 text-emerald-400 font-mono-code overflow-y-auto relative">
+                        <textarea id="editor-textarea" class="w-full h-full bg-transparent resize-none outline-none text-emerald-300 font-mono-code text-sm leading-relaxed" spellcheck="false" autocomplete="off"></textarea>
                     </div>
-                    <div id="editor-footer" class="bg-slate-800 px-4 py-2 text-xs text-slate-300 flex flex-wrap gap-x-4 border-t border-slate-700">
-                        <span id="editor-shortcut-1">^G Get Help</span>
-                        <span id="editor-shortcut-2">^O WriteOut</span>
-                        <span id="editor-shortcut-3">^X Exit</span>
-                        <span id="editor-shortcut-4">^W Where Is</span>
+                    <!-- Vim Command Line Bar (only shown in vim mode) -->
+                    <div id="vim-command-bar" class="bg-slate-900 border-t border-slate-800 px-4 py-1.5 text-xs text-slate-300 hidden flex items-center">
+                        <span id="vim-cmd-prompt" class="mr-1">:</span>
+                        <input id="vim-cmd-input" type="text" class="bg-transparent outline-none flex-1 text-slate-100 font-mono-code" autocomplete="off" />
+                    </div>
+                    <!-- Editor Footer Shortcuts -->
+                    <div id="editor-footer" class="bg-slate-900 text-slate-400 px-4 py-2 text-xs border-t border-slate-800 flex justify-between items-center">
+                        <span id="editor-status-msg" class="text-amber-400"></span>
+                        <span id="editor-mode-footer">[ EDIT INTERACTIVE MODE ]</span>
                     </div>
                 </div>
 
-                <!-- Terminal Output & Prompt Area -->
-                <div id="terminal-output" class="flex-1 p-4 overflow-y-auto font-mono-code text-sm text-slate-200 space-y-2 select-text">
-                    <div class="text-slate-400">Welcome to CompTIA Linux+ Chapter 2 Interactive Terminal Simulator</div>
-                    <div class="text-slate-400">Practice text editors: <span class="text-emerald-400 font-bold">nano</span> or <span class="text-emerald-400 font-bold">vim</span> filename.txt (e.g. <code class="text-cyan-300">nano config.cfg</code>). Type <span class="text-emerald-400 font-bold">help</span> for commands.</div>
-                    <div class="text-slate-400 mb-4">------------------------------------------------------------</div>
-                </div>
-
-                <!-- Terminal Input Form -->
-                <div class="bg-slate-950 px-4 py-3 border-t border-slate-800 flex items-center">
-                    <span id="terminal-prompt" class="text-emerald-400 font-mono-code text-sm font-semibold mr-2 shrink-0">student@linuxplus:~$</span>
-                    <input type="text" id="terminal-input" autocomplete="off" spellcheck="false" class="w-full bg-transparent text-slate-100 font-mono-code text-sm focus:outline-none" placeholder="Type command here..." autofocus>
+                <!-- Terminal Prompt Line -->
+                <div id="terminal-prompt-container" class="bg-slate-900 px-4 py-3 border-t border-slate-800 flex items-center space-x-2">
+                    <span id="terminal-prompt" class="text-emerald-400 font-semibold text-xs sm:text-sm">student@linux-server:~$</span>
+                    <input id="terminal-input" type="text" class="flex-1 bg-transparent border-none outline-none text-slate-100 font-mono-code text-xs sm:text-sm" autofocus autocomplete="off" />
                 </div>
             </div>
         </section>
 
         <!-- TAB 4: EXAM QUIZ -->
         <section id="tab-quiz" class="hidden space-y-6">
-            <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                    <div>
-                        <h3 class="text-xl font-bold text-slate-900">CompTIA Linux+ Practice Assessment: Chapter 2</h3>
-                        <p class="text-xs text-slate-500">Test your mastery of vi/vim and nano text editors.</p>
-                    </div>
-                    <span id="quiz-progress-text" class="text-xs font-semibold bg-slate-100 text-slate-700 px-3 py-1 rounded-full">Question 1 of 5</span>
-                </div>
+            <div class="max-w-2xl mx-auto text-center space-y-2">
+                <h3 class="text-2xl font-bold text-slate-900">CompTIA Linux+ Chapter 2 Certification Quiz</h3>
+                <p class="text-slate-600 text-sm">Test your knowledge on vi/vim and nano text editors.</p>
+            </div>
 
-                <!-- Question Card -->
+            <div class="max-w-2xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-sm p-8 space-y-8">
                 <div id="quiz-container" class="space-y-6">
-                    <div id="question-text" class="text-base font-semibold text-slate-800">
-                        Loading question...
-                    </div>
-                    <div id="options-container" class="space-y-3">
-                        <!-- Options injected by JS -->
-                    </div>
+                    <!-- Dynamic quiz questions injected by JS -->
                 </div>
-
-                <!-- Quiz Navigation / Results -->
-                <div id="quiz-footer" class="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
-                    <div id="quiz-feedback" class="text-sm font-medium"></div>
-                    <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-xl transition hidden">
-                        Next Question &rarr;
-                    </button>
-                </div>
-
-                <!-- Final Score Screen -->
-                <div id="quiz-score-screen" class="hidden text-center py-8 space-y-4">
-                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-                        🎉
-                    </div>
-                    <h4 class="text-2xl font-bold text-slate-900">Quiz Completed!</h4>
-                    <p id="final-score-text" class="text-slate-600 text-base"></p>
-                    <button onclick="restartQuiz()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-xl transition">
-                        Retake Quiz
+                <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                    <span id="quiz-progress" class="text-xs font-semibold text-slate-500">Question 1 of 5</span>
+                    <button onclick="submitQuizAnswer()" id="quiz-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2.5 rounded-xl shadow transition">
+                        Submit Answer
                     </button>
                 </div>
             </div>
@@ -327,610 +387,607 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-500">
-        <p>Designed for Linux+ Certification Students &bull; Interactive Browser Lab</p>
+    <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            Linux+ Certification Training Course &bull; Chapter 2: Text Editors (vi/vim & nano)
+        </div>
     </footer>
 
     <!-- JavaScript Application Logic -->
     <script>
-        // --- Navigation / Tabs Management ---
+        // --- Navigation / Tab Switching ---
         function switchTab(tabId) {
             const tabs = ['overview', 'flashcards', 'terminal', 'quiz'];
             tabs.forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
-                const navBtn = document.getElementById(`nav-${t}`);
+                document.getElementById('tab-' + t).classList.add('hidden');
+                const navBtn = document.getElementById('nav-' + t);
+                const mobBtn = document.getElementById('mob-' + t);
                 if (navBtn) {
-                    navBtn.classList.remove('text-blue-600', 'font-semibold');
-                    navBtn.classList.add('text-slate-600');
+                    navBtn.className = 'transition hover:text-blue-600';
                 }
-                const mobBtn = document.getElementById(`mob-${t}`);
                 if (mobBtn) {
+                    mobBtn.className = '';
                     mobBtn.classList.remove('text-blue-600', 'font-bold');
                 }
             });
 
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            const activeNav = document.getElementById(`nav-${tabId}`);
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeNav = document.getElementById('nav-' + tabId);
+            const activeMob = document.getElementById('mob-' + tabId);
             if (activeNav) {
-                activeNav.classList.add('text-blue-600', 'font-semibold');
-                activeNav.classList.remove('text-slate-600');
+                activeNav.className = 'text-blue-600 font-semibold transition hover:text-blue-700';
             }
-            const activeMob = document.getElementById(`mob-${tabId}`);
             if (activeMob) {
-                activeMob.classList.add('text-blue-600', 'font-bold');
+                activeMob.className = 'text-blue-600 font-bold';
             }
 
             if (tabId === 'terminal') {
-                setTimeout(() => document.getElementById('terminal-input').focus(), 50);
+                setTimeout(() => {
+                    const termInput = document.getElementById('terminal-input');
+                    if (termInput) termInput.focus();
+                }, 50);
             }
         }
 
-        // --- Flashcards Data & Logic (Chapter 2: Text Editors) ---
-        const flashcards = [
-            {
-                q: "Which vim mode is required to type text, and how do you return to command mode from it?",
-                a: "Insert Mode (entered with 'i'). Press [Esc] to return to Command Mode."
-            },
-            {
-                q: "What is the key combination in GNU nano to write changes (save) to the current file?",
-                a: "Ctrl + O (WriteOut), followed by pressing Enter."
-            },
-            {
-                q: "In vim command mode, what keystrokes save a file and exit simultaneously?",
-                a: ":wq (or :x)"
-            },
-            {
-                q: "Which vim command mode keystroke deletes the entire current line of text?",
-                a: "dd (double d)"
-            },
-            {
-                q: "What shortcut in GNU nano exits the program (prompting to save if modified)?",
-                a: "Ctrl + X"
-            },
-            {
-                q: "In vim command mode, what keystroke sequence copies (yanks) the current line?",
-                a: "yy (double y)"
-            }
+        // --- Flashcard Logic ---
+        const flashcardsData = [
+            { q: "Which vim mode is used for typing regular text and editing file contents?", a: "Insert Mode (entered by pressing 'i')" },
+            { q: "What keystroke combination saves a file and exits in GNU nano?", a: "Ctrl + O (WriteOut), then Enter, followed by Ctrl + X (Exit)" },
+            { q: "In vim command mode, what command deletes the current line under the cursor?", a: "dd (double d)" },
+            { q: "How do you switch from Insert Mode back to Command Mode in vim?", a: "Press the Escape (Esc) key" },
+            { q: "In vim, what command starts a search for a text string forward in the file?", a: "/ (e.g., /search_term)" },
+            { q: "What ex-command saves a vim file and quits simultaneously?", a: ":wq (Write and Quit)" }
         ];
-
         let currentCardIndex = 0;
-        let isCardFlipped = false;
 
         function updateFlashcard() {
-            const card = flashcards[currentCardIndex];
-            document.getElementById('card-counter').innerText = `Card ${currentCardIndex + 1} of ${flashcards.length}`;
+            const card = flashcardsData[currentCardIndex];
+            document.getElementById('card-counter').innerText = `Card ${currentCardIndex + 1} of ${flashcardsData.length}`;
             document.getElementById('card-content').innerText = card.q;
-            document.getElementById('card-hint').innerText = `Click to reveal answer`;
-            isCardFlipped = false;
-        }
-
-        function flipCard() {
-            const card = flashcards[currentCardIndex];
-            const contentEl = document.getElementById('card-content');
-            const hintEl = document.getElementById('card-hint');
-            if (!isCardFlipped) {
-                contentEl.innerText = card.a;
-                contentEl.className = "text-xl font-semibold text-blue-600";
-                hintEl.innerText = "Answer revealed (Click to see question)";
-                isCardFlipped = true;
-            } else {
-                contentEl.innerText = card.q;
-                contentEl.className = "text-xl font-semibold text-slate-800";
-                hintEl.innerText = "Click to reveal answer";
-                isCardFlipped = false;
-            }
+            document.getElementById('card-hint').innerText = "Answer: " + card.a;
         }
 
         function nextCard() {
-            currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+            currentCardIndex = (currentCardIndex + 1) % flashcardsData.length;
             updateFlashcard();
         }
 
         function prevCard() {
-            currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+            currentCardIndex = (currentCardIndex - 1 + flashcardsData.length) % flashcardsData.length;
             updateFlashcard();
         }
 
+        function flipCard() {
+            const hintEl = document.getElementById('card-hint');
+            hintEl.classList.toggle('text-blue-600');
+            hintEl.classList.toggle('text-slate-900');
+        }
 
-        // --- Virtual Terminal Simulator State & Logic ---
+        // --- Virtual Terminal & Editor State ---
+        let currentDir = "~";
         let vfs = {
-            "/": {
+            "~": {
                 type: "dir",
-                children: {
-                    "home": {
-                        type: "dir",
-                        children: {
-                            "student": {
-                                type: "dir",
-                                children: {
-                                    "motd.txt": { type: "file", content: "Welcome to CompTIA Linux+ Certification Training!\nChapter 2: Text Editors (vi and nano)." },
-                                    "network.cfg": { type: "file", content: "IP=192.168.1.100\nGATEWAY=192.168.1.1\nDNS=8.8.8.8" }
-                                }
-                            }
-                        }
-                    }
+                files: {
+                    "config.txt": "SERVER_NAME=web01\nPORT=80\nENABLE_SSL=true",
+                    "practice.txt": "Welcome to Chapter 2 of CompTIA Linux+.\nThis file contains sample text for vim practice.\nYou can navigate, search for strings, delete lines with dd,\nor yank and paste lines using yy and p."
                 }
             }
         };
 
-        let currentPath = "/home/student";
+        let currentEditingFile = null;
+        let currentEditorType = null; // 'nano' or 'vim'
+        let vimMode = 'NORMAL'; // 'NORMAL', 'INSERT', 'COMMAND'
+        let copiedLineBuffer = "";
 
-        function resolvePath(pathStr) {
-            if (!pathStr) return null;
-            let parts;
-            if (pathStr.startsWith('/')) {
-                parts = pathStr.split('/').filter(Boolean);
-            } else {
-                let currParts = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
-                let targetParts = pathStr.split('/').filter(Boolean);
-                for (let p of targetParts) {
-                    if (p === '..') {
-                        currParts.pop();
-                    } else if (p !== '.') {
-                        currParts.push(p);
+        function toggleLabPanel(type) {
+            const nanoCard = document.getElementById('nano-lab-card');
+            const vimCard = document.getElementById('vim-lab-card');
+            if (type === 'nano') {
+                nanoCard.classList.toggle('hidden');
+                vimCard.classList.add('hidden');
+            } else if (type === 'vim') {
+                vimCard.classList.toggle('hidden');
+                nanoCard.classList.add('hidden');
+            }
+        }
+
+        function resetTerminalState() {
+            currentDir = "~";
+            vfs = {
+                "~": {
+                    type: "dir",
+                    files: {
+                        "config.txt": "SERVER_NAME=web01\nPORT=80\nENABLE_SSL=true",
+                        "practice.txt": "Welcome to Chapter 2 of CompTIA Linux+.\nThis file contains sample text for vim practice.\nYou can navigate, search for strings, delete lines with dd,\nor yank and paste lines using yy and p."
                     }
                 }
-                parts = currParts;
-            }
-
-            let curr = vfs["/"];
-            for (let part of parts) {
-                if (curr.type === 'dir' && curr.children && curr.children[part]) {
-                    curr = curr.children[part];
-                } else {
-                    return null;
-                }
-            }
-            return curr;
+            };
+            closeEditor();
+            const output = document.getElementById('terminal-output');
+            output.innerHTML = `<div class="text-slate-400 text-xs">Terminal state reset successfully. Type <code class="text-blue-400">help</code> for commands.</div>`;
+            appendPrompt();
         }
 
-        function getAbsolutePath(pathStr) {
-            if (!pathStr) return currentPath;
-            if (pathStr.startsWith('/')) {
-                let parts = pathStr.split('/').filter(Boolean);
-                let resolved = [];
-                for (let p of parts) {
-                    if (p === '..') resolved.pop();
-                    else if (p !== '.') resolved.push(p);
-                }
-                return '/' + resolved.join('/');
-            } else {
-                let currParts = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
-                let targetParts = pathStr.split('/').filter(Boolean);
-                for (let p of targetParts) {
-                    if (p === '..') currParts.pop();
-                    else if (p !== '.') currParts.push(p);
-                }
-                return '/' + currParts.join('/');
-            }
-        }
-
-        function getParentAndName(pathStr) {
-            let abs = getAbsolutePath(pathStr);
-            let lastSlash = abs.lastIndexOf('/');
-            if (lastSlash === 0) return { parent: vfs["/"], name: abs.substring(1) };
-            let parentPath = abs.substring(0, lastSlash);
-            let name = abs.substring(lastSlash + 1);
-            let parent = resolvePath(parentPath);
-            return { parent, name };
-        }
-
-        const terminalInput = document.getElementById('terminal-input');
-        const terminalOutput = document.getElementById('terminal-output');
-
-        // Editor overlay state
-        let currentEditingFile = null;
-        let currentEditorType = 'nano'; // 'nano' or 'vim'
-
-        // Automated walkthrough demos
-        function runNanoDemo() {
-            appendTerminalLine(`<span class="text-emerald-400">student@linuxplus:/home/student$</span> <span class="text-slate-100">nano demo.txt</span>`);
-            setTimeout(() => {
-                openEditor('nano', 'demo.txt');
-                const textarea = document.getElementById('editor-textarea');
-                textarea.value = "Line 1: Hello from GNU nano!\nLine 2: Press Ctrl+O to save and Ctrl+X to exit.";
-            }, 400);
-        }
-
-        function runVimDemo() {
-            appendTerminalLine(`<span class="text-emerald-400">student@linuxplus:/home/student$</span> <span class="text-slate-100">vim vimtest.txt</span>`);
-            setTimeout(() => {
-                openEditor('vim', 'vimtest.txt');
-                const textarea = document.getElementById('editor-textarea');
-                textarea.value = "Line 1: Vim Modal Editing\nLine 2: Press Esc then type :wq to save and exit.";
-            }, 400);
-        }
-
-        terminalInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const cmdLine = terminalInput.value.trim();
-                terminalInput.value = '';
-                if (cmdLine) {
-                    appendTerminalLine(`<span class="text-emerald-400">student@linuxplus:${currentPath}$</span> <span class="text-slate-100">${escapeHtml(cmdLine)}</span>`);
-                    executeCommand(cmdLine);
-                }
-            }
-        });
-
-        function appendTerminalLine(html) {
+        function appendOutput(html) {
+            const output = document.getElementById('terminal-output');
             const div = document.createElement('div');
             div.innerHTML = html;
-            terminalOutput.appendChild(div);
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function appendPrompt() {
+            const output = document.getElementById('terminal-output');
+            const div = document.createElement('div');
+            div.className = "flex items-center space-x-2";
+            div.innerHTML = `<span class="text-emerald-400 font-semibold">student@linux-server:${currentDir}$</span>`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Terminal input handler
+        const termInput = document.getElementById('terminal-input');
+        if (termInput) {
+            termInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const cmd = termInput.value.trim();
+                    termInput.value = '';
+                    appendOutput(`<span class="text-slate-300">student@linux-server:${currentDir}$ ${escapeHtml(cmd)}</span>`);
+                    processCommand(cmd);
+                }
+            });
         }
 
         function escapeHtml(text) {
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
-        function resetTerminalState() {
-            vfs = {
-                "/": {
-                    type: "dir",
-                    children: {
-                        "home": {
-                            type: "dir",
-                            children: {
-                                "student": {
-                                    type: "dir",
-                                    children: {
-                                        "motd.txt": { type: "file", content: "Welcome to CompTIA Linux+ Certification Training!\nChapter 2: Text Editors (vi and nano)." },
-                                        "network.cfg": { type: "file", content: "IP=192.168.1.100\nGATEWAY=192.168.1.1\nDNS=8.8.8.8" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-            currentPath = "/home/student";
-            document.getElementById('terminal-prompt').innerText = `student@linuxplus:${currentPath}$`;
-            terminalOutput.innerHTML = `<div class="text-slate-400">Terminal state reset to default. Type <span class="text-emerald-400 font-bold">help</span> for commands.</div>`;
-        }
-
-        function executeCommand(rawCmd) {
-            const parts = rawCmd.split(' ');
+        function processCommand(cmdStr) {
+            if (!cmdStr) {
+                appendPrompt();
+                return;
+            }
+            const parts = cmdStr.split(' ');
             const cmd = parts[0];
-            const args = parts.slice(1);
+            const arg = parts[1];
 
-            switch (cmd) {
+            switch(cmd) {
                 case 'help':
-                    appendTerminalLine(`
-                        <div class="text-slate-300 space-y-1">
-                            <div>Available built-in terminal & editor commands:</div>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-cyan-300 font-mono-code text-xs mt-1">
-                                <div>nano [file]</div><div>vim [file]</div><div>cat [file]</div>
-                                <div>ls</div><div>pwd</div><div>cd [dir]</div>
-                                <div>touch [file]</div><div>rm [file]</div><div>clear</div>
-                            </div>
-                        </div>
-                    `);
+                    appendOutput(`<div class="text-slate-300 text-xs space-y-1">
+                        <div><strong>Available Terminal Commands:</strong></div>
+                        <div><code class="text-emerald-400">ls [-la]</code> - List directory contents</div>
+                        <div><code class="text-emerald-400">pwd</code> - Print working directory</div>
+                        <div><code class="text-emerald-400">cd [dir]</code> - Change directory</div>
+                        <div><code class="text-emerald-400">cat [file]</code> - Display file contents</div>
+                        <div><code class="text-emerald-400">touch [file]</code> - Create an empty file</div>
+                        <div><code class="text-emerald-400">nano [file]</code> - Open file in GNU nano</div>
+                        <div><code class="text-emerald-400">vim [file]</code> - Open file in Vim editor</div>
+                        <div><code class="text-emerald-400">rm [file]</code> - Remove file</div>
+                        <div><code class="text-emerald-400">clear</code> - Clear terminal screen</div>
+                    </div>`);
                     break;
-
                 case 'clear':
-                    terminalOutput.innerHTML = '';
+                    document.getElementById('terminal-output').innerHTML = '';
                     break;
-
                 case 'pwd':
-                    appendTerminalLine(`<div class="text-slate-200">${currentPath}</div>`);
+                    appendOutput(`<div class="text-slate-200 text-xs">/home/student</div>`);
                     break;
-
                 case 'ls':
-                    let targetPath = currentPath;
-                    for (let arg of args) {
-                        if (!arg.startsWith('-')) targetPath = arg;
-                    }
-                    let node = resolvePath(targetPath);
-                    if (!node) {
-                        appendTerminalLine(`<div class="text-rose-400">ls: cannot access '${targetPath}': No such file or directory</div>`);
-                    } else if (node.type === 'file') {
-                        appendTerminalLine(`<div class="text-slate-200">${targetPath}</div>`);
+                    const dirFiles = vfs["~"].files;
+                    const fileNames = Object.keys(dirFiles).join("   ");
+                    if (arg === '-la' || arg === '-l') {
+                        appendOutput(`<div class="text-slate-300 text-xs space-y-0.5">
+                            <div>total 16</div>
+                            <div>drwxr-xr-x 3 student student 4096 Nov  2 10:00 <span class="text-blue-400">.</span></div>
+                            <div>drwxr-xr-x 5 root    root    4096 Nov  2 10:00 <span class="text-blue-400">..</span></div>
+                            -rw-r--r-- 1 student student  48 Nov  2 10:00 config.txt<br>
+                            -rw-r--r-- 1 student student 182 Nov  2 10:00 practice.txt
+                        </div>`);
                     } else {
-                        let keys = Object.keys(node.children || {}).sort();
-                        let line = `<div class="flex flex-wrap gap-x-4">`;
-                        for (let k of keys) {
-                            let isDir = node.children[k] && node.children[k].type === 'dir';
-                            let colorClass = isDir ? 'text-blue-400 font-bold' : 'text-slate-200';
-                            line += `<span class="${colorClass}">${k}</span>`;
-                        }
-                        line += `</div>`;
-                        appendTerminalLine(line);
+                        appendOutput(`<div class="text-blue-400 text-xs font-semibold">${fileNames}</div>`);
                     }
                     break;
-
-                case 'cd':
-                    let dest = args[0] || '/home/student';
-                    let resolvedDest = getAbsolutePath(dest);
-                    let destNode = resolvePath(resolvedDest);
-                    if (!destNode) {
-                        appendTerminalLine(`<div class="text-rose-400">cd: ${dest}: No such file or directory</div>`);
-                    } else if (destNode.type !== 'dir') {
-                        appendTerminalLine(`<div class="text-rose-400">cd: ${dest}: Not a directory</div>`);
-                    } else {
-                        currentPath = resolvedDest;
-                        document.getElementById('terminal-prompt').innerText = `student@linuxplus:${currentPath}$`;
-                    }
-                    break;
-
                 case 'cat':
-                    if (!args[0]) {
-                        appendTerminalLine(`<div class="text-rose-400">cat: missing file operand</div>`);
-                        break;
-                    }
-                    let fileNode = resolvePath(args[0]);
-                    if (!fileNode) {
-                        appendTerminalLine(`<div class="text-rose-400">cat: ${args[0]}: No such file or directory</div>`);
-                    } else if (fileNode.type !== 'file') {
-                        appendTerminalLine(`<div class="text-rose-400">cat: ${args[0]}: Is a directory</div>`);
+                    if (!arg) {
+                        appendOutput(`<div class="text-red-400 text-xs">cat: missing file argument</div>`);
+                    } else if (vfs["~"].files[arg] !== undefined) {
+                        appendOutput(`<div class="text-slate-300 text-xs whitespace-pre-wrap bg-slate-950 p-2 rounded border border-slate-800">${escapeHtml(vfs["~"].files[arg])}</div>`);
                     } else {
-                        appendTerminalLine(`<div class="text-slate-300 whitespace-pre-wrap">${escapeHtml(fileNode.content)}</div>`);
+                        appendOutput(`<div class="text-red-400 text-xs">cat: ${escapeHtml(arg)}: No such file or directory</div>`);
                     }
                     break;
-
                 case 'touch':
-                    if (!args[0]) {
-                        appendTerminalLine(`<div class="text-rose-400">touch: missing file operand</div>`);
-                        break;
-                    }
-                    let { parent: tDir, name: fName } = getParentAndName(args[0]);
-                    if (!tDir || tDir.type !== 'dir') {
-                        appendTerminalLine(`<div class="text-rose-400">touch: cannot touch '${args[0]}': No such file or directory</div>`);
+                    if (!arg) {
+                        appendOutput(`<div class="text-red-400 text-xs">touch: missing file argument</div>`);
                     } else {
-                        if (!tDir.children[fName]) {
-                            tDir.children[fName] = { type: 'file', content: '' };
+                        if (vfs["~"].files[arg] === undefined) {
+                            vfs["~"].files[arg] = "";
                         }
+                        appendOutput(`<div class="text-emerald-400 text-xs">File '${escapeHtml(arg)}' created.</div>`);
                     }
                     break;
-
                 case 'rm':
-                    let targetArg = args.filter(a => !a.startsWith('-'))[0];
-                    if (!targetArg) {
-                        appendTerminalLine(`<div class="text-rose-400">rm: missing operand</div>`);
-                        break;
+                    if (!arg) {
+                        appendOutput(`<div class="text-red-400 text-xs">rm: missing file argument</div>`);
+                    } else if (vfs["~"].files[arg] !== undefined) {
+                        delete vfs["~"].files[arg];
+                        appendOutput(`<div class="text-emerald-400 text-xs">Removed '${escapeHtml(arg)}'.</div>`);
+                    } else {
+                        appendOutput(`<div class="text-red-400 text-xs">rm: cannot remove '${escapeHtml(arg)}': No such file</div>`);
                     }
-                    let { parent: rParent, name: rName } = getParentAndName(targetArg);
-                    if (!rParent || !rParent.children[rName]) {
-                        appendTerminalLine(`<div class="text-rose-400">rm: cannot remove '${targetArg}': No such file or directory</div>`);
-                        break;
-                    }
-                    delete rParent.children[rName];
                     break;
-
                 case 'nano':
+                    if (!arg) {
+                        appendOutput(`<div class="text-red-400 text-xs">nano: missing filename</div>`);
+                    } else {
+                        if (vfs["~"].files[arg] === undefined) {
+                            vfs["~"].files[arg] = "";
+                        }
+                        openEditor('nano', arg);
+                        return; // Skip prompt append until exit
+                    }
+                    break;
                 case 'vim':
                 case 'vi':
-                    if (!args[0]) {
-                        appendTerminalLine(`<div class="text-rose-400">${cmd}: missing file operand</div>`);
-                        break;
+                    if (!arg) {
+                        appendOutput(`<div class="text-red-400 text-xs">vim: missing filename</div>`);
+                    } else {
+                        if (vfs["~"].files[arg] === undefined) {
+                            vfs["~"].files[arg] = "";
+                        }
+                        openEditor('vim', arg);
+                        return; // Skip prompt append until exit
                     }
-                    openEditor(cmd === 'nano' ? 'nano' : 'vim', args[0]);
                     break;
-
                 default:
-                    appendTerminalLine(`<div class="text-rose-400">bash: ${cmd}: command not found. Type 'help' for available commands.</div>`);
+                    appendOutput(`<div class="text-red-400 text-xs">bash: ${escapeHtml(cmd)}: command not found. Type 'help' for available commands.</div>`);
                     break;
             }
+            appendPrompt();
         }
 
-        // --- Fullscreen Text Editor Integration ---
+        // --- Editor Overlay Logic ---
         function openEditor(type, filename) {
             currentEditorType = type;
             currentEditingFile = filename;
-            let absPath = getAbsolutePath(filename);
-            let fileNode = resolvePath(filename);
-
-            let content = "";
-            if (fileNode) {
-                if (fileNode.type === 'dir') {
-                    appendTerminalLine(`<div class="text-rose-400">${type}: ${filename}: Is a directory</div>`);
-                    return;
-                }
-                content = fileNode.content || "";
-            } else {
-                // Create new file parent if needed
-                let { parent, name } = getParentAndName(filename);
-                if (!parent || parent.type !== 'dir') {
-                    appendTerminalLine(`<div class="text-rose-400">${type}: cannot open '${filename}': No such directory</div>`);
-                    return;
-                }
-                parent.name = { type: 'file', content: '' };
-            }
-
-            const overlay = document.getElementById('editor-overlay');
-            const titleEl = document.getElementById('editor-title');
+            const editorEl = document.getElementById('fullscreen-editor');
             const textarea = document.getElementById('editor-textarea');
-            const modeInd = document.getElementById('editor-mode-indicator');
-            const s1 = document.getElementById('editor-shortcut-1');
-            const s2 = document.getElementById('editor-shortcut-2');
-            const s3 = document.getElementById('editor-shortcut-3');
-            const s4 = document.getElementById('editor-shortcut-4');
+            const fileNameEl = document.getElementById('editor-file-name');
+            const helpShortcutEl = document.getElementById('editor-help-shortcut');
+            const modeIndicator = document.getElementById('editor-mode-indicator');
+            const vimCmdBar = document.getElementById('vim-command-bar');
+            const footerMode = document.getElementById('editor-mode-footer');
 
-            textarea.value = content;
-            overlay.classList.remove('hidden');
+            editorEl.classList.remove('hidden');
+            textarea.value = vfs["~"].files[filename];
+            document.getElementById('editor-status-msg').innerText = "";
 
             if (type === 'nano') {
-                titleEl.innerText = `GNU nano 6.2 - ${absPath}`;
-                modeInd.innerText = "NANO (Ctrl+O to Save, Ctrl+X to Exit)";
-                modeInd.className = "bg-emerald-600 text-white px-2 py-0.5 rounded text-[10px]";
-                s1.innerText = "^G Help";
-                s2.innerText = "^O WriteOut (Save)";
-                s3.innerText = "^X Exit";
-                s4.innerText = "^W Where Is";
+                fileNameEl.innerText = `GNU nano 7.2    File: ${filename}`;
+                helpShortcutEl.innerText = "^O WriteOut  ^X Exit";
+                modeIndicator.classList.add('hidden');
+                vimCmdBar.classList.add('hidden');
+                footerMode.innerText = "[ NANO EDITOR MODE ]";
+                textarea.focus();
             } else {
-                titleEl.innerText = `VIM - ${absPath} (${content.split('\n').length} lines)`;
-                modeInd.innerText = "COMMAND MODE (Press 'i' to Insert, type ':wq' to Save/Exit)";
-                modeInd.className = "bg-purple-600 text-white px-2 py-0.5 rounded text-[10px]";
-                s1.innerText = "i: Insert mode";
-                s2.innerText = "Esc: Command mode";
-                s3.innerText = ":w : Save";
-                s4.innerText = ":wq or :q! : Quit";
-            }
-
-            textarea.focus();
-        }
-
-        // Handle editor key combinations inside textarea
-        document.getElementById('editor-textarea').addEventListener('keydown', function(e) {
-            if (currentEditorType === 'nano') {
-                // Ctrl + O -> Save
-                if (e.ctrlKey && e.key.toLowerCase() === 'o') {
-                    e.preventDefault();
-                    saveEditorContent();
-                    appendTerminalLine(`<div class="text-emerald-400">[ Wrote file successfully ]</div>`);
-                }
-                // Ctrl + X -> Exit
-                else if (e.ctrlKey && e.key.toLowerCase() === 'x') {
-                    e.preventDefault();
-                    saveEditorContent();
-                    document.getElementById('editor-overlay').classList.add('hidden');
-                    appendTerminalLine(`<div class="text-slate-400">Exited nano editor. File saved.</div>`);
-                    setTimeout(() => document.getElementById('terminal-input').focus(), 50);
-                }
-            } else {
-                // Vim shortcuts simulation
-                if (e.key === 'Escape') {
-                    e.preventDefault();
-                    document.getElementById('editor-mode-indicator').innerText = "VIM COMMAND MODE";
-                    document.getElementById('editor-mode-indicator').className = "bg-purple-600 text-white px-2 py-0.5 rounded text-[10px]";
-                } else if (e.key === 'i') {
-                    // if user types i when not focused on typing or command mode
-                }
-            }
-        });
-
-        function saveEditorContent() {
-            let content = document.getElementById('editor-textarea').value;
-            let { parent, name } = getParentAndName(currentEditingFile);
-            if (parent) {
-                parent.children[name] = { type: 'file', content: content };
+                vimMode = 'NORMAL';
+                fileNameEl.innerText = `${filename} (vim)`;
+                helpShortcutEl.innerText = "Press i for Insert | :wq to Save & Quit";
+                modeIndicator.classList.remove('hidden');
+                modeIndicator.innerText = "NORMAL MODE";
+                modeIndicator.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white";
+                vimCmdBar.classList.add('hidden');
+                footerMode.innerText = "[ VIM NORMAL MODE - Press i, d, y, p, / ]";
+                textarea.blur(); // Vim starts in normal mode
             }
         }
 
+        function closeEditor() {
+            const editorEl = document.getElementById('fullscreen-editor');
+            editorEl.classList.add('hidden');
+            currentEditingFile = null;
+            currentEditorType = null;
+            appendPrompt();
+        }
 
-        // --- Exam Quiz Data & Logic (Chapter 2: Text Editors) ---
+        // Editor Key Listener for Nano and Vim
+        const editorTextarea = document.getElementById('editor-textarea');
+        const vimCmdInput = document.getElementById('vim-cmd-input');
+
+        if (editorTextarea) {
+            editorTextarea.addEventListener('keydown', function(e) {
+                if (currentEditorType === 'nano') {
+                    if (e.ctrlKey && e.key === 'o') {
+                        e.preventDefault();
+                        vfs["~"].files[currentEditingFile] = editorTextarea.value;
+                        showEditorStatus("[ Wrote " + editorTextarea.value.split('\n').length + " lines ]");
+                    } else if (e.ctrlKey && e.key === 'x') {
+                        e.preventDefault();
+                        vfs["~"].files[currentEditingFile] = editorTextarea.value;
+                        closeEditor();
+                        appendOutput(`<div class="text-emerald-400 text-xs">Saved and closed ${currentEditingFile}.</div>`);
+                        appendPrompt();
+                    }
+                } else if (currentEditorType === 'vim') {
+                    if (vimMode === 'NORMAL') {
+                        e.preventDefault();
+                        const lines = editorTextarea.value.split('\n');
+                        let cursorPos = editorTextarea.selectionStart;
+                        // Determine current line index
+                        let currentLineIdx = 0;
+                        let charCount = 0;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (cursorPos <= charCount + lines[i].length) {
+                                currentLineIdx = i;
+                                break;
+                            }
+                            charCount += lines[i].length + 1;
+                        }
+
+                        if (e.key === 'i') {
+                            vimMode = 'INSERT';
+                            updateVimModeUI();
+                            editorTextarea.focus();
+                        } else if (e.key === ':') {
+                            vimMode = 'COMMAND';
+                            updateVimModeUI();
+                            const vimCmdBar = document.getElementById('vim-command-bar');
+                            vimCmdBar.classList.remove('hidden');
+                            vimCmdInput.value = '';
+                            vimCmdInput.focus();
+                        } else if (e.key === 'j') {
+                            // Move cursor down
+                            if (currentLineIdx < lines.length - 1) {
+                                let nextPos = charCount + lines[currentLineIdx].length + 1;
+                                editorTextarea.setSelectionRange(nextPos, nextPos);
+                            }
+                        } else if (e.key === 'k') {
+                            // Move cursor up
+                            if (currentLineIdx > 0) {
+                                let prevPos = 0;
+                                for (let i = 0; i < currentLineIdx - 1; i++) prevPos += lines[i].length + 1;
+                                editorTextarea.setSelectionRange(prevPos, prevPos);
+                            }
+                        } else if (e.key === 'l') {
+                            if (cursorPos < editorTextarea.value.length) {
+                                editorTextarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+                            }
+                        } else if (e.key === 'h') {
+                            if (cursorPos > 0) {
+                                editorTextarea.setSelectionRange(cursorPos - 1, cursorPos - 1);
+                            }
+                        } else if (e.key === 'd') {
+                            // Check for double 'dd' deletion
+                            if (window.vimLastKey === 'd') {
+                                lines.splice(currentLineIdx, 1);
+                                editorTextarea.value = lines.join('\n');
+                                showEditorStatus("1 line deleted");
+                                window.vimLastKey = '';
+                            } else {
+                                window.vimLastKey = 'd';
+                                setTimeout(() => { window.vimLastKey = ''; }, 600);
+                            }
+                        } else if (e.key === 'y') {
+                            // Check for double 'yy' yank
+                            if (window.vimLastKey === 'y') {
+                                copiedLineBuffer = lines[currentLineIdx];
+                                showEditorStatus("1 line yanked (copied)");
+                                window.vimLastKey = '';
+                            } else {
+                                window.vimLastKey = 'y';
+                                setTimeout(() => { window.vimLastKey = ''; }, 600);
+                            }
+                        } else if (e.key === 'p') {
+                            if (copiedLineBuffer !== "") {
+                                lines.splice(currentLineIdx + 1, 0, copiedLineBuffer);
+                                editorTextarea.value = lines.join('\n');
+                                showEditorStatus("1 line pasted");
+                            } else {
+                                showEditorStatus("Nothing in yank buffer");
+                            }
+                        } else if (e.key === '/') {
+                            vimMode = 'COMMAND';
+                            updateVimModeUI();
+                            const vimCmdBar = document.getElementById('vim-command-bar');
+                            vimCmdBar.classList.remove('hidden');
+                            document.getElementById('vim-cmd-prompt').innerText = '/';
+                            vimCmdInput.value = '';
+                            vimCmdInput.focus();
+                        }
+                    } else if (vimMode === 'INSERT') {
+                        if (e.key === 'Escape') {
+                            e.preventDefault();
+                            vimMode = 'NORMAL';
+                            updateVimModeUI();
+                            editorTextarea.blur();
+                        }
+                    }
+                }
+            });
+        }
+
+        if (vimCmdInput) {
+            vimCmdInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const cmdVal = vimCmdInput.value.trim();
+                    const promptChar = document.getElementById('vim-cmd-prompt').innerText;
+                    const vimCmdBar = document.getElementById('vim-command-bar');
+                    vimCmdBar.classList.add('hidden');
+                    document.getElementById('vim-cmd-prompt').innerText = ':';
+
+                    if (promptChar === '/') {
+                        // Search action
+                        const content = editorTextarea.value;
+                        const idx = content.indexOf(cmdVal);
+                        if (idx !== -1) {
+                            editorTextarea.setSelectionRange(idx, idx + cmdVal.length);
+                            showEditorStatus(`Pattern found at position ${idx}`);
+                        } else {
+                            showEditorStatus(`Pattern not found: ${cmdVal}`);
+                        }
+                    } else {
+                        // Ex command (:w, :q, :wq)
+                        if (cmdVal === 'wq' || cmdVal === 'x') {
+                            vfs["~"].files[currentEditingFile] = editorTextarea.value;
+                            closeEditor();
+                            appendOutput(`<div class="text-purple-400 text-xs">"${currentEditingFile}" 3L, 182B written & exited.</div>`);
+                            appendPrompt();
+                        } else if (cmdVal === 'w') {
+                            vfs["~"].files[currentEditingFile] = editorTextarea.value;
+                            showEditorStatus(`"${currentEditingFile}" written`);
+                        } else if (cmdVal === 'q') {
+                            closeEditor();
+                            appendOutput(`<div class="text-slate-300 text-xs">Exited ${currentEditingFile}.</div>`);
+                            appendPrompt();
+                        } else {
+                            showEditorStatus(`Not an editor command: ${cmdVal}`);
+                        }
+                    }
+                    vimMode = 'NORMAL';
+                    updateVimModeUI();
+                } else if (e.key === 'Escape') {
+                    document.getElementById('vim-command-bar').classList.add('hidden');
+                    document.getElementById('vim-cmd-prompt').innerText = ':';
+                    vimMode = 'NORMAL';
+                    updateVimModeUI();
+                }
+            });
+        }
+
+        function updateVimModeUI() {
+            const modeIndicator = document.getElementById('editor-mode-indicator');
+            const footerMode = document.getElementById('editor-mode-footer');
+            if (vimMode === 'NORMAL') {
+                modeIndicator.innerText = "NORMAL MODE";
+                modeIndicator.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white";
+                footerMode.innerText = "[ VIM NORMAL MODE - Press i, d, y, p, / ]";
+            } else if (vimMode === 'INSERT') {
+                modeIndicator.innerText = "INSERT MODE";
+                modeIndicator.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white";
+                footerMode.innerText = "[ -- INSERT -- Press ESC to return to Normal Mode ]";
+            } else {
+                modeIndicator.innerText = "COMMAND MODE";
+                modeIndicator.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-600 text-white";
+                footerMode.innerText = "[ EX / SEARCH COMMAND LINE ]";
+            }
+        }
+
+        function showEditorStatus(msg) {
+            document.getElementById('editor-status-msg').innerText = msg;
+            setTimeout(() => {
+                document.getElementById('editor-status-msg').innerText = "";
+            }, 3500);
+        }
+
+        // --- Quiz Logic ---
         const quizQuestions = [
             {
-                q: "Which Linux text editor is modeless and displays quick keyboard shortcuts at the bottom of the screen?",
-                options: ["vim", "nano", "emacs", "ed"],
-                answer: 1,
-                explanation: "GNU nano is a straightforward, modeless text editor that lists essential keyboard commands (like ^O for WriteOut and ^X for Exit) at the screen bottom."
-            },
-            {
-                q: "You are currently in Vim's Insert Mode. What single key must you press to transition back into Command Mode?",
-                options: ["Enter", "Ctrl+C", "Escape (Esc)", "Tab"],
+                q: "Which Linux text editor is modeless and displays shortcut key references at the bottom of the screen by default?",
+                options: ["vi", "vim", "nano", "emacs"],
                 answer: 2,
-                explanation: "Pressing the Escape (Esc) key transitions Vim from Insert Mode back into Command Mode where navigation and ex-commands are entered."
+                explanation: "GNU nano is modeless and features a convenient bottom-screen menu displaying common shortcut commands."
             },
             {
-                q: "When using Vim in Command Mode, which ex-command writes the file to disk and immediately quits the editor?",
-                options: [":wq", ":q!", ":w! /etc", ":saveq"],
+                q: "What keyboard shortcut is used in nano to write out (save) the current file?",
+                options: ["Ctrl + S", "Ctrl + O", "Ctrl + W", "Ctrl + X"],
+                answer: 1,
+                explanation: "Ctrl + O (WriteOut) saves the current buffer to disk in GNU nano."
+            },
+            {
+                q: "When working in vim, which key transitions the editor from Normal Mode to Insert Mode?",
+                options: ["Esc", "i", ":", "v"],
+                answer: 1,
+                explanation: "Pressing 'i' enters Insert Mode allowing typing and editing of text contents."
+            },
+            {
+                q: "How do you quit vim without saving changes made to a configuration file?",
+                options: [":q!", ":wq", ":w", "Ctrl + X"],
                 answer: 0,
-                explanation: "The command ':wq' (Write and Quit) saves any modifications and exits vim. Alternatively, ':x' achieves the same result."
+                explanation: ":q! forces quit and discards all changes made since the last write."
             },
             {
-                q: "In Vim Command Mode, which keystroke sequence deletes (cuts) the entire current line of text?",
-                options: ["yy", "dd", "dw", "x"],
-                answer: 1,
-                explanation: "Typing 'dd' in Vim command mode deletes the current line (and places it in the copy/paste buffer). 'yy' yanks (copies) the line."
-            },
-            {
-                q: "Which keyboard shortcut combination in GNU nano opens the search (Where Is) tool to find text strings?",
-                options: ["Ctrl + F", "Ctrl + S", "Ctrl + W", "Ctrl + R"],
+                q: "In vim Normal Mode, what keystroke sequence deletes the current line?",
+                options: ["dw", "yy", "dd", "x"],
                 answer: 2,
-                explanation: "Ctrl + W invokes the 'Where Is' search prompt in nano to locate specific strings within the document."
+                explanation: "Typing 'dd' in Normal Mode deletes (cuts) the current line."
             }
         ];
 
         let currentQuizIndex = 0;
-        let score = 0;
-        let selectedOption = null;
+        let userAnswers = [];
 
-        function loadQuizQuestion() {
-            selectedOption = null;
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
             const q = quizQuestions[currentQuizIndex];
-            document.getElementById('quiz-progress-text').innerText = `Question ${currentQuizIndex + 1} of ${quizQuestions.length}`;
-            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('quiz-progress').innerText = `Question ${currentQuizIndex + 1} of ${quizQuestions.length}`;
 
-            const optContainer = document.getElementById('options-container');
-            optContainer.innerHTML = '';
-
+            let html = `<h4 class="font-bold text-slate-900 text-base mb-4">${currentQuizIndex + 1}. ${q.q}</h4><div class="space-y-3">`;
             q.options.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition font-medium text-slate-700 text-sm flex items-center justify-between";
-                btn.innerHTML = `<span>${opt}</span><span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-xs"></span>`;
-                btn.onclick = () => selectQuizOption(idx, btn);
-                optContainer.appendChild(btn);
+                const checked = userAnswers[currentQuizIndex] === idx ? 'checked' : '';
+                html += `<label class="flex items-center space-x-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                    <input type="radio" name="quiz-opt" value="${idx}" ${checked} class="text-blue-600 focus:ring-blue-500 h-4 w-4">
+                    <span class="text-sm text-slate-700 font-medium">${opt}</span>
+                </label>`;
             });
-
-            document.getElementById('quiz-feedback').innerHTML = '';
-            document.getElementById('quiz-next-btn').classList.add('hidden');
+            html += `</div>`;
+            container.innerHTML = html;
         }
 
-        function selectQuizOption(idx, btnElement) {
-            const q = quizQuestions[currentQuizIndex];
-            selectedOption = idx;
-
-            const allBtns = document.getElementById('options-container').children;
-            for (let i = 0; i < allBtns.length; i++) {
-                allBtns[i].className = "w-full text-left p-4 rounded-xl border border-slate-200 font-medium text-slate-700 text-sm flex items-center justify-between pointer-events-none";
-                if (i === q.answer) {
-                    allBtns[i].className += " bg-emerald-50 border-emerald-500 text-emerald-900 font-semibold";
-                    allBtns[i].querySelector('span:last-child').innerHTML = '✓';
-                } else if (i === idx && idx !== q.answer) {
-                    allBtns[i].className += " bg-rose-50 border-rose-500 text-rose-900";
-                    allBtns[i].querySelector('span:last-child').innerHTML = '✕';
-                }
+        function submitQuizAnswer() {
+            const selected = document.querySelector('input[name="quiz-opt"]:checked');
+            if (!selected && currentQuizIndex < quizQuestions.length) {
+                alert("Please select an answer choice before proceeding.");
+                return;
             }
 
-            const feedbackEl = document.getElementById('quiz-feedback');
-            if (idx === q.answer) {
-                score++;
-                feedbackEl.innerHTML = `<span class="text-emerald-600 font-bold">Correct!</span> <span class="text-slate-600">${q.explanation}</span>`;
-            } else {
-                feedbackEl.innerHTML = `<span class="text-rose-600 font-bold">Incorrect.</span> <span class="text-slate-600">${q.explanation}</span>`;
+            if (selected) {
+                userAnswers[currentQuizIndex] = parseInt(selected.value);
             }
 
-            document.getElementById('quiz-next-btn').classList.remove('hidden');
-        }
-
-        function nextQuizQuestion() {
             currentQuizIndex++;
             if (currentQuizIndex < quizQuestions.length) {
-                loadQuizQuestion();
+                renderQuiz();
             } else {
-                showQuizScore();
+                renderQuizResults();
             }
         }
 
-        function showQuizScore() {
-            document.getElementById('quiz-container').classList.add('hidden');
-            document.getElementById('quiz-footer').classList.add('hidden');
-            const scoreScreen = document.getElementById('quiz-score-screen');
-            scoreScreen.classList.remove('hidden');
+        function renderQuizResults() {
+            let score = 0;
+            quizQuestions.forEach((q, idx) => {
+                if (userAnswers[idx] === q.answer) score++;
+            });
 
-            let pct = Math.round((score / quizQuestions.length) * 100);
-            let msg = `You scored ${score} out of ${quizQuestions.length} (${pct}%). `;
-            if (pct >= 80) {
-                msg += "Outstanding work! You have mastered Chapter 2 text editor concepts for the Linux+ exam.";
-            } else {
-                msg += "Good effort! Review the flashcards and practice editing files in the virtual terminal before retaking.";
-            }
-            document.getElementById('final-score-text').innerText = msg;
+            const container = document.getElementById('quiz-container');
+            let html = `<div class="text-center space-y-4 py-4">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                    ${Math.round((score / quizQuestions.length) * 100)}%
+                </div>
+                <h4 class="text-2xl font-bold text-slate-900">Quiz Completed!</h4>
+                <p class="text-slate-600 text-sm">You scored ${score} out of ${quizQuestions.length} correct.</p>
+            </div>
+            <div class="space-y-4 pt-4 border-t border-slate-100">
+                <h5 class="font-bold text-slate-900 text-sm">Review Answers:</h5>`;
+
+            quizQuestions.forEach((q, idx) => {
+                const isCorrect = userAnswers[idx] === q.answer;
+                html += `<div class="p-4 rounded-xl border ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'} text-xs space-y-1">
+                    <div class="font-bold text-slate-900">${idx + 1}. ${q.q}</div>
+                    <div>Your answer: <span class="${isCorrect ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}">${q.options[userAnswers[idx]]}</span></div>
+                    ${!isCorrect ? `<div>Correct answer: <span class="font-bold text-emerald-700">${q.options[q.answer]}</span></div>` : ''}
+                    <div class="text-slate-500 mt-1">${q.explanation}</div>
+                </div>`;
+            });
+            html += `</div>`;
+            container.innerHTML = html;
+            document.getElementById('quiz-btn').style.display = 'none';
         }
 
-        function restartQuiz() {
-            currentQuizIndex = 0;
-            score = 0;
-            document.getElementById('quiz-score-screen').classList.add('hidden');
-            document.getElementById('quiz-container').classList.remove('hidden');
-            document.getElementById('quiz-footer').classList.remove('hidden');
-            loadQuizQuestion();
-        }
-
-        // Initialize App on load
+        // Initialize quiz on load
         window.onload = function() {
+            renderQuiz();
             updateFlashcard();
-            loadQuizQuestion();
         };
     </script>
 </body>
