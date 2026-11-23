@@ -189,6 +189,11 @@
             font-size: 0.9rem;
             scroll-behavior: smooth;
         }
+        .terminal-line {
+            white-space: pre;
+            font-family: var(--font-mono);
+            line-height: 1.4;
+        }
         .terminal-input-line { display: flex; padding: 0.5rem 1rem 1rem; }
         .prompt { color: var(--terminal-prompt); font-weight: bold; margin-right: 8px; }
         .term-input {
@@ -1353,28 +1358,40 @@
         simPs(args) {
             const str = args.join(' ');
             if (str.includes('aux')) {
-                let out = "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\n";
+                let out = "USER       PID  %CPU  %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\n";
                 this.state.processTable.forEach(p => {
-                    out += `${p.user.padEnd(8)} ${p.pid.toString().padEnd(5)} ${(p.cpu||0).toFixed(1).padEnd(4)} ${(p.mem||0).toFixed(1).padEnd(4)}  18400  3200 pts/0    ${p.state.padEnd(4)} 10:14   0:00 ${p.cmd}\n`;
+                    const user = p.user.padEnd(9);
+                    const pid = p.pid.toString().padStart(5);
+                    const cpu = (p.cpu || 0).toFixed(1).padStart(5);
+                    const mem = (p.mem || 0).toFixed(1).padStart(5);
+                    const stat = (p.state || 'S').padEnd(4);
+                    out += `${user} ${pid} ${cpu} ${mem}  18400  3200 pts/0    ${stat} 10:14   0:00 ${p.cmd}\n`;
                 });
                 return out;
             } else if (str.includes('-ef') || str.includes('-e')) {
-                let out = "UID        PID  PPID  C STIME TTY          TIME CMD\n";
+                let out = "UID         PID   PPID  C STIME TTY          TIME CMD\n";
                 this.state.processTable.forEach(p => {
-                    out += `${p.user.padEnd(8)} ${p.pid.toString().padEnd(5)} ${(p.ppid??0).toString().padEnd(5)} 0 10:14 pts/0    00:00:00 ${p.cmd}\n`;
+                    const uid = p.user.padEnd(10);
+                    const pid = p.pid.toString().padStart(5);
+                    const ppid = (p.ppid ?? 0).toString().padStart(6);
+                    out += `${uid} ${pid} ${ppid}  0 10:14 pts/0    00:00:00 ${p.cmd}\n`;
                 });
                 return out;
             } else if (str.includes('-l')) {
                 let out = "F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN  TTY          TIME CMD\n";
                 this.state.processTable.forEach(p => {
-                    const pri = 80 + (p.ni ?? 0);
-                    out += `0 ${p.state}  1000 ${p.pid.toString().padEnd(5)} ${(p.ppid??0).toString().padEnd(5)}  0  ${pri}  ${(p.ni??0).toString().padEnd(3)} -  4600 -      pts/0    00:00:00 ${p.cmd}\n`;
+                    const pri = (80 + (p.ni ?? 0)).toString().padStart(4);
+                    const ni = (p.ni ?? 0).toString().padStart(3);
+                    const pid = p.pid.toString().padStart(5);
+                    const ppid = (p.ppid ?? 0).toString().padStart(5);
+                    out += `0 ${p.state}  1000 ${pid} ${ppid}  0 ${pri} ${ni} -  4600 -      pts/0    00:00:00 ${p.cmd}\n`;
                 });
                 return out;
             } else {
                 let out = "  PID TTY          TIME CMD\n";
                 this.state.processTable.filter(p => p.user === 'learner').forEach(p => {
-                    out += `${p.pid.toString().padStart(5)} pts/0    00:00:00 ${p.cmd}\n`;
+                    const pid = p.pid.toString().padStart(5);
+                    out += `${pid} pts/0    00:00:00 ${p.cmd}\n`;
                 });
                 return out;
             }
