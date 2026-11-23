@@ -278,6 +278,106 @@
             align-items: center;
             gap: 10px;
         }
+
+        /* * SIMULATION TAB & TOOLBAR STYLES * */
+        .sim-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .sim-tab-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.35rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            color: var(--text-main);
+            transition: all 0.15s ease;
+        }
+        .sim-tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .process-table-container {
+            width: 100%;
+            overflow-x: auto;
+            max-height: 250px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+        .process-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .process-table th {
+            background: var(--bg-page);
+            padding: 0.4rem 0.6rem;
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+        .process-table th:hover { color: var(--primary); }
+        .process-table td {
+            padding: 0.35rem 0.6rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .state-badge {
+            display: inline-block;
+            padding: 0.1rem 0.35rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            font-size: 0.7rem;
+        }
+        .state-R { background: #dcfce7; color: #15803d; }
+        .state-S { background: #e0f2fe; color: #0369a1; }
+        .state-T { background: #fef3c7; color: #b45309; }
+        .state-Z { background: #fee2e2; color: #b91c1c; }
+
+        /* * SIGNAL LAB TOOLBAR * */
+        .signal-strip {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        .signal-btn {
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-main);
+        }
+        .signal-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .signal-btn.danger { border-color: var(--danger); color: var(--danger); }
+        .signal-btn.danger:hover { background: var(--danger); color: white; }
+
+        /* * SCENARIO LAB STYLES * */
+        .scenario-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            background: var(--bg-page);
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .scenario-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            background: var(--bg-card);
+        }
     </style>
 </head>
 <body>
@@ -292,8 +392,9 @@
             </div>
         </div>
         
-        <div style="display: flex; align-items: center; gap: 1.5rem;">
-            <div id="status-badge" class="badge" style="background: var(--border); color: var(--text-muted);">Guided Mode</div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button id="scenario-nav-btn" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="app.showScenarios()">Scenario Lab</button>
+            <button id="mode-toggle-btn" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="app.toggleExamMode()">Mode: Guided</button>
             <button id="theme-toggle" class="btn btn-outline" aria-label="Toggle Theme">🌓</button>
         </div>
 
@@ -349,13 +450,19 @@
                 <!-- CENTER: Terminal & Visuals -->
                 <div style="display: flex; flex-direction: column; gap: 1rem;">
                     <!-- Visual Area -->
-                    <div class="card" style="flex: 1; margin-bottom: 0; position: relative; display: flex; flex-direction: column;">
+                    <div class="card" style="flex: 1; margin-bottom: 0; position: relative; display: flex; flex-direction: column; min-height: 280px;">
                         <div class="flex-between mb-2">
                             <h4 id="sim-title">Process Visualizer</h4>
                             <div class="badge" id="sim-type" style="background: #eff6ff; color: #1d4ed8;">Interactive</div>
                         </div>
-                        <div id="sim-content" style="flex: 1; overflow: hidden;">
-                            <!-- Dynamic Visualization (SVG Process Tree / ps table / etc.) -->
+                        <div id="sim-tabs-bar" class="sim-tabs">
+                            <button class="sim-tab-btn active" onclick="app.setSimTab('tree')">Process Tree</button>
+                            <button class="sim-tab-btn" onclick="app.setSimTab('table')">Process Viewer (top/ps)</button>
+                            <button class="sim-tab-btn" onclick="app.setSimTab('cron')">Crontab Builder</button>
+                            <button class="sim-tab-btn" onclick="app.setSimTab('signals')">Signal Strategy</button>
+                        </div>
+                        <div id="sim-content" style="flex: 1; overflow-y: auto;">
+                            <!-- Dynamic Visualization -->
                         </div>
                     </div>
                     
@@ -366,10 +473,11 @@
                             <div class="t-dot" style="background: #f59e0b;"></div>
                             <div class="t-dot" style="background: #10b981;"></div>
                             <div style="font-size: 0.7rem; color: #94a3b8; margin-left: 1rem;">bash — chapter9@linux-lab</div>
+                            <div style="margin-left: auto; font-size: 0.7rem; color: var(--terminal-prompt);" id="bg-jobs-indicator">Jobs: 0</div>
                         </div>
                         <div class="terminal-body" id="term-output">
                             <div>Welcome to the Linux Process Lab.</div>
-                            <div>Type <span style="color: var(--warning)">help</span> for available commands.</div>
+                            <div>Type <span style="color: var(--warning)">help</span> for available commands. Press Ctrl+Z to stop foreground tasks.</div>
                         </div>
                         <div class="terminal-input-line">
                             <span class="prompt">learner@linux:~$</span>
@@ -381,20 +489,71 @@
                 <!-- RIGHT: Checklist & Hints -->
                 <div class="workspace-right" style="display: flex; flex-direction: column; gap: 1rem;">
                     <div class="card" style="flex: 1; margin-bottom: 0;">
-                        <h4 class="mb-2">Hints</h4>
+                        <h4 class="mb-2">Hints & Exam Tips</h4>
                         <div id="hint-container" style="font-size: 0.85rem; color: var(--text-muted);">
                             Click "Request Hint" if you get stuck.
                         </div>
-                        <button class="btn btn-outline mt-4" style="width: 100%;" onclick="app.getHint()">Request Hint</button>
+                        <button class="btn btn-outline mt-4" id="request-hint-btn" style="width: 100%;" onclick="app.getHint()">Request Hint</button>
                     </div>
                     <div class="card" style="margin-bottom: 0;">
-                        <h4 class="mb-2">Status</h4>
+                        <h4 class="mb-2">Status & Telemetry</h4>
                         <div style="font-size: 0.85rem;">
                             <div class="flex-between"><span>Errors:</span> <span id="stat-errors">0</span></div>
                             <div class="flex-between"><span>Hints Used:</span> <span id="stat-hints">0</span></div>
+                            <div class="flex-between"><span>Mode:</span> <span id="stat-mode">Guided</span></div>
                         </div>
                     </div>
                     <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="app.exitModule()">Exit to Dashboard</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN: SCENARIO CHALLENGE LAB -->
+        <section id="screen-scenarios" class="screen">
+            <div class="card" style="border-top: 5px solid var(--accent); max-width: 1000px; margin: 0 auto;">
+                <div class="flex-between mb-2">
+                    <div>
+                        <span class="badge" style="background: #dcfce7; color: #166534;">Scenario Lab</span>
+                        <h2 class="mt-4">CompTIA Linux+ Production Scenarios</h2>
+                    </div>
+                    <button class="btn btn-outline" onclick="app.showDashboard()">Back to Dashboard</button>
+                </div>
+                <p class="text-muted mb-2">Solve authentic admin trouble tickets by applying the appropriate commands, signals, and service managers.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+                    <div>
+                        <div class="scenario-card active" onclick="app.selectScenario(0)">
+                            <strong>Ticket #1: Runaway User Job</strong>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">A user left a calculation script consuming 99% CPU. Deprioritize it or end it gracefully.</p>
+                        </div>
+                        <div class="scenario-card" onclick="app.selectScenario(1)">
+                            <strong>Ticket #2: Safely Restart Service</strong>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">nginx service config was updated. Restart or reload via systemctl safely.</p>
+                        </div>
+                        <div class="scenario-card" onclick="app.selectScenario(2)">
+                            <strong>Ticket #3: Job Persistence Beyond Logout</strong>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Launch a 4-hour batch job that ignores SIGHUP when the SSH session closes.</p>
+                        </div>
+                        <div class="scenario-card" onclick="app.selectScenario(3)">
+                            <strong>Ticket #4: One-Time Maintenance</strong>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Schedule a single maintenance task for 2:00 PM tomorrow using at.</p>
+                        </div>
+                        <div class="scenario-card" onclick="app.selectScenario(4)">
+                            <strong>Ticket #5: Recurring Daily Backup</strong>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Set up an automated backup running daily at 5:05 PM in crontab.</p>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background: var(--bg-page); margin-bottom: 0;">
+                        <h4 id="scen-title">Ticket Briefing</h4>
+                        <div id="scen-desc" style="font-size: 0.85rem; margin: 0.75rem 0;" class="text-muted"></div>
+                        <div class="card" style="background: var(--bg-card); padding: 0.75rem; font-size: 0.8rem;">
+                            <strong>Expected Terminal Action:</strong>
+                            <div id="scen-task" style="margin-top: 0.35rem; font-family: var(--font-mono); color: var(--primary);"></div>
+                        </div>
+                        <div id="scen-result" style="font-size: 0.85rem; margin-top: 0.5rem; min-height: 24px;"></div>
+                        <button class="btn btn-primary mt-4" onclick="app.launchScenarioWorkspace()">Open Ticket in Terminal</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -442,76 +601,120 @@
             {
                 id: 1,
                 title: "Process Foundations",
-                concept: "A <strong>process</strong> is an executing program. In Linux, <strong>systemd</strong> (PID 1) is the first process launched by the kernel, acting as the parent for all others.",
-                why: "Understanding the hierarchy helps diagnose why killing a parent might affect child processes.",
+                concept: "A <strong>process</strong> is an executing program instance in memory. In modern Linux, <strong>systemd</strong> is assigned <strong>PID 1</strong> by the kernel (PID 0) and serves as the ultimate ancestor for all user-space daemons and child processes.",
+                why: "Understanding PID/PPID hierarchy and forking is essential to trace memory leaks, orphan processes, and understand daemon dependencies.",
                 tasks: [
-                    "Examine the process tree to find PID 1.",
-                    "Execute 'ps -ef' to see parent IDs (PPID).",
-                    "Identify the shell process currently running."
+                    "Run 'ps -ef' to view process hierarchy and parent IDs (PPID).",
+                    "Inspect systemd as PID 1 with PPID 0 in the Process Tree.",
+                    "Use 'pidof' or 'pgrep' to find the PID of the 'bash' shell."
                 ],
                 initialState: {
                     processes: [
-                        { pid: 0, ppid: -1, cmd: "kernel", user: "root", state: "R", cpu: 0 },
-                        { pid: 1, ppid: 0, cmd: "systemd", user: "root", state: "S", cpu: 1 },
-                        { pid: 50, ppid: 1, cmd: "sshd", user: "root", state: "S", cpu: 0 },
-                        { pid: 120, ppid: 50, cmd: "bash", user: "learner", state: "S", cpu: 0 }
+                        { pid: 0, ppid: -1, cmd: "kernel", user: "root", state: "R", cpu: 0, mem: 0, ni: 0 },
+                        { pid: 1, ppid: 0, cmd: "systemd", user: "root", state: "S", cpu: 0.2, mem: 1.1, ni: 0 },
+                        { pid: 50, ppid: 1, cmd: "sshd", user: "root", state: "S", cpu: 0.1, mem: 0.4, ni: 0 },
+                        { pid: 120, ppid: 50, cmd: "bash", user: "learner", state: "S", cpu: 0.1, mem: 0.5, ni: 0 },
+                        { pid: 310, ppid: 1, cmd: "crond", user: "root", state: "S", cpu: 0.0, mem: 0.3, ni: 0 },
+                        { pid: 412, ppid: 1, cmd: "atd", user: "daemon", state: "S", cpu: 0.0, mem: 0.2, ni: 0 }
                     ]
                 }
             },
             {
                 id: 2,
                 title: "Viewing Processes",
-                concept: "Tools like <code>ps</code> provide a static snapshot, while <code>top</code> and <code>htop</code> offer dynamic, real-time sorting and monitoring.",
-                why: "Knowing when to use 'ps aux' versus 'top' determines how quickly you find a system bottleneck.",
+                concept: "Standard utility <code>ps</code> provides static point-in-time snapshots (e.g., <code>ps -ef</code> for standard syntax or <code>ps aux</code> for BSD syntax). Dynamic monitors like <code>top</code> and <code>htop</code> provide interactive real-time resource sorting.",
+                why: "Pinpointing CPU bottlenecks, memory hogs, and identifying defunct (Zombie 'Z') processes quickly is an everyday admin duty.",
                 tasks: [
-                    "Run 'top' and sort by CPU usage.",
-                    "Use 'pgrep' to find the PID of the 'sshd' process.",
-                    "Filter processes by the 'learner' user."
+                    "Run 'ps aux' to see CPU and memory percentages.",
+                    "Launch 'top' to open the interactive process viewer.",
+                    "Use 'pgrep sshd' to query a process ID without manual filtering."
                 ]
             },
             {
                 id: 3,
-                title: "Priorities (Nice)",
-                concept: "Linux uses <strong>Niceness</strong> (-20 to 19) to prioritize CPU time. Lower values mean higher priority.",
-                why: "Preventing a low-priority backup script from slowing down a production database is a common task.",
+                title: "Priorities (Nice & Renice)",
+                concept: "Linux process scheduling priority (PR) is adjusted via <strong>Niceness (NI)</strong>, which ranges from <strong>-20</strong> (highest priority / least nice) to <strong>+19</strong> (lowest priority / most nice). Default is 0. Normal users can only lower priority (increase nice value); lowering nice value (raising priority) requires root privileges.",
+                why: "Critical database or realtime networking workloads require high priority, while heavy maintenance indexing jobs should be run at +15 or higher.",
                 tasks: [
-                    "Launch 'sleep 1000' with a nice value of 10.",
-                    "Renice an existing process to -5 (requires sudo simulation).",
-                    "Observe how priority (PR) changes in response to nice (NI)."
+                    "Launch a background calculation using 'nice -n 10 sleep 300 &'.",
+                    "Check the NI column using 'ps -l' or the Process Viewer tab.",
+                    "Modify priority using 'renice +5 -p <PID>'."
                 ]
             },
             {
                 id: 4,
                 title: "Job Control",
-                concept: "Processes can run in the <strong>foreground</strong> (locking the terminal) or <strong>background</strong> (allowing other tasks).",
-                why: "Efficiency. Running long tasks in the background keeps your terminal available.",
+                concept: "Interactive shells distinguish between <strong>Job ID (JID)</strong> (e.g., [1]) and <strong>Process ID (PID)</strong>. Appending <code>&amp;</code> starts a job in the background. <code>Ctrl-Z</code> pauses a foreground job, <code>bg</code> resumes it in background, and <code>fg</code> brings it back forward.",
+                why: "Enables multitasking within a single terminal session without opening multiple SSH connections.",
                 tasks: [
-                    "Start a process in the background using '&'.",
-                    "Stop a foreground process using Ctrl-Z.",
-                    "Resume a stopped job in the background using 'bg'."
+                    "Start a process in the background with '&' (e.g., 'sleep 500 &').",
+                    "List active session jobs using 'jobs'.",
+                    "Bring the job back to foreground using 'fg %1'."
                 ]
             },
             {
                 id: 5,
                 title: "Signals & Termination",
-                concept: "Signals communicate with processes. <strong>SIGTERM (15)</strong> asks gracefully; <strong>SIGKILL (9)</strong> forces termination.",
-                why: "Graceful shutdown prevents data corruption.",
+                concept: "Linux processes communicate via signals. Always follow the <strong>Graceful Escalation Rule</strong>: first attempt <strong>SIGTERM (15)</strong> so the process can close files and flush buffers; only escalate to <strong>SIGKILL (9)</strong> if the process is completely hung. Use <code>pkill</code> or <code>killall</code> to match by command name.",
+                why: "Issuing SIGKILL immediately can corrupt databases, leave lock files behind, or orphan child processes.",
                 tasks: [
-                    "Send a SIGTERM to a non-responsive process.",
-                    "Use 'pkill' to end all instances of a command.",
-                    "Explain why SIGKILL should be a last resort."
+                    "Send graceful termination signal with 'kill <PID>' (or 'kill -15 <PID>').",
+                    "Use 'pkill sleep' to terminate all sleep commands simultaneously.",
+                    "Inspect the Signal Strategy visualizer tab to test SIGTERM vs SIGKILL."
                 ]
             },
             {
                 id: 6,
                 title: "Scheduling Jobs",
-                concept: "<strong>at</strong> handles one-time tasks; <strong>cron</strong> handles recurring schedules using the crontab format.",
-                why: "Automation. Reliable systems don't rely on humans to remember maintenance times.",
+                concept: "<strong>at</strong> and <strong>atd</strong> handle one-time deferred executions. <strong>cron</strong> and <strong>crond</strong> handle recurring time-based schedules via <code>crontab -e</code> and <code>/etc/crontab</code> with the standard five-field format: minute, hour, day-of-month, month, day-of-week.",
+                why: "Automating routine log rotations, backups, and security patch schedules is a core Linux administration competency.",
                 tasks: [
-                    "Schedule a job for 2 minutes from now using 'at'.",
-                    "Create a cron entry for a daily backup at 5:00 AM.",
-                    "Verify active cron jobs using 'crontab -l'."
+                    "Schedule a one-time job with 'at 14:00' or view scheduled jobs with 'atq'.",
+                    "View active user crontabs with 'crontab -l'.",
+                    "Use the Crontab Builder tool in the visualizer to construct a backup schedule."
                 ]
+            }
+        ],
+        scenarios: [
+            {
+                id: 0,
+                title: "Runaway User Job",
+                desc: "A user left a calculation script (PID 945 'heavy_calc') consuming 99% CPU on a multi-user server. You need to lower its priority or terminate it with SIGTERM.",
+                task: "renice +15 -p 945   OR   kill 945",
+                validator: (cmd) => (cmd.includes('renice') && cmd.includes('945')) || cmd === 'kill 945' || cmd === 'kill -15 945' || cmd === 'pkill heavy_calc',
+                success: "Success! The runaway process priority was adjusted or gracefully terminated."
+            },
+            {
+                id: 1,
+                title: "Safely Restart Web Service",
+                desc: "The nginx web server configuration was modified. Safely reload or restart the service using systemctl.",
+                task: "systemctl reload nginx   OR   systemctl restart nginx",
+                validator: (cmd) => cmd === 'systemctl reload nginx' || cmd === 'systemctl restart nginx' || cmd === 'systemctl status nginx',
+                success: "Success! nginx service configuration was reloaded via systemd."
+            },
+            {
+                id: 2,
+                title: "Job Persistence Beyond Logout",
+                desc: "You need to launch a long-running data import script 'import_data.sh' so it ignores SIGHUP signals when your shell session terminates.",
+                task: "nohup ./import_data.sh &",
+                validator: (cmd) => cmd.startsWith('nohup') && cmd.includes('&'),
+                success: "Success! The job was started with nohup; output redirects to nohup.out and will ignore SIGHUP."
+            },
+            {
+                id: 3,
+                title: "One-Time Maintenance Task",
+                desc: "A one-time patch script must run tomorrow at 2:00 PM (14:00). Configure this using the 'at' command daemon.",
+                task: "at 14:00 tomorrow",
+                validator: (cmd) => cmd.startsWith('at 14:00') || cmd === 'at 2pm' || cmd === 'atq',
+                success: "Success! The job was queued in atd spool (/var/spool/at)."
+            },
+            {
+                id: 4,
+                title: "Daily Recurring Backup",
+                desc: "A system backup script '/usr/local/bin/backup.sh' must run every day at exactly 5:05 PM (17:05). Format the crontab command or inspect crontab.",
+                task: "5 17 * * * /usr/local/bin/backup.sh (via crontab -e) or crontab -l",
+                validator: (cmd) => cmd === 'crontab -l' || cmd === 'crontab -e' || cmd.includes('5 17 * * *'),
+                success: "Success! The 5-field cron entry matches 17:05 daily execution."
             }
         ]
     };
@@ -523,8 +726,10 @@
         state: {
             currentModule: 0,
             completedModules: [],
-            mode: 'guided',
+            mode: 'guided', // 'guided' or 'exam'
             theme: 'light',
+            currentSimTab: 'tree',
+            currentScenarioIdx: 0,
             stats: {
                 errors: 0,
                 hints: 0,
@@ -537,8 +742,16 @@
                 cwd: '/home/learner'
             },
             processTable: [],
-            jobs: [],
-            cronJobs: []
+            jobs: [], // { jid: 1, pid: 1045, cmd: 'sleep 500', status: 'Running' }
+            cronJobs: [
+                "0 2 * * * /usr/bin/updatedb",
+                "30 3 * * 0 /usr/local/bin/weekly_clean.sh"
+            ],
+            atJobs: [
+                { id: 1, date: "Nov 24 14:00", queue: "a", user: "learner" }
+            ],
+            tableSortKey: 'cpu',
+            tableSortAsc: false
         },
 
         init() {
@@ -550,11 +763,46 @@
 
         bindEvents() {
             document.getElementById('theme-toggle').onclick = () => this.toggleTheme();
-            document.getElementById('term-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') this.handleCommand(e.target.value);
-                if (e.key === 'ArrowUp') { e.preventDefault(); this.recallHistory(1); }
-                if (e.key === 'ArrowDown') { e.preventDefault(); this.recallHistory(-1); }
+            
+            const termInput = document.getElementById('term-input');
+            termInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.handleCommand(termInput.value);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.recallHistory(1);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.recallHistory(-1);
+                } else if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) {
+                    e.preventDefault();
+                    this.handleCtrlZ();
+                } else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+                    e.preventDefault();
+                    this.logToTerminal(`^C`, 'prompt');
+                }
             });
+        },
+
+        toggleExamMode() {
+            if (this.state.mode === 'guided') {
+                this.state.mode = 'exam';
+                document.getElementById('mode-toggle-btn').innerText = "Mode: Exam";
+                document.getElementById('status-badge').innerText = "Exam Mode";
+                document.getElementById('status-badge').style.background = "#fee2e2";
+                document.getElementById('status-badge').style.color = "#991b1b";
+                document.getElementById('hint-container').innerText = "Exam mode active: hints suppressed to simulate certification test conditions.";
+                document.getElementById('request-hint-btn').disabled = true;
+            } else {
+                this.state.mode = 'guided';
+                document.getElementById('mode-toggle-btn').innerText = "Mode: Guided";
+                document.getElementById('status-badge').innerText = "Guided Mode";
+                document.getElementById('status-badge').style.background = "var(--border)";
+                document.getElementById('status-badge').style.color = "var(--text-muted)";
+                document.getElementById('hint-container').innerText = "Click 'Request Hint' if you get stuck.";
+                document.getElementById('request-hint-btn').disabled = false;
+            }
+            this.updateStats();
         },
 
         /* NAVIGATION & UI */
@@ -572,7 +820,7 @@
                             <span class="status-dot" style="background: ${isCompleted ? 'var(--accent)' : 'var(--border)'}"></span>
                         </div>
                         <h3 class="mt-4">${m.title}</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">${m.concept.substring(0, 80)}...</p>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">${m.concept.substring(0, 85)}...</p>
                         ${isLocked ? '<p style="font-size: 0.65rem; color: var(--danger); font-weight: bold; margin-top: 0.5rem;">LOCKED</p>' : ''}
                     </div>
                 `;
@@ -580,6 +828,43 @@
 
             document.getElementById('dash-progress-bar').style.width = 
                 `${(this.state.completedModules.length / LESSON_DATA.modules.length) * 100}%`;
+        },
+
+        showScenarios() {
+            this.switchScreen('scenarios');
+            this.selectScenario(this.state.currentScenarioIdx);
+        },
+
+        selectScenario(idx) {
+            this.state.currentScenarioIdx = idx;
+            document.querySelectorAll('.scenario-card').forEach((card, i) => {
+                card.classList.toggle('active', i === idx);
+            });
+            const scen = LESSON_DATA.scenarios[idx];
+            document.getElementById('scen-title').innerText = scen.title;
+            document.getElementById('scen-desc').innerText = scen.desc;
+            document.getElementById('scen-task').innerText = this.state.mode === 'exam' ? "[Hidden in Exam Mode - Use troubleshooting knowledge]" : scen.task;
+            document.getElementById('scen-result').innerText = "";
+        },
+
+        launchScenarioWorkspace() {
+            this.switchScreen('workspace');
+            const scen = LESSON_DATA.scenarios[this.state.currentScenarioIdx];
+            document.getElementById('module-badge').innerText = `Scenario Ticket #${scen.id + 1}`;
+            document.getElementById('module-title').innerText = scen.title;
+            document.getElementById('module-concept').innerHTML = `<p>${scen.desc}</p>`;
+            document.getElementById('task-list').innerHTML = `
+                <div style="display:flex; gap:8px;">
+                    <input type="checkbox" id="scen-task-check" disabled>
+                    <label>Resolve the scenario ticket using simulated commands.</label>
+                </div>
+            `;
+            // Add scenario target processes if needed
+            if (scen.id === 0 && !this.state.processTable.some(p => p.pid === 945)) {
+                this.state.processTable.push({ pid: 945, ppid: 120, cmd: "python3 heavy_calc.py", user: "learner", state: "R", cpu: 99.2, mem: 4.8, ni: 0 });
+            }
+            this.renderSimContent();
+            this.logToTerminal(`[SCENARIO BRIEFING] ${scen.title} initialized. Refer to left briefing panel.`, "output");
         },
 
         startModule(idx) {
@@ -613,6 +898,12 @@
                 </div>
             `).join('');
 
+            // Set appropriate default tab per module
+            if (m.id === 1) this.state.currentSimTab = 'tree';
+            else if (m.id === 2 || m.id === 3) this.state.currentSimTab = 'table';
+            else if (m.id === 5) this.state.currentSimTab = 'signals';
+            else if (m.id === 6) this.state.currentSimTab = 'cron';
+
             this.resetSimulation();
         },
 
@@ -634,6 +925,240 @@
             if (this.state.theme === 'dark') document.body.classList.add('dark-theme');
         },
 
+        /* SIMULATION TABS */
+        setSimTab(tab) {
+            this.state.currentSimTab = tab;
+            document.querySelectorAll('.sim-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase().includes(tab) || 
+                    (tab === 'table' && btn.innerText.includes('Viewer')) ||
+                    (tab === 'cron' && btn.innerText.includes('Cron')) ||
+                    (tab === 'signals' && btn.innerText.includes('Signal')));
+            });
+            this.renderSimContent();
+        },
+
+        renderSimContent() {
+            const container = document.getElementById('sim-content');
+            container.innerHTML = "";
+
+            if (this.state.currentSimTab === 'tree') {
+                this.renderProcessTree(container);
+            } else if (this.state.currentSimTab === 'table') {
+                this.renderProcessTable(container);
+            } else if (this.state.currentSimTab === 'cron') {
+                this.renderCronBuilder(container);
+            } else if (this.state.currentSimTab === 'signals') {
+                this.renderSignalStrategy(container);
+            }
+        },
+
+        renderProcessTree(container) {
+            const tree = document.createElement('div');
+            tree.className = 'process-tree';
+            
+            // Build visual hierarchy: Kernel (0) -> systemd (1) -> children
+            this.state.processTable.forEach(p => {
+                const node = document.createElement('div');
+                node.className = 'proc-node';
+                node.innerHTML = `
+                    <div style="font-weight:bold; color:var(--primary);">${p.cmd}</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">
+                        PID: <strong>${p.pid}</strong> | PPID: ${p.ppid}<br>
+                        USER: ${p.user} | State: <span class="state-badge state-${p.state}">${p.state}</span>
+                    </div>
+                `;
+                node.onclick = () => {
+                    this.logToTerminal(`[Process Inspector] PID ${p.pid} ('${p.cmd}') | PPID ${p.ppid} | Nice ${p.ni || 0}`, 'output');
+                };
+                tree.appendChild(node);
+            });
+            container.appendChild(tree);
+        },
+
+        renderProcessTable(container) {
+            const wrap = document.createElement('div');
+            wrap.className = 'process-table-container';
+
+            let procs = [...this.state.processTable];
+            procs.sort((a, b) => {
+                let valA = a[this.state.tableSortKey] ?? 0;
+                let valB = b[this.state.tableSortKey] ?? 0;
+                return this.state.tableSortAsc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+            });
+
+            wrap.innerHTML = `
+                <div style="margin-bottom:0.4rem; font-size:0.75rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+                    <span>Click column headers to sort. Hover over state badges for explanations.</span>
+                    <span>Total Procs: ${procs.length}</span>
+                </div>
+                <table class="process-table">
+                    <thead>
+                        <tr>
+                            <th onclick="app.sortTable('pid')">PID</th>
+                            <th onclick="app.sortTable('ppid')">PPID</th>
+                            <th onclick="app.sortTable('user')">USER</th>
+                            <th onclick="app.sortTable('ni')">NI</th>
+                            <th onclick="app.sortTable('state')">STAT</th>
+                            <th onclick="app.sortTable('cpu')">%CPU</th>
+                            <th onclick="app.sortTable('mem')">%MEM</th>
+                            <th onclick="app.sortTable('cmd')">COMMAND</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${procs.map(p => `
+                            <tr>
+                                <td>${p.pid}</td>
+                                <td>${p.ppid}</td>
+                                <td>${p.user}</td>
+                                <td>${p.ni ?? 0}</td>
+                                <td>
+                                    <span class="state-badge state-${p.state}" title="${this.getStateDescription(p.state)}">
+                                        ${p.state}
+                                    </span>
+                                </td>
+                                <td>${(p.cpu ?? 0).toFixed(1)}</td>
+                                <td>${(p.mem ?? 0).toFixed(1)}</td>
+                                <td>${p.cmd}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.appendChild(wrap);
+        },
+
+        getStateDescription(st) {
+            const map = {
+                'R': 'Running or runnable (on run queue)',
+                'S': 'Interruptible sleep (waiting for an event to complete)',
+                'D': 'Uninterruptible sleep (usually disk/IO operation)',
+                'T': 'Stopped by job control signal (e.g. Ctrl-Z)',
+                'Z': 'Zombie / defunct (terminated but parent not yet waited)'
+            };
+            return map[st] || 'Active process';
+        },
+
+        sortTable(key) {
+            if (this.state.tableSortKey === key) {
+                this.state.tableSortAsc = !this.state.tableSortAsc;
+            } else {
+                this.state.tableSortKey = key;
+                this.state.tableSortAsc = false;
+            }
+            this.renderSimContent();
+        },
+
+        renderCronBuilder(container) {
+            const builder = document.createElement('div');
+            builder.innerHTML = `
+                <div style="font-size:0.8rem; margin-bottom:0.5rem;">
+                    <strong>Interactive Crontab Builder</strong> — Format: <code>[min] [hour] [day-of-month] [month] [day-of-week] [command]</code>
+                </div>
+                <div class="cron-builder">
+                    <div class="cron-field">
+                        <input type="text" id="cron-min" value="5" maxlength="5">
+                        <span class="cron-label">MIN (0-59)</span>
+                    </div>
+                    <div class="cron-field">
+                        <input type="text" id="cron-hour" value="17" maxlength="5">
+                        <span class="cron-label">HOUR (0-23)</span>
+                    </div>
+                    <div class="cron-field">
+                        <input type="text" id="cron-dom" value="*" maxlength="5">
+                        <span class="cron-label">DOM (1-31)</span>
+                    </div>
+                    <div class="cron-field">
+                        <input type="text" id="cron-mon" value="*" maxlength="5">
+                        <span class="cron-label">MON (1-12)</span>
+                    </div>
+                    <div class="cron-field">
+                        <input type="text" id="cron-dow" value="*" maxlength="5">
+                        <span class="cron-label">DOW (0-7)</span>
+                    </div>
+                    <div style="flex:1;">
+                        <input type="text" id="cron-cmd" value="/usr/local/bin/backup.sh" style="width:100%; padding:0.4rem; border:1px solid var(--border); border-radius:0.4rem; background:var(--bg-page); color:var(--text-main);">
+                        <span class="cron-label">COMMAND TO EXECUTE</span>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem;">
+                    <button class="btn btn-primary" style="font-size:0.75rem; padding:0.35rem 0.8rem;" onclick="app.applyCronBuilder()">Save to Crontab</button>
+                    <span id="cron-preview" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--primary);">Preview: 5 17 * * * /usr/local/bin/backup.sh</span>
+                </div>
+                <div style="margin-top:1rem; font-size:0.75rem;">
+                    <strong>Active Crontab Entries:</strong>
+                    <pre style="background:var(--bg-page); padding:0.5rem; border-radius:0.4rem; margin-top:0.3rem;">${this.state.cronJobs.join('\n')}</pre>
+                </div>
+            `;
+            container.appendChild(builder);
+
+            const updatePreview = () => {
+                const preview = document.getElementById('cron-preview');
+                const m = document.getElementById('cron-min')?.value || '*';
+                const h = document.getElementById('cron-hour')?.value || '*';
+                const dom = document.getElementById('cron-dom')?.value || '*';
+                const mon = document.getElementById('cron-mon')?.value || '*';
+                const dow = document.getElementById('cron-dow')?.value || '*';
+                const cmd = document.getElementById('cron-cmd')?.value || '';
+                if (preview) preview.innerText = `Preview: ${m} ${h} ${dom} ${mon} ${dow} ${cmd}`;
+            };
+
+            ['cron-min', 'cron-hour', 'cron-dom', 'cron-mon', 'cron-dow', 'cron-cmd'].forEach(id => {
+                const el = builder.querySelector(`#${id}`);
+                if (el) el.addEventListener('input', updatePreview);
+            });
+        },
+
+        applyCronBuilder() {
+            const m = document.getElementById('cron-min')?.value || '*';
+            const h = document.getElementById('cron-hour')?.value || '*';
+            const dom = document.getElementById('cron-dom')?.value || '*';
+            const mon = document.getElementById('cron-mon')?.value || '*';
+            const dow = document.getElementById('cron-dow')?.value || '*';
+            const cmd = document.getElementById('cron-cmd')?.value || '/bin/true';
+            
+            const entry = `${m} ${h} ${dom} ${mon} ${dow} ${cmd}`;
+            this.state.cronJobs.push(entry);
+            this.logToTerminal(`crontab: installing new crontab entry: "${entry}"`, "output");
+            this.renderSimContent();
+            this.checkObjectiveProgress();
+        },
+
+        renderSignalStrategy(container) {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div style="font-size:0.8rem; margin-bottom:0.5rem;">
+                    <strong>Signal Escalation Strategy:</strong> CompTIA recommends graceful shutdown first.
+                </div>
+                <div style="background:var(--bg-page); padding:0.75rem; border-radius:0.5rem; font-size:0.75rem; margin-bottom:0.75rem;">
+                    <strong>Graceful Termination Order:</strong><br>
+                    1. <code>SIGTERM (15)</code>: Allows process to save state, close socket/db handles.<br>
+                    2. <code>SIGINT (2)</code>: Terminal interrupt (identical to Ctrl-C).<br>
+                    3. <code>SIGHUP (1)</code>: Hangup detected on controlling terminal or reload daemon configuration.<br>
+                    4. <code>SIGKILL (9)</code>: Kernel immediately removes process from scheduler. Uncatchable; risks data corruption.
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                    <span style="font-size:0.75rem; font-weight:bold;">Test Signal on PID:</span>
+                    <select id="sig-target-pid" style="padding:0.3rem; border-radius:0.3rem; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main);">
+                        ${this.state.processTable.filter(p => p.pid > 1).map(p => `<option value="${p.pid}">${p.pid} (${p.cmd})</option>`).join('')}
+                    </select>
+                    <div class="signal-strip">
+                        <button class="signal-btn" onclick="app.sendTestSignal(15)">SIGTERM (15)</button>
+                        <button class="signal-btn" onclick="app.sendTestSignal(2)">SIGINT (2)</button>
+                        <button class="signal-btn" onclick="app.sendTestSignal(1)">SIGHUP (1)</button>
+                        <button class="signal-btn danger" onclick="app.sendTestSignal(9)">SIGKILL (9)</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        },
+
+        sendTestSignal(sig) {
+            const sel = document.getElementById('sig-target-pid');
+            if (!sel) return;
+            const pid = parseInt(sel.value);
+            this.handleKill([`-${sig}`, pid.toString()]);
+        },
+
         /* TERMINAL LOGIC */
         handleCommand(raw) {
             const input = raw.trim();
@@ -643,18 +1168,32 @@
             this.state.terminal.history.push(input);
             this.state.terminal.historyIndex = -1;
 
-            const parts = input.split(' ');
+            this.logToTerminal(`learner@linux:~$ ${input}`, 'prompt');
+            
+            // Background check: command ending with &
+            let isBg = false;
+            let cleanInput = input;
+            if (input.endsWith('&')) {
+                isBg = true;
+                cleanInput = input.replace(/&+$/, '').trim();
+            }
+
+            const parts = cleanInput.split(/\s+/);
             const cmd = parts[0];
             const args = parts.slice(1);
 
-            this.logToTerminal(`learner@linux:~$ ${input}`, 'prompt');
-            
             let output = "";
             let type = "output";
 
             switch(cmd) {
                 case 'help':
-                    output = "Available: ps, top, htop, pgrep, pidof, kill, pkill, killall, nice, renice, jobs, fg, bg, at, crontab, clear";
+                    output = "Supported Chapter 9 commands:\n" +
+                             "  ps, top, htop, pgrep, pidof\n" +
+                             "  nice, renice\n" +
+                             "  jobs, fg, bg, nohup\n" +
+                             "  kill, killall, pkill\n" +
+                             "  at, atq, atrm, crontab\n" +
+                             "  systemctl, clear";
                     break;
                 case 'clear':
                     document.getElementById('term-output').innerHTML = "";
@@ -664,29 +1203,85 @@
                     break;
                 case 'top':
                 case 'htop':
-                    this.openSimOverlay('top');
-                    output = "Opening interactive viewer...";
+                    this.setSimTab('table');
+                    output = `Opening ${cmd} viewer in Process Viewer tab. Live monitoring enabled.`;
                     break;
                 case 'pgrep':
-                    const match = this.state.processTable.find(p => p.cmd.includes(args[0]));
-                    output = match ? match.pid.toString() : "No process found.";
+                    if (args.length === 0) {
+                        output = "usage: pgrep [pattern]";
+                        type = "error";
+                    } else {
+                        const matches = this.state.processTable.filter(p => p.cmd.includes(args[0]));
+                        output = matches.length ? matches.map(m => m.pid).join('\n') : "";
+                    }
+                    break;
+                case 'pidof':
+                    if (args.length === 0) {
+                        output = "usage: pidof [program]";
+                        type = "error";
+                    } else {
+                        const match = this.state.processTable.find(p => p.cmd.split(' ')[0] === args[0]);
+                        output = match ? match.pid.toString() : "";
+                    }
+                    break;
+                case 'nice':
+                    output = this.handleNice(args, isBg);
+                    break;
+                case 'renice':
+                    output = this.handleRenice(args);
+                    break;
+                case 'jobs':
+                    output = this.simJobs();
+                    break;
+                case 'fg':
+                    output = this.simFg(args);
+                    break;
+                case 'bg':
+                    output = this.simBg(args);
+                    break;
+                case 'nohup':
+                    output = this.handleNohup(args, isBg);
                     break;
                 case 'kill':
                     output = this.handleKill(args);
                     break;
-                case 'nice':
-                    if (args.length < 2) {
-                        output = "usage: nice -n <value> <command>";
+                case 'killall':
+                    output = this.handleKillall(args);
+                    break;
+                case 'pkill':
+                    output = this.handlePkill(args);
+                    break;
+                case 'at':
+                    output = this.handleAt(args);
+                    break;
+                case 'atq':
+                    output = this.state.atJobs.map(j => `${j.id}\t${j.date} ${j.queue} ${j.user}`).join('\n') || "No scheduled at jobs.";
+                    break;
+                case 'atrm':
+                    if (args.length > 0) {
+                        const atId = parseInt(args[0]);
+                        this.state.atJobs = this.state.atJobs.filter(j => j.id !== atId);
+                        output = `Job ${atId} removed from spool.`;
                     } else {
-                        output = "Process launched in background.";
-                        this.spawnProcess(args.slice(1).join(' '), parseInt(args[0].replace('-n', '')) || 10);
+                        output = "usage: atrm <job_id>";
+                        type = "error";
                     }
                     break;
                 case 'crontab':
                     output = this.handleCrontab(args);
                     break;
+                case 'systemctl':
+                    output = this.handleSystemctl(args);
+                    break;
+                case 'sleep':
+                    if (isBg) {
+                        output = this.spawnJob(`sleep ${args[0] || '100'}`, true);
+                    } else {
+                        output = `[Running in foreground: sleep ${args[0] || '100'} — Press Ctrl-Z to suspend to background]`;
+                    }
+                    break;
                 default:
-                    output = `bash: ${cmd}: command not found`;
+                    output = `bash: ${cmd}: command not found. Type 'help' for available process management commands.`;
                     type = "error";
                     this.state.stats.errors++;
             }
@@ -717,6 +1312,32 @@
             }
         },
 
+        handleCtrlZ() {
+            // Stop foreground and put into jobs
+            const jid = this.state.jobs.length + 1;
+            const pid = Math.floor(Math.random() * 2000) + 1200;
+            this.state.jobs.push({
+                jid: jid,
+                pid: pid,
+                cmd: "sleep 300",
+                status: "Stopped"
+            });
+            this.state.processTable.push({
+                pid: pid,
+                ppid: 120,
+                cmd: "sleep 300",
+                user: "learner",
+                state: "T",
+                cpu: 0,
+                mem: 0.1,
+                ni: 0
+            });
+            this.logToTerminal(`\n^Z\n[${jid}]+  Stopped                 sleep 300`, 'output');
+            this.updateBgJobsIndicator();
+            this.renderSimContent();
+            this.checkObjectiveProgress();
+        },
+
         logToTerminal(text, type) {
             const container = document.getElementById('term-output');
             const div = document.createElement('div');
@@ -728,110 +1349,314 @@
             container.scrollTop = container.scrollHeight;
         },
 
-        /* SIMULATION LOGIC */
-        resetSimulation() {
-            const m = LESSON_DATA.modules[this.state.currentModule];
-            this.state.processTable = m.initialState?.processes.map(p => ({...p})) || [
-                { pid: 1, ppid: 0, cmd: "systemd", user: "root", state: "S", cpu: 0, ni: 0 },
-                { pid: 120, ppid: 1, cmd: "bash", user: "learner", state: "S", cpu: 0, ni: 0 },
-                { pid: 245, ppid: 120, cmd: "vi notes.txt", user: "learner", state: "T", cpu: 0, ni: 0 }
-            ];
-            this.renderProcessVisualizer();
-        },
-
-        renderProcessVisualizer() {
-            const container = document.getElementById('sim-content');
-            container.innerHTML = "";
-            
-            const tree = document.createElement('div');
-            tree.className = 'process-tree';
-            
-            this.state.processTable.forEach(p => {
-                const node = document.createElement('div');
-                node.className = 'proc-node';
-                node.innerHTML = `
-                    <strong>${p.cmd}</strong><br>
-                    <span style="font-size:0.6rem">PID: ${p.pid} | PPID: ${p.ppid}</span>
-                `;
-                tree.appendChild(node);
-            });
-            
-            container.appendChild(tree);
-        },
-
-        openSimOverlay(type) {
-            this.logToTerminal("[Simulation] Displaying real-time process monitoring...", "output");
-        },
-
+        /* DETAILED COMMAND SIMULATORS */
         simPs(args) {
-            let out = "PID    TTY      TIME     CMD\n";
-            this.state.processTable.forEach(p => {
-                out += `${p.pid.toString().padEnd(6)} pts/0    00:00:01 ${p.cmd}\n`;
+            const str = args.join(' ');
+            if (str.includes('aux')) {
+                let out = "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\n";
+                this.state.processTable.forEach(p => {
+                    out += `${p.user.padEnd(8)} ${p.pid.toString().padEnd(5)} ${(p.cpu||0).toFixed(1).padEnd(4)} ${(p.mem||0).toFixed(1).padEnd(4)}  18400  3200 pts/0    ${p.state.padEnd(4)} 10:14   0:00 ${p.cmd}\n`;
+                });
+                return out;
+            } else if (str.includes('-ef') || str.includes('-e')) {
+                let out = "UID        PID  PPID  C STIME TTY          TIME CMD\n";
+                this.state.processTable.forEach(p => {
+                    out += `${p.user.padEnd(8)} ${p.pid.toString().padEnd(5)} ${(p.ppid??0).toString().padEnd(5)} 0 10:14 pts/0    00:00:00 ${p.cmd}\n`;
+                });
+                return out;
+            } else if (str.includes('-l')) {
+                let out = "F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN  TTY          TIME CMD\n";
+                this.state.processTable.forEach(p => {
+                    const pri = 80 + (p.ni ?? 0);
+                    out += `0 ${p.state}  1000 ${p.pid.toString().padEnd(5)} ${(p.ppid??0).toString().padEnd(5)}  0  ${pri}  ${(p.ni??0).toString().padEnd(3)} -  4600 -      pts/0    00:00:00 ${p.cmd}\n`;
+                });
+                return out;
+            } else {
+                let out = "  PID TTY          TIME CMD\n";
+                this.state.processTable.filter(p => p.user === 'learner').forEach(p => {
+                    out += `${p.pid.toString().padStart(5)} pts/0    00:00:00 ${p.cmd}\n`;
+                });
+                return out;
+            }
+        },
+
+        handleNice(args, isBg) {
+            let val = 10;
+            let cmdParts = args;
+            if (args[0] === '-n') {
+                val = parseInt(args[1]) || 10;
+                cmdParts = args.slice(2);
+            } else if (args[0] && args[0].startsWith('-')) {
+                val = parseInt(args[0].replace('-', '')) || 10;
+                cmdParts = args.slice(1);
+            }
+
+            if (val < 0 && this.state.mode === 'guided') {
+                return "nice: cannot set niceness negative (-20 to -1): Permission denied (requires root/sudo).";
+            }
+
+            const runCmd = cmdParts.join(' ') || "sleep 300";
+            const pid = Math.floor(Math.random() * 4000) + 1200;
+            this.state.processTable.push({
+                pid: pid,
+                ppid: 120,
+                cmd: runCmd,
+                user: "learner",
+                state: "S",
+                cpu: 0.1,
+                mem: 0.2,
+                ni: val
             });
-            return out;
+            this.renderSimContent();
+            return `[Nice Started] PID ${pid} launched with niceness ${val} (Priority PR: ${80 + val}).`;
+        },
+
+        handleRenice(args) {
+            // renice +5 -p 1200 or renice 5 1200
+            let val = 0;
+            let pid = 0;
+            if (args.includes('-p')) {
+                val = parseInt(args[0]);
+                pid = parseInt(args[args.indexOf('-p') + 1]);
+            } else if (args.length >= 2) {
+                val = parseInt(args[0]);
+                pid = parseInt(args[1]);
+            }
+
+            if (!pid) return "usage: renice [-n] priority [[-p] pids] [[-u] users]";
+
+            if (val < 0) {
+                return `renice: failed to set priority for ${pid}: Operation not permitted (only root can increase priority / lower nice value).`;
+            }
+
+            const proc = this.state.processTable.find(p => p.pid === pid);
+            if (proc) {
+                const oldNi = proc.ni || 0;
+                proc.ni = val;
+                this.renderSimContent();
+                return `${pid} (process ID) old priority ${oldNi}, new priority ${val}`;
+            }
+            return `renice: ${pid}: process not found`;
+        },
+
+        simJobs() {
+            if (this.state.jobs.length === 0) return "No active jobs in current shell.";
+            return this.state.jobs.map(j => `[${j.jid}]+  ${j.status.padEnd(9)}  ${j.cmd}`).join('\n');
+        },
+
+        simBg(args) {
+            let jid = 1;
+            if (args[0] && args[0].startsWith('%')) {
+                jid = parseInt(args[0].replace('%', ''));
+            }
+            const job = this.state.jobs.find(j => j.jid === jid);
+            if (job) {
+                job.status = "Running";
+                const p = this.state.processTable.find(x => x.pid === job.pid);
+                if (p) p.state = "S";
+                this.renderSimContent();
+                return `[${job.jid}]+ ${job.cmd} &`;
+            }
+            return `bash: bg: job ${jid} not found`;
+        },
+
+        simFg(args) {
+            let jid = 1;
+            if (args[0] && args[0].startsWith('%')) {
+                jid = parseInt(args[0].replace('%', ''));
+            }
+            const jobIdx = this.state.jobs.findIndex(j => j.jid === jid);
+            if (jobIdx > -1) {
+                const job = this.state.jobs[jobIdx];
+                this.state.jobs.splice(jobIdx, 1);
+                this.updateBgJobsIndicator();
+                return `${job.cmd}\n[Brought to foreground]`;
+            }
+            return `bash: fg: job ${jid} not found`;
+        },
+
+        handleNohup(args, isBg) {
+            const innerCmd = args.join(' ');
+            const pid = Math.floor(Math.random() * 3000) + 1500;
+            this.state.processTable.push({
+                pid: pid,
+                ppid: 1, // gets reparented to systemd
+                cmd: innerCmd,
+                user: "learner",
+                state: "S",
+                cpu: 0.4,
+                mem: 0.8,
+                ni: 0
+            });
+            this.renderSimContent();
+            return `nohup: ignoring input and appending output to 'nohup.out'\n[PID ${pid} immune to SIGHUP logout signals]`;
         },
 
         handleKill(args) {
-            if (args.length === 0) return "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]";
-            
-            const pidArg = args[args.length - 1];
-            const pid = parseInt(pidArg);
-            const signal = args.length > 1 ? args[0] : '-15';
-
-            if ((signal === '-9' || signal === '-SIGKILL') && this.state.mode === 'guided') {
-                this.logToTerminal("Caution: SIGKILL forced termination. Data loss may occur.", "warning");
+            if (args.length === 0) return "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l";
+            if (args[0] === '-l') {
+                return " 1) SIGHUP   2) SIGINT   3) SIGQUIT  9) SIGKILL  15) SIGTERM  18) SIGCONT  19) SIGSTOP";
             }
 
-            const index = this.state.processTable.findIndex(p => p.pid === pid);
-            if (index > -1) {
-                const proc = this.state.processTable[index];
-                this.state.processTable.splice(index, 1);
-                this.renderProcessVisualizer();
-                return `Process ${pid} (${proc.cmd}) terminated.`;
+            const pidArg = args[args.length - 1];
+            const pid = parseInt(pidArg);
+            const sig = args.length > 1 ? args[0] : '-15';
+
+            if ((sig === '-9' || sig === '-SIGKILL') && this.state.mode === 'guided') {
+                this.logToTerminal("[Instructional Note] SIGKILL used. Reminder: CompTIA Linux+ recommends testing SIGTERM (15) first before force-killing.", "warning");
+            }
+
+            const idx = this.state.processTable.findIndex(p => p.pid === pid);
+            if (idx > -1) {
+                const p = this.state.processTable[idx];
+                this.state.processTable.splice(idx, 1);
+                this.state.jobs = this.state.jobs.filter(j => j.pid !== pid);
+                this.updateBgJobsIndicator();
+                this.renderSimContent();
+                return `[Process Terminated] PID ${pid} (${p.cmd}) terminated via signal ${sig}.`;
             }
             return `bash: kill: (${pidArg}) - No such process`;
         },
 
-        spawnProcess(cmd, ni = 0) {
-            const pid = Math.floor(Math.random() * 5000) + 1000;
-            this.state.processTable.push({
-                pid: pid,
-                ppid: 120,
-                cmd: cmd || "sleep 1000",
-                user: "learner",
-                state: "S",
-                cpu: 0,
-                ni: ni
+        handleKillall(args) {
+            if (!args[0]) return "killall: usage: killall [-s signal] name ...";
+            const target = args[args.length - 1];
+            const beforeCount = this.state.processTable.length;
+            this.state.processTable = this.state.processTable.filter(p => !p.cmd.includes(target));
+            const removed = beforeCount - this.state.processTable.length;
+            this.renderSimContent();
+            return `killall: terminated ${removed} processes matching '${target}'.`;
+        },
+
+        handlePkill(args) {
+            if (!args[0]) return "pkill: usage: pkill [options] pattern";
+            const target = args[args.length - 1];
+            const beforeCount = this.state.processTable.length;
+            this.state.processTable = this.state.processTable.filter(p => !p.cmd.includes(target));
+            const removed = beforeCount - this.state.processTable.length;
+            this.renderSimContent();
+            return removed > 0 ? `pkill: signaled ${removed} process(es).` : "pkill: no matching processes found.";
+        },
+
+        handleAt(args) {
+            if (args.length === 0) return "usage: at [-q queue] [-f file] time";
+            const newId = this.state.atJobs.length + 1;
+            const timeStr = args.join(' ');
+            this.state.atJobs.push({
+                id: newId,
+                date: `Nov 24 ${timeStr}`,
+                queue: "a",
+                user: "learner"
             });
-            this.renderProcessVisualizer();
+            return `warning: commands will be executed using /bin/sh\njob ${newId} at ${timeStr}\n<EOT> (job scheduled in atd daemon)`;
         },
 
         handleCrontab(args) {
             if (args[0] === '-l') {
-                return this.state.cronJobs.length > 0 ? this.state.cronJobs.join('\n') : "no crontab for learner";
-            }
-            if (args[0] === '-e') {
-                return "Crontab editor simulated. Please use the Crontab Builder tool in the visualizer area.";
+                return this.state.cronJobs.length > 0 ? 
+                    `# User crontab for learner\n` + this.state.cronJobs.join('\n') : 
+                    "no crontab for learner";
+            } else if (args[0] === '-e') {
+                this.setSimTab('cron');
+                return "crontab: opening interactive Crontab Builder tool in visualizer workspace.";
+            } else if (args[0] === '-r') {
+                this.state.cronJobs = [];
+                this.renderSimContent();
+                return "crontab: all crontabs removed for learner.";
             }
             return "usage: crontab [-u user] file | crontab [-l | -r | -e]";
         },
 
-        /* LESSON FLOW */
+        handleSystemctl(args) {
+            const sub = args[0];
+            const unit = args[1] || "service";
+            if (!sub) return "systemctl [command] [unit]";
+
+            if (sub === 'status') {
+                return `● ${unit}.service - Service Unit\n   Loaded: loaded (/lib/systemd/system/${unit}.service; enabled)\n   Active: active (running) since Mon 2026-11-23 10:00:00 UTC\n Main PID: 1820 (${unit})`;
+            } else if (sub === 'restart' || sub === 'reload') {
+                return `[systemd] Reloaded/restarted ${unit}.service gracefully.`;
+            } else if (sub === 'stop') {
+                return `[systemd] Stopped ${unit}.service.`;
+            } else if (sub === 'start') {
+                return `[systemd] Started ${unit}.service.`;
+            }
+            return `systemctl: command '${sub}' processed.`;
+        },
+
+        spawnJob(cmd, isBg = true) {
+            const jid = this.state.jobs.length + 1;
+            const pid = Math.floor(Math.random() * 5000) + 1000;
+            if (isBg) {
+                this.state.jobs.push({ jid, pid, cmd, status: "Running" });
+            }
+            this.state.processTable.push({
+                pid: pid,
+                ppid: 120,
+                cmd: cmd,
+                user: "learner",
+                state: "S",
+                cpu: 0.1,
+                mem: 0.1,
+                ni: 0
+            });
+            this.updateBgJobsIndicator();
+            this.renderSimContent();
+            return `[${jid}] ${pid}`;
+        },
+
+        updateBgJobsIndicator() {
+            const ind = document.getElementById('bg-jobs-indicator');
+            if (ind) ind.innerText = `Jobs: ${this.state.jobs.length}`;
+        },
+
+        /* LESSON FLOW & PROGRESS CHECK */
         checkObjectiveProgress() {
             const mIdx = this.state.currentModule;
             const tasks = document.querySelectorAll('#task-list input');
-            
-            // Logic varies per module
-            if (mIdx === 0) { // Foundations
-                if (this.state.terminal.history.some(h => h.includes('ps -ef'))) tasks[1].checked = true;
-                if (this.state.terminal.history.some(h => h.includes('ps'))) tasks[0].checked = true;
+            const hist = this.state.terminal.history;
+
+            if (mIdx === 0) { // Module 1: Foundations
+                if (hist.some(h => h.includes('ps -ef') || h.includes('ps -e'))) tasks[0].checked = true;
+                if (hist.some(h => h.includes('systemd') || h.includes('tree') || h.includes('ps'))) tasks[1].checked = true;
+                if (hist.some(h => h.includes('pidof') || h.includes('pgrep'))) tasks[2].checked = true;
+            } else if (mIdx === 1) { // Module 2: Viewing
+                if (hist.some(h => h.includes('ps aux'))) tasks[0].checked = true;
+                if (hist.some(h => h.includes('top') || h.includes('htop'))) tasks[1].checked = true;
+                if (hist.some(h => h.includes('pgrep'))) tasks[2].checked = true;
+            } else if (mIdx === 2) { // Module 3: Nice
+                if (hist.some(h => h.includes('nice'))) tasks[0].checked = true;
+                if (hist.some(h => h.includes('ps -l') || h.includes('top'))) tasks[1].checked = true;
+                if (hist.some(h => h.includes('renice'))) tasks[2].checked = true;
+            } else if (mIdx === 3) { // Module 4: Job Control
+                if (hist.some(h => h.includes('&'))) tasks[0].checked = true;
+                if (hist.some(h => h.includes('jobs'))) tasks[1].checked = true;
+                if (hist.some(h => h.includes('fg'))) tasks[2].checked = true;
+            } else if (mIdx === 4) { // Module 5: Signals
+                if (hist.some(h => h.includes('kill') && !h.includes('pkill'))) tasks[0].checked = true;
+                if (hist.some(h => h.includes('pkill') || h.includes('killall'))) tasks[1].checked = true;
+                if (this.state.currentSimTab === 'signals') tasks[2].checked = true;
+            } else if (mIdx === 5) { // Module 6: Scheduling
+                if (hist.some(h => h.includes('at ') || h.includes('atq'))) tasks[0].checked = true;
+                if (hist.some(h => h.includes('crontab -l') || h.includes('crontab -e'))) tasks[1].checked = true;
+                if (this.state.cronJobs.length > 2) tasks[2].checked = true;
             }
 
-            if (this.state.stats.commands > 5) {
-                tasks.forEach(t => t.checked = true);
+            // Scenario validation
+            const currentScen = LESSON_DATA.scenarios[this.state.currentScenarioIdx];
+            if (currentScen && hist.length > 0) {
+                const lastCmd = hist[hist.length - 1];
+                if (currentScen.validator(lastCmd)) {
+                    const chk = document.getElementById('scen-task-check');
+                    if (chk) chk.checked = true;
+                    const res = document.getElementById('scen-result');
+                    if (res) {
+                        res.innerHTML = `<span style="color:var(--accent); font-weight:bold;">${currentScen.success}</span>`;
+                    }
+                }
             }
 
-            if (Array.from(tasks).every(t => t.checked)) {
+            if (tasks.length > 0 && Array.from(tasks).every(t => t.checked)) {
                 this.completeModule();
             }
         },
@@ -845,7 +1670,7 @@
             if (this.state.completedModules.length === LESSON_DATA.modules.length) {
                 setTimeout(() => this.showReview(), 1500);
             } else {
-                this.logToTerminal("\nMODULE COMPLETE. Returning to dashboard in 3s...", "output");
+                this.logToTerminal(`\n[MODULE ${mId} COMPLETE] Progress saved. Returning to dashboard in 3 seconds...`, "output");
                 setTimeout(() => this.showDashboard(), 3000);
             }
         },
@@ -860,21 +1685,26 @@
         },
 
         getHint() {
+            if (this.state.mode === 'exam') return;
             this.state.stats.hints++;
-            const hints = [
-                "Try using 'ps aux' to see all processes.",
-                "PID 1 is always systemd in modern Linux.",
-                "Nice values range from -20 to 19.",
-                "Use Ctrl-Z to stop a foreground job.",
-                "Run 'kill -l' to see all signal numbers."
+            const hintsByModule = [
+                ["Run 'ps -ef' to view the PPID column.", "PID 1 is systemd and is spawned by kernel PID 0.", "Try 'pgrep bash'."],
+                ["Use 'ps aux' to see CPU/MEM columns.", "Type 'top' to open the process viewer.", "Use 'pgrep sshd'."],
+                ["Launch nice with: 'nice -n 10 sleep 300 &'.", "Check priorities with 'ps -l'.", "Use 'renice +5 -p <PID>'."],
+                ["Append '&' to run in background.", "Type 'jobs' to see active JIDs.", "Type 'fg %1' to bring back the first job."],
+                ["Use graceful 'kill <PID>' (signal 15).", "Use 'pkill sleep' to terminate by name.", "Explore the Signal Strategy tab."],
+                ["Try 'at 14:00' or 'atq'.", "Run 'crontab -l' to list scheduled tasks.", "Open the Crontab Builder tab."]
             ];
-            document.getElementById('hint-container').innerText = hints[Math.floor(Math.random() * hints.length)];
+            const currentList = hintsByModule[this.state.currentModule] || hintsByModule[0];
+            const hint = currentList[Math.floor(Math.random() * currentList.length)];
+            document.getElementById('hint-container').innerText = `Exam Tip: ${hint}`;
             this.updateStats();
         },
 
         updateStats() {
             document.getElementById('stat-errors').innerText = this.state.stats.errors;
             document.getElementById('stat-hints').innerText = this.state.stats.hints;
+            document.getElementById('stat-mode').innerText = this.state.mode === 'exam' ? 'Exam' : 'Guided';
             this.updateProgressBar();
         },
 
@@ -882,6 +1712,19 @@
             const total = LESSON_DATA.modules.length;
             const current = this.state.completedModules.length;
             document.getElementById('progress-fill').style.width = `${(current / total) * 100}%`;
+        },
+
+        resetSimulation() {
+            const m = LESSON_DATA.modules[this.state.currentModule];
+            this.state.processTable = m.initialState?.processes.map(p => ({...p})) || [
+                { pid: 0, ppid: -1, cmd: "kernel", user: "root", state: "R", cpu: 0, mem: 0, ni: 0 },
+                { pid: 1, ppid: 0, cmd: "systemd", user: "root", state: "S", cpu: 0.2, mem: 1.1, ni: 0 },
+                { pid: 50, ppid: 1, cmd: "sshd", user: "root", state: "S", cpu: 0.1, mem: 0.4, ni: 0 },
+                { pid: 120, ppid: 50, cmd: "bash", user: "learner", state: "S", cpu: 0.1, mem: 0.5, ni: 0 },
+                { pid: 245, ppid: 120, cmd: "vi notes.txt", user: "learner", state: "T", cpu: 0, mem: 0.3, ni: 0 }
+            ];
+            this.renderSimContent();
+            this.updateBgJobsIndicator();
         }
     };
 
