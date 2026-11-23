@@ -533,6 +533,12 @@
                         </div>
                     </div>
 
+                    <div id="module-complete-banner" class="hidden" style="margin-top: 0.5rem; padding: 0.75rem; border-radius: var(--radius); background: #dcfce7; border: 1px solid #86efac; color: #166534; font-size: 0.8rem;">
+                        <strong>✓ Objectives Complete!</strong>
+                        <p style="margin: 0.35rem 0 0.5rem 0; font-size: 0.75rem;">Feel free to continue experimenting in this terminal, or return to the dashboard to select your next module.</p>
+                        <button class="btn btn-primary" style="width: 100%; font-size: 0.75rem; padding: 0.35rem;" onclick="app.showDashboard()">Return to Dashboard →</button>
+                    </div>
+
                     <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); margin-top: auto; padding: 0.45rem;" onclick="app.exitModule()">← Exit to Dashboard</button>
                 </div>
 
@@ -959,6 +965,9 @@
             document.getElementById('module-title').innerText = m.title;
             document.getElementById('module-concept').innerHTML = `<p>${m.concept}</p><p class="mt-4"><strong>Why it matters:</strong> ${m.why}</p>`;
             
+            const banner = document.getElementById('module-complete-banner');
+            if (banner) banner.classList.add('hidden');
+
             const taskList = document.getElementById('task-list');
             taskList.innerHTML = m.tasks.map((t, i) => `
                 <div style="display: flex; gap: 8px; margin-bottom: 0.5rem;">
@@ -1744,15 +1753,20 @@
 
         completeModule() {
             const mId = LESSON_DATA.modules[this.state.currentModule].id;
-            if (!this.state.completedModules.includes(mId)) {
+            const isFirstCompletion = !this.state.completedModules.includes(mId);
+
+            if (isFirstCompletion) {
                 this.state.completedModules.push(mId);
-            }
-            
-            if (this.state.completedModules.length === LESSON_DATA.modules.length) {
-                setTimeout(() => this.showReview(), 1500);
-            } else {
-                this.logToTerminal(`\n[MODULE ${mId} COMPLETE] Progress saved. Returning to dashboard in 3 seconds...`, "output");
-                setTimeout(() => this.showDashboard(), 3000);
+                this.updateProgressBar();
+
+                const banner = document.getElementById('module-complete-banner');
+                if (banner) banner.classList.remove('hidden');
+
+                if (this.state.completedModules.length === LESSON_DATA.modules.length) {
+                    this.logToTerminal(`\n[ALL MODULES COMPLETE] Outstanding! You have met all learning objectives. You can keep testing commands or click "← Exit to Dashboard" / "Review Mastery" when ready.`, "output");
+                } else {
+                    this.logToTerminal(`\n[MODULE ${mId} COMPLETE] All tasks finished! You can continue practicing in this environment or click "Return to Dashboard" on the left when ready.`, "output");
+                }
             }
         },
 
