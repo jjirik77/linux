@@ -155,9 +155,9 @@
          */
         .workspace-layout {
             display: grid;
-            grid-template-columns: 350px 1fr 300px;
+            grid-template-columns: 320px 1fr 280px;
             gap: 1rem;
-            height: calc(100vh - 160px);
+            min-height: calc(100vh - 140px);
         }
         @media (max-width: 1200px) {
             .workspace-layout { grid-template-columns: 1fr 1.5fr; }
@@ -173,6 +173,8 @@
             display: flex;
             flex-direction: column;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+            min-height: 380px;
+            flex: 1.3;
         }
         .terminal-header {
             background: #1e293b;
@@ -453,9 +455,9 @@
                 </div>
 
                 <!-- CENTER: Terminal & Visuals -->
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
                     <!-- Visual Area -->
-                    <div class="card" style="flex: 1; margin-bottom: 0; position: relative; display: flex; flex-direction: column; min-height: 280px;">
+                    <div class="card" style="flex: 1; margin-bottom: 0; position: relative; display: flex; flex-direction: column; min-height: 220px; max-height: 280px;">
                         <div class="flex-between mb-2">
                             <h4 id="sim-title">Process Visualizer</h4>
                             <div class="badge" id="sim-type" style="background: #eff6ff; color: #1d4ed8;">Interactive</div>
@@ -472,7 +474,7 @@
                     </div>
                     
                     <!-- Terminal -->
-                    <div class="terminal-container" style="height: 250px;">
+                    <div class="terminal-container">
                         <div class="terminal-header">
                             <div class="t-dot" style="background: #ef4444;"></div>
                             <div class="t-dot" style="background: #f59e0b;"></div>
